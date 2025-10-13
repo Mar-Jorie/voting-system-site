@@ -299,12 +299,12 @@ const VotingModal = ({ isOpen, onClose }) => {
 
                             {/* Candidate Image */}
                             <div className="h-32 overflow-hidden rounded-t-lg">
-                              {candidate.image ? (
-                                Array.isArray(candidate.image) && candidate.image.length > 1 ? (
-                                  <ImageCarousel images={candidate.image} />
+                              {candidate.images && candidate.images.length > 0 ? (
+                                candidate.images.length > 1 ? (
+                                  <ImageCarousel images={candidate.images} />
                                 ) : (
                                   <img
-                                    src={Array.isArray(candidate.image) ? candidate.image[0] : candidate.image}
+                                    src={candidate.images[0]}
                                     alt={candidate.name}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                                   />
@@ -365,12 +365,12 @@ const VotingModal = ({ isOpen, onClose }) => {
 
                             {/* Candidate Image */}
                             <div className="h-32 overflow-hidden rounded-t-lg">
-                              {candidate.image ? (
-                                Array.isArray(candidate.image) && candidate.image.length > 1 ? (
-                                  <ImageCarousel images={candidate.image} />
+                              {candidate.images && candidate.images.length > 0 ? (
+                                candidate.images.length > 1 ? (
+                                  <ImageCarousel images={candidate.images} />
                                 ) : (
                                   <img
-                                    src={Array.isArray(candidate.image) ? candidate.image[0] : candidate.image}
+                                    src={candidate.images[0]}
                                     alt={candidate.name}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                                   />
