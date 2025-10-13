@@ -366,6 +366,97 @@ const LandingPage = () => {
             </div>
           </div>
 
+          {/* Detailed Results */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Male Category Results */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center mb-4">
+                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mr-3">
+                  <UserGroupIcon className="h-5 w-5 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Male Category Results</h3>
+              </div>
+              <div className="space-y-4">
+                {getMaleCandidates().sort((a, b) => (b.votes || 0) - (a.votes || 0)).map((candidate, index) => (
+                  <div key={candidate.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                    <div className="flex-shrink-0">
+                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                        index === 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {index + 1}
+                      </span>
+                    </div>
+                    {candidate.image && (
+                      <img 
+                        src={candidate.image} 
+                        alt={candidate.name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{candidate.name}</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                            style={{ 
+                              width: `${getTotalVotes() > 0 ? ((candidate.votes || 0) / getTotalVotes()) * 100 : 0}%` 
+                            }}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-medium text-gray-600 min-w-[2rem]">{candidate.votes || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Female Category Results */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center mb-4">
+                <div className="w-8 h-8 bg-pink-50 rounded-lg flex items-center justify-center mr-3">
+                  <UserGroupIcon className="h-5 w-5 text-pink-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Female Category Results</h3>
+              </div>
+              <div className="space-y-4">
+                {getFemaleCandidates().sort((a, b) => (b.votes || 0) - (a.votes || 0)).map((candidate, index) => (
+                  <div key={candidate.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                    <div className="flex-shrink-0">
+                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                        index === 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {index + 1}
+                      </span>
+                    </div>
+                    {candidate.image && (
+                      <img 
+                        src={candidate.image} 
+                        alt={candidate.name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{candidate.name}</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-pink-600 h-2 rounded-full transition-all duration-300" 
+                            style={{ 
+                              width: `${getTotalVotes() > 0 ? ((candidate.votes || 0) / getTotalVotes()) * 100 : 0}%` 
+                            }}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-medium text-gray-600 min-w-[2rem]">{candidate.votes || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* View All Results Button */}
           <div className="text-center">
             <Link to="/voting">
