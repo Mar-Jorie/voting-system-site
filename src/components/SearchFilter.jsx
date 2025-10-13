@@ -16,7 +16,8 @@ const SearchFilter = ({
   onSearchSelectChange,
   statusOptions = [],
   getUniqueCompanies = () => [],
-  className = "bg-gray-50 border-gray-200"
+  className = "bg-gray-50 border-gray-200",
+  showFilterIcon = true
 }) => {
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
@@ -74,28 +75,31 @@ const SearchFilter = ({
           )}
         </div>
 
-        {/* Filter Icon */}
-        <button
-          onClick={toggleFilterPanel}
-          className="p-2 sm:p-2 text-gray-600 hover:text-primary-600 transition-colors flex-shrink-0"
-        >
-          <FunnelIcon className="h-4 w-4" />
-        </button>
+        {/* Filter Icon - Only show if showFilterIcon is true */}
+        {showFilterIcon && (
+          <button
+            onClick={toggleFilterPanel}
+            className="p-2 sm:p-2 text-gray-600 hover:text-primary-600 transition-colors flex-shrink-0"
+          >
+            <FunnelIcon className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
-      {/* Filter Panel Overlay */}
-      {isFilterPanelOpen && (
+      {/* Filter Panel Overlay - Only show if showFilterIcon is true */}
+      {showFilterIcon && isFilterPanelOpen && (
         <div 
           className="fixed inset-0 bg-black/30 bg-opacity-50 z-[125] h-screen"
           onClick={toggleFilterPanel}
         ></div>
       )}
 
-      {/* Right Side Filter Panel */}
-      <div className={`
-        fixed top-0 right-0 h-screen w-80 sm:w-72 bg-white shadow-lg z-[130] transform transition-transform duration-300 ease-in-out filter-panel-fixed
-        ${isFilterPanelOpen ? 'translate-x-0' : 'translate-x-full'}
-      `}>
+      {/* Right Side Filter Panel - Only show if showFilterIcon is true */}
+      {showFilterIcon && (
+        <div className={`
+          fixed top-0 right-0 h-screen w-80 sm:w-72 bg-white shadow-lg z-[130] transform transition-transform duration-300 ease-in-out filter-panel-fixed
+          ${isFilterPanelOpen ? 'translate-x-0' : 'translate-x-full'}
+        `}>
         <div className="flex flex-col h-full">
           {/* Panel Header */}
           <div className="p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
@@ -166,7 +170,8 @@ const SearchFilter = ({
             </button>
           </div>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -42,7 +42,14 @@ const CandidateImageCarousel = ({ images, candidateId, candidateName, onImageCli
         className="w-full h-full object-contain bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
         onClick={handleImageClick}
         onError={(e) => {
-          e.target.src = '/api/placeholder/400/300';
+          // Prevent infinite retry loops by setting a fallback
+          if (e.target.src !== '/api/placeholder/400/300') {
+            e.target.src = '/api/placeholder/400/300';
+          }
+        }}
+        onLoad={(e) => {
+          // Ensure image is properly loaded
+          e.target.style.opacity = '1';
         }}
       />
       
@@ -362,6 +369,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                         { value: 'female', label: 'Female' }
                       ]}
                       className="bg-gray-50 border-gray-200"
+                      showFilterIcon={false}
                     />
                   </div>
 
@@ -564,7 +572,14 @@ const VotingModal = ({ isOpen, onClose }) => {
                     alt={`${previewCandidateName} - Image ${previewCurrentIndex + 1}`}
                     className="max-w-full max-h-full object-contain"
                     onError={(e) => {
-                      e.target.src = '/api/placeholder/400/300';
+                      // Prevent infinite retry loops by setting a fallback
+                      if (e.target.src !== '/api/placeholder/400/300') {
+                        e.target.src = '/api/placeholder/400/300';
+                      }
+                    }}
+                    onLoad={(e) => {
+                      // Ensure image is properly loaded
+                      e.target.style.opacity = '1';
                     }}
                   />
                   
