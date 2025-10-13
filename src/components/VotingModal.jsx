@@ -6,15 +6,23 @@ import SearchFilter from './SearchFilter';
 import Pagination from './Pagination';
 
 // Custom Image Carousel Component for Voting Modal
-const CandidateImageCarousel = ({ images, candidateId }) => {
+const CandidateImageCarousel = ({ images, candidateId, candidateName, onImageClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const goToPrevious = () => {
+  const goToPrevious = (e) => {
+    e.stopPropagation(); // Prevent triggering image click
     setCurrentIndex(currentIndex === 0 ? images.length - 1 : currentIndex - 1);
   };
 
-  const goToNext = () => {
+  const goToNext = (e) => {
+    e.stopPropagation(); // Prevent triggering image click
     setCurrentIndex(currentIndex === images.length - 1 ? 0 : currentIndex + 1);
+  };
+
+  const handleImageClick = () => {
+    if (onImageClick && images && images.length > 0) {
+      onImageClick(images, candidateName, currentIndex);
+    }
   };
 
   if (!images || images.length === 0) {
@@ -27,11 +35,12 @@ const CandidateImageCarousel = ({ images, candidateId }) => {
 
   return (
     <div className="relative h-32 overflow-hidden rounded-t-lg">
-      {/* Current Image */}
+      {/* Current Image - Clickable */}
       <img
         src={images[currentIndex]}
         alt={`Candidate ${candidateId}`}
-        className="w-full h-full object-contain bg-gray-100"
+        className="w-full h-full object-contain bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={handleImageClick}
         onError={(e) => {
           e.target.src = '/api/placeholder/400/300';
         }}
@@ -81,6 +90,12 @@ const VotingModal = ({ isOpen, onClose }) => {
   });
   const [votingComplete, setVotingComplete] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
+  
+  // Image preview modal state
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [previewImages, setPreviewImages] = useState([]);
+  const [previewCurrentIndex, setPreviewCurrentIndex] = useState(0);
+  const [previewCandidateName, setPreviewCandidateName] = useState('');
   
   // Filter and pagination state
   const [searchValue, setSearchValue] = useState('');
@@ -235,6 +250,29 @@ const VotingModal = ({ isOpen, onClose }) => {
     onClose();
   };
 
+  // Handle image preview
+  const handleImageClick = (images, candidateName, currentIndex = 0) => {
+    setPreviewImages(images);
+    setPreviewCurrentIndex(currentIndex);
+    setPreviewCandidateName(candidateName);
+    setShowImagePreview(true);
+  };
+
+  const handlePreviewClose = () => {
+    setShowImagePreview(false);
+    setPreviewImages([]);
+    setPreviewCurrentIndex(0);
+    setPreviewCandidateName('');
+  };
+
+  const handlePreviewPrevious = () => {
+    setPreviewCurrentIndex(previewCurrentIndex === 0 ? previewImages.length - 1 : previewCurrentIndex - 1);
+  };
+
+  const handlePreviewNext = () => {
+    setPreviewCurrentIndex(previewCurrentIndex === previewImages.length - 1 ? 0 : previewCurrentIndex + 1);
+  };
+
   // Form fields for the vote modal
   const voteFormFields = [
     {
@@ -360,6 +398,8 @@ const VotingModal = ({ isOpen, onClose }) => {
                             <CandidateImageCarousel 
                               images={candidate.images} 
                               candidateId={candidate.id}
+                              candidateName={candidate.name}
+                              onImageClick={handleImageClick}
                             />
 
                             {/* Candidate Info */}
@@ -413,6 +453,8 @@ const VotingModal = ({ isOpen, onClose }) => {
                             <CandidateImageCarousel 
                               images={candidate.images} 
                               candidateId={candidate.id}
+                              candidateName={candidate.name}
+                              onImageClick={handleImageClick}
                             />
 
                             {/* Candidate Info */}
@@ -488,6 +530,85 @@ const VotingModal = ({ isOpen, onClose }) => {
         loading={false}
         isUpdate={false}
       />
+
+      {/* Image Preview Modal */}
+      {showImagePreview && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 z-40 transition-opacity bg-black/80" 
+              onClick={handlePreviewClose}
+            ></div>
+            
+            {/* Modal Content */}
+            <div className="relative z-50 w-full max-w-4xl max-h-[90vh] overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {previewCandidateName} - Image {previewCurrentIndex + 1} of {previewImages.length}
+                </h2>
+                <button
+                  onClick={handlePreviewClose}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Image Content */}
+              <div className="relative p-6">
+                <div className="relative max-h-[70vh] flex items-center justify-center">
+                  <img
+                    src={previewImages[previewCurrentIndex]}
+                    alt={`${previewCandidateName} - Image ${previewCurrentIndex + 1}`}
+                    className="max-w-full max-h-full object-contain"
+                    onError={(e) => {
+                      e.target.src = '/api/placeholder/400/300';
+                    }}
+                  />
+                  
+                  {/* Navigation Arrows - Only show if more than 1 image */}
+                  {previewImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={handlePreviewPrevious}
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-75 transition-opacity"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeftIcon className="h-6 w-6" />
+                      </button>
+                      <button
+                        onClick={handlePreviewNext}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-75 transition-opacity"
+                        aria-label="Next image"
+                      >
+                        <ChevronRightIcon className="h-6 w-6" />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Image Indicators */}
+                {previewImages.length > 1 && (
+                  <div className="flex justify-center mt-4 space-x-2">
+                    {previewImages.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setPreviewCurrentIndex(index)}
+                        className={`w-3 h-3 rounded-full transition-colors ${
+                          index === previewCurrentIndex ? 'bg-primary-600' : 'bg-gray-300'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
