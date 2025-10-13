@@ -198,7 +198,7 @@ const VotingPage = () => {
       <div className="min-h-screen bg-white overflow-y-auto">
         {/* Navigation Header */}
         <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="w-full max-w-full px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 sm:h-20">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
@@ -243,7 +243,7 @@ const VotingPage = () => {
     <div className="min-h-screen bg-white overflow-y-auto">
       {/* Navigation Header - Same as Landing Page */}
       <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="w-full max-w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo */}
             <div className="flex items-center space-x-3">

@@ -178,7 +178,7 @@ const LandingPage = () => {
 
       {/* Features Section */}
       <section id="features" className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 bg-white">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full max-w-full">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight">
               Award Selection Features
@@ -226,7 +226,7 @@ const LandingPage = () => {
 
       {/* How It Works Section */}
       <section id="how-it-works" className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full max-w-full">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight">
               How It Works
@@ -257,7 +257,7 @@ const LandingPage = () => {
 
       {/* Results Section */}
       <section id="results" className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 bg-white">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full max-w-full">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight">
               Current Voting Results
