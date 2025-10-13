@@ -310,7 +310,7 @@ const LandingPage = () => {
           </div>
 
           {/* Winners */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-2 gap-6 3xl:gap-12 mb-8">
             {/* Male Winner */}
             <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-6 shadow-sm border border-primary-200 hover:shadow-md transition-shadow duration-200">
               <div className="flex items-center justify-between mb-4">
@@ -379,7 +379,7 @@ const LandingPage = () => {
           </div>
 
           {/* Detailed Results */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-2 gap-6 3xl:gap-12 mb-8">
             {/* Male Category Results */}
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
               <div className="flex items-center mb-4">
