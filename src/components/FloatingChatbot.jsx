@@ -15,10 +15,10 @@ const FloatingChatbot = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: 'Hello! I\'m your Voting System assistant. I have full knowledge about our voting system. How can I help you today?',
+      text: 'Hello! I\'m your Voting System by Mrj assistant. I have full knowledge about our voting system. How can I help you today?',
       isBot: true,
       timestamp: new Date(),
-      sender: 'Voting System assistant'
+      sender: 'Voting System by Mrj assistant'
     }
   ]);
 
@@ -54,7 +54,7 @@ const FloatingChatbot = () => {
         text: 'Thank you for your question! This is a demo response. In a real implementation, this would connect to an AI assistant.',
         isBot: true,
         timestamp: new Date(),
-        sender: 'Voting System assistant'
+        sender: 'Voting System by Mrj assistant'
       };
       setMessages(prev => [...prev, botResponse]);
     }, 1000);

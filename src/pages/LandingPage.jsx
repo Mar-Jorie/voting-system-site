@@ -68,7 +68,7 @@ const LandingPage = () => {
               <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
                 <img src="/logo.png" alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
               </div>
-              <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Voting System</span>
+              <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Voting System by Mrj</span>
             </div>
             
             {/* Navigation Links - Hidden on Mobile */}
@@ -500,7 +500,7 @@ const LandingPage = () => {
       {/* Footer */}
       <footer className="bg-gray-900 text-center text-gray-400 py-6 px-4 sm:px-6">
         <p className="text-xs sm:text-sm">
-          &copy; 2024 Voting System. All rights reserved. | 
+          &copy; 2024 Voting System by Mrj. All rights reserved. | 
           <Link to="/signin" className="text-gray-400 hover:text-gray-300 underline ml-1">
             Admin Login
           </Link>

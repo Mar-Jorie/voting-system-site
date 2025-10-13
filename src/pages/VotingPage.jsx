@@ -204,7 +204,7 @@ const VotingPage = () => {
                 <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
                   <img src="/logo.png" alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
                 </div>
-                <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Voting System</span>
+                <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Voting System by Mrj</span>
               </div>
               <div className="hidden md:flex items-center space-x-4">
                 <Link to="/signin">
