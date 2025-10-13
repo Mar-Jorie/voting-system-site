@@ -150,18 +150,9 @@ const VotingModal = ({ isOpen, onClose }) => {
   }, [candidates, searchValue, filters]);
 
   const checkVotingStatus = useCallback(() => {
-    const votes = JSON.parse(localStorage.getItem('votes') || '[]');
-    const userEmail = localStorage.getItem('voterEmail');
-    
-    if (userEmail && votes.some(vote => vote.voterEmail === userEmail)) {
-      setHasVoted(true);
-      const userVote = votes.find(vote => vote.voterEmail === userEmail);
-      const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-      setSelectedCandidates({
-        male: storedCandidates.find(c => c.id === userVote.maleCandidateId),
-        female: storedCandidates.find(c => c.id === userVote.femaleCandidateId)
-      });
-    }
+    // Reset voting status for new voting session
+    setHasVoted(false);
+    setSelectedCandidates({ male: null, female: null });
   }, []);
 
   useEffect(() => {
@@ -240,7 +231,7 @@ const VotingModal = ({ isOpen, onClose }) => {
 
     const updatedVotes = [...existingVotes, newVote];
     localStorage.setItem('votes', JSON.stringify(updatedVotes));
-    localStorage.setItem('voterEmail', voterInfo.email);
+    // Don't store voterEmail in localStorage to allow multiple voting sessions
 
     // Reload candidates with updated vote counts
     loadCandidates();
