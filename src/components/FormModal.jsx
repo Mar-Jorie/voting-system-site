@@ -37,7 +37,8 @@ const FormModal = ({
 
   // Check if form is valid
   const isFormValid = () => {
-    return fields.every(field => {
+    // Check if all required fields are filled and valid
+    const fieldsValid = fields.every(field => {
       if (field.required) {
         const value = formData[field.name];
         if (value === null || value === undefined || value === '') {
@@ -52,6 +53,11 @@ const FormModal = ({
       }
       return true;
     });
+    
+    // Check if there are any field-specific errors (like duplicate email)
+    const noFieldErrors = Object.values(errors).every(error => error === null);
+    
+    return fieldsValid && noFieldErrors;
   };
 
   // Get validation error message
