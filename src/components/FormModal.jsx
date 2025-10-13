@@ -89,7 +89,7 @@ const FormModal = ({
       }));
     }
     
-    // Validate email format in real-time
+    // Validate email format and check for duplicates in real-time
     if (fieldName === 'email' && value && value.trim() !== '') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(value)) {
@@ -98,10 +98,19 @@ const FormModal = ({
           [fieldName]: 'Please enter a valid email address'
         }));
       } else {
-        setErrors(prev => ({
-          ...prev,
-          [fieldName]: null
-        }));
+        // Check if email has already voted
+        const existingVotes = JSON.parse(localStorage.getItem('votes') || '[]');
+        if (existingVotes.some(vote => vote.voterEmail === value)) {
+          setErrors(prev => ({
+            ...prev,
+            [fieldName]: 'This email has already voted'
+          }));
+        } else {
+          setErrors(prev => ({
+            ...prev,
+            [fieldName]: null
+          }));
+        }
       }
     } else if (fieldName === 'email' && (!value || value.trim() === '')) {
       // Clear email error when field is empty

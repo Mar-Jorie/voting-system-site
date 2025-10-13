@@ -204,13 +204,6 @@ const VotingModal = ({ isOpen, onClose }) => {
   const handleVoteSubmit = (formData) => {
     // Update voter info with form data
     setVoterInfo(formData);
-    
-    // Check if email already voted (FormModal handles other validation)
-    const existingVotes = JSON.parse(localStorage.getItem('votes') || '[]');
-    if (existingVotes.some(vote => vote.voterEmail === formData.email)) {
-      toast.error('This email has already voted');
-      return;
-    }
 
     // Show confirmation modal instead of directly submitting
     setShowVoteModal(false);
