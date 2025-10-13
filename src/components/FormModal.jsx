@@ -81,8 +81,30 @@ const FormModal = ({
       [fieldName]: value
     }));
     
-    // Clear error when user starts typing
-    if (errors[fieldName]) {
+    // Clear general error when user starts typing
+    if (errors.general) {
+      setErrors(prev => ({
+        ...prev,
+        general: null
+      }));
+    }
+    
+    // Validate email format in real-time
+    if (fieldName === 'email' && value && value.trim() !== '') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) {
+        setErrors(prev => ({
+          ...prev,
+          [fieldName]: 'Please enter a valid email address'
+        }));
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          [fieldName]: null
+        }));
+      }
+    } else if (fieldName === 'email' && (!value || value.trim() === '')) {
+      // Clear email error when field is empty
       setErrors(prev => ({
         ...prev,
         [fieldName]: null
@@ -168,6 +190,13 @@ const FormModal = ({
                       error={errors[field.name]}
                     />
                   )}
+                  
+                  {/* Field-specific error message */}
+                  {errors[field.name] && (
+                    <p className="mt-1 text-red-600 ">
+                      {errors[field.name]}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -209,14 +238,6 @@ const FormModal = ({
                 </Button>
               </div>
               
-              {/* Validation Message */}
-              {!isFormValid() && !loading && (
-                <div className="mt-3 text-center">
-                  <p className="text-sm text-gray-500">
-                    {getValidationError() || 'Please fill in all required fields'}
-                  </p>
-                </div>
-              )}
             </div>
           </form>
         </div>
