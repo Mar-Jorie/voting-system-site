@@ -187,7 +187,7 @@ const LandingPage = () => {
               Secure, transparent, and user-friendly selection process for our Corporate Party 2025 awards.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 3xl:grid-cols-6 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 3xl:grid-cols-4 gap-6 sm:gap-8 3xl:gap-12">
             {/* Feature Cards */}
             <div className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 group">
               <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
@@ -235,7 +235,7 @@ const LandingPage = () => {
               Simple steps to cast your vote and make your voice heard.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 3xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 3xl:grid-cols-3 gap-8 3xl:gap-12">
             <div className="text-center">
               <div className="w-16 h-16 bg-primary-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">1</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">View Candidates</h3>
@@ -268,7 +268,7 @@ const LandingPage = () => {
           </div>
           
           {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 3xl:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 3xl:grid-cols-3 gap-6 3xl:gap-8 mb-8">
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
               <div className="flex items-center justify-between mb-3">
                 <div className="w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center">
