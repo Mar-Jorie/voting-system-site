@@ -90,7 +90,7 @@ const SignUpPage = () => {
           <div className="text-center">
             <div className="flex justify-center mb-4">
               <div className="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center">
-                <img src="/vite.svg" alt="Logo" className="w-8 h-8 object-contain" />
+                <img src="/logo.jpeg" alt="Logo" className="w-8 h-8 object-contain" />
               </div>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Create your account</h2>

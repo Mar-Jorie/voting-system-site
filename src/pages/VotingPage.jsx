@@ -202,7 +202,7 @@ const VotingPage = () => {
             <div className="flex items-center justify-between h-16 sm:h-20">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
-                  <img src="/vite.svg" alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
+                  <img src="/logo.jpeg" alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
                 </div>
                 <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Voting System</span>
               </div>
@@ -248,7 +248,7 @@ const VotingPage = () => {
             {/* Logo */}
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
-                <img src="/vite.svg" alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
+                <img src="/logo.jpeg" alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
               </div>
               <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Voting System</span>
             </div>

@@ -109,7 +109,7 @@ const NavSidebar = () => {
           <div className="hidden lg:block">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 flex items-center justify-center">
-                <img src="/vite.svg" alt="Logo" className="w-6 h-6 object-contain" />
+                <img src="/logo.jpeg" alt="Logo" className="w-6 h-6 object-contain" />
               </div>
               <div>
                 <h1 className="text-base font-medium text-gray-900">
