@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { XMarkIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/outline';
 import Button from './Button';
 import FormModal from './FormModal';
 import ImageCarousel from './ImageCarousel';
@@ -205,9 +205,9 @@ const VotingModal = ({ isOpen, onClose }) => {
         <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={handleClose}></div>
         
         {/* Modal Content */}
-        <div className="relative z-50 w-full max-w-6xl max-h-[90vh] overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
+        <div className="relative z-50 w-full max-w-6xl max-h-[90vh] overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
             <h2 className="text-2xl font-semibold text-gray-900">
               {votingComplete ? 'Vote Submitted Successfully!' : 'Cast Your Vote'}
             </h2>
@@ -220,7 +220,7 @@ const VotingModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* Content */}
-          <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+          <div className="flex-1 overflow-y-auto">
             {votingComplete ? (
               <div className="p-6 text-center">
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -293,88 +293,144 @@ const VotingModal = ({ isOpen, onClose }) => {
                     </div>
 
                     {/* Candidates Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
                       {/* Male Candidates */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                          Male Category
-                        </h3>
+                      <div className="space-y-6">
+                        <div className="text-center">
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">Male Category</h3>
+                          <div className="w-16 h-1 bg-primary-600 mx-auto rounded-full"></div>
+                        </div>
                         {maleCandidates.length > 0 ? (
-                          maleCandidates.map((candidate) => (
-                            <div
-                              key={candidate.id}
-                              className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                                selectedCandidates.male?.id === candidate.id
-                                  ? 'border-primary-500 bg-primary-50'
-                                  : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                              onClick={() => handleCandidateSelect(candidate)}
-                            >
-                              <div className="flex items-center space-x-4">
-                                {candidate.image && (
-                                  <img
-                                    src={candidate.image}
-                                    alt={candidate.name}
-                                    className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
-                                  />
-                                )}
-                                <div className="flex-1">
-                                  <h4 className="font-semibold text-gray-900">{candidate.name}</h4>
-                                  <p className="text-sm text-gray-600">{candidate.description}</p>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {candidate.votes || 0} votes
-                                  </p>
+                          <div className="grid grid-cols-1 gap-4">
+                            {maleCandidates.map((candidate) => (
+                              <div
+                                key={candidate.id}
+                                className={`border-2 rounded-xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                                  selectedCandidates.male?.id === candidate.id
+                                    ? 'border-primary-500 bg-primary-50 shadow-lg transform scale-[1.02]'
+                                    : 'border-gray-200 hover:border-primary-300 bg-white'
+                                }`}
+                                onClick={() => handleCandidateSelect(candidate)}
+                              >
+                                <div className="flex items-center space-x-6">
+                                  {/* Candidate Image */}
+                                  <div className="relative">
+                                    {candidate.image ? (
+                                      <img
+                                        src={candidate.image}
+                                        alt={candidate.name}
+                                        className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
+                                      />
+                                    ) : (
+                                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 border-4 border-white shadow-lg flex items-center justify-center">
+                                        <span className="text-2xl font-bold text-primary-600">
+                                          {candidate.name.charAt(0)}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {selectedCandidates.male?.id === candidate.id && (
+                                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center shadow-lg">
+                                        <CheckCircleIcon className="h-5 w-5 text-white" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Candidate Info */}
+                                  <div className="flex-1">
+                                    <h4 className="text-lg font-bold text-gray-900 mb-2">{candidate.name}</h4>
+                                    <p className="text-sm text-gray-600 mb-3 leading-relaxed">{candidate.description}</p>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-medium text-primary-600 bg-primary-100 px-3 py-1 rounded-full">
+                                        {candidate.votes || 0} votes
+                                      </span>
+                                      {selectedCandidates.male?.id === candidate.id && (
+                                        <span className="text-xs font-medium text-primary-600">
+                                          Selected
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
-                                {selectedCandidates.male?.id === candidate.id && (
-                                  <CheckCircleIcon className="h-6 w-6 text-primary-600" />
-                                )}
                               </div>
-                            </div>
-                          ))
+                            ))}
+                          </div>
                         ) : (
-                          <p className="text-gray-500 text-center py-4">No male candidates found</p>
+                          <div className="text-center py-12">
+                            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <UserIcon className="h-8 w-8 text-gray-400" />
+                            </div>
+                            <p className="text-gray-500">No male candidates found</p>
+                          </div>
                         )}
                       </div>
 
                       {/* Female Candidates */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                          Female Category
-                        </h3>
+                      <div className="space-y-6">
+                        <div className="text-center">
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">Female Category</h3>
+                          <div className="w-16 h-1 bg-pink-500 mx-auto rounded-full"></div>
+                        </div>
                         {femaleCandidates.length > 0 ? (
-                          femaleCandidates.map((candidate) => (
-                            <div
-                              key={candidate.id}
-                              className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                                selectedCandidates.female?.id === candidate.id
-                                  ? 'border-primary-500 bg-primary-50'
-                                  : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                              onClick={() => handleCandidateSelect(candidate)}
-                            >
-                              <div className="flex items-center space-x-4">
-                                {candidate.image && (
-                                  <img
-                                    src={candidate.image}
-                                    alt={candidate.name}
-                                    className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
-                                  />
-                                )}
-                                <div className="flex-1">
-                                  <h4 className="font-semibold text-gray-900">{candidate.name}</h4>
-                                  <p className="text-sm text-gray-600">{candidate.description}</p>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {candidate.votes || 0} votes
-                                  </p>
+                          <div className="grid grid-cols-1 gap-4">
+                            {femaleCandidates.map((candidate) => (
+                              <div
+                                key={candidate.id}
+                                className={`border-2 rounded-xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                                  selectedCandidates.female?.id === candidate.id
+                                    ? 'border-pink-500 bg-pink-50 shadow-lg transform scale-[1.02]'
+                                    : 'border-gray-200 hover:border-pink-300 bg-white'
+                                }`}
+                                onClick={() => handleCandidateSelect(candidate)}
+                              >
+                                <div className="flex items-center space-x-6">
+                                  {/* Candidate Image */}
+                                  <div className="relative">
+                                    {candidate.image ? (
+                                      <img
+                                        src={candidate.image}
+                                        alt={candidate.name}
+                                        className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
+                                      />
+                                    ) : (
+                                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-100 to-pink-200 border-4 border-white shadow-lg flex items-center justify-center">
+                                        <span className="text-2xl font-bold text-pink-600">
+                                          {candidate.name.charAt(0)}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {selectedCandidates.female?.id === candidate.id && (
+                                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                                        <CheckCircleIcon className="h-5 w-5 text-white" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Candidate Info */}
+                                  <div className="flex-1">
+                                    <h4 className="text-lg font-bold text-gray-900 mb-2">{candidate.name}</h4>
+                                    <p className="text-sm text-gray-600 mb-3 leading-relaxed">{candidate.description}</p>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-medium text-pink-600 bg-pink-100 px-3 py-1 rounded-full">
+                                        {candidate.votes || 0} votes
+                                      </span>
+                                      {selectedCandidates.female?.id === candidate.id && (
+                                        <span className="text-xs font-medium text-pink-600">
+                                          Selected
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
-                                {selectedCandidates.female?.id === candidate.id && (
-                                  <CheckCircleIcon className="h-6 w-6 text-primary-600" />
-                                )}
                               </div>
-                            </div>
-                          ))
+                            ))}
+                          </div>
                         ) : (
-                          <p className="text-gray-500 text-center py-4">No female candidates found</p>
+                          <div className="text-center py-12">
+                            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <UserIcon className="h-8 w-8 text-gray-400" />
+                            </div>
+                            <p className="text-gray-500">No female candidates found</p>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -393,22 +449,28 @@ const VotingModal = ({ isOpen, onClose }) => {
                       </div>
                     )}
 
-                    {/* Vote Button */}
-                    <div className="flex justify-center">
-                      <Button
-                        onClick={handleVote}
-                        variant="primary"
-                        size="lg"
-                        disabled={!selectedCandidates.male || !selectedCandidates.female}
-                      >
-                        Submit Vote
-                      </Button>
-                    </div>
                   </>
                 )}
               </div>
             )}
           </div>
+
+          {/* Fixed Footer */}
+          {!votingComplete && !hasVoted && (
+            <div className="border-t border-gray-200 p-6 flex-shrink-0 bg-white">
+              <div className="flex justify-center">
+                <Button
+                  onClick={handleVote}
+                  variant="primary"
+                  size="lg"
+                  disabled={!selectedCandidates.male || !selectedCandidates.female}
+                  className="px-8"
+                >
+                  Submit Vote
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
