@@ -61,7 +61,7 @@ const LandingPage = () => {
     <div className="min-h-screen bg-white overflow-y-auto">
       {/* Navigation */}
       <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
-        <div className="w-full max-w-full px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo */}
             <div className="flex items-center space-x-3">
@@ -134,7 +134,7 @@ const LandingPage = () => {
 
       {/* Hero Section */}
       <section className="relative py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-white">
-        <div className="w-full max-w-full">
+        <div className="w-full">
           <div className="grid lg:grid-cols-2 3xl:grid-cols-3 gap-8 lg:gap-12 3xl:gap-16 items-center">
             <div className="text-left 3xl:col-span-2">
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight">
@@ -178,7 +178,7 @@ const LandingPage = () => {
 
       {/* Features Section */}
       <section id="features" className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 bg-white">
-        <div className="w-full max-w-full">
+        <div className="w-full">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight">
               Award Selection Features
@@ -226,7 +226,7 @@ const LandingPage = () => {
 
       {/* How It Works Section */}
       <section id="how-it-works" className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 bg-gray-50">
-        <div className="w-full max-w-full">
+        <div className="w-full">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight">
               How It Works
@@ -257,7 +257,7 @@ const LandingPage = () => {
 
       {/* Results Section */}
       <section id="results" className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 bg-white">
-        <div className="w-full max-w-full">
+        <div className="w-full">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight">
               Current Voting Results
@@ -477,7 +477,7 @@ const LandingPage = () => {
 
       {/* CTA Section */}
       <section className="py-8 sm:py-10 px-4 sm:px-6 bg-gradient-to-r from-primary-400 to-indigo-600 opacity-90">
-        <div className="w-full max-w-full text-center">
+        <div className="w-full text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 tracking-tight">
             Ready to Select Outstanding Guests?
           </h2>

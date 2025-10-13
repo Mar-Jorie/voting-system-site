@@ -64,7 +64,7 @@ const ResultsPage = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Navigation */}
       <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
-        <div className="w-full px-4 sm:px-6">
+        <div className="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo */}
             <div className="flex items-center space-x-3">
