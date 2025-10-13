@@ -1,10 +1,71 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { XMarkIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckCircleIcon, UserIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import Button from './Button';
 import FormModal from './FormModal';
-import ImageCarousel from './ImageCarousel';
 import SearchFilter from './SearchFilter';
 import Pagination from './Pagination';
+
+// Custom Image Carousel Component for Voting Modal
+const CandidateImageCarousel = ({ images, candidateId }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const goToPrevious = () => {
+    setCurrentIndex(currentIndex === 0 ? images.length - 1 : currentIndex - 1);
+  };
+
+  const goToNext = () => {
+    setCurrentIndex(currentIndex === images.length - 1 ? 0 : currentIndex + 1);
+  };
+
+  if (!images || images.length === 0) {
+    return (
+      <div className="h-32 bg-gray-200 rounded-t-lg flex items-center justify-center">
+        <UserIcon className="h-12 w-12 text-gray-400" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-32 overflow-hidden rounded-t-lg">
+      {/* Current Image */}
+      <img
+        src={images[currentIndex]}
+        alt={`Candidate ${candidateId}`}
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          e.target.src = '/api/placeholder/400/300';
+        }}
+      />
+      
+      {/* Navigation Arrows - Only show if more than 1 image */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={goToPrevious}
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-75 transition-opacity"
+            aria-label="Previous image"
+          >
+            <ChevronLeftIcon className="h-4 w-4" />
+          </button>
+          <button
+            onClick={goToNext}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-75 transition-opacity"
+            aria-label="Next image"
+          >
+            <ChevronRightIcon className="h-4 w-4" />
+          </button>
+        </>
+      )}
+
+      {/* Image Counter */}
+      {images.length > 1 && (
+        <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+          {currentIndex + 1} / {images.length}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const VotingModal = ({ isOpen, onClose }) => {
   const [candidates, setCandidates] = useState([]);
@@ -237,9 +298,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                 <div className="space-y-6">
                   {/* Page Header */}
                   <div>
-                    <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
-                      Cast Your Vote
-                    </h1>
+                  
                     <p className="text-gray-600">
                       Select one candidate from each category to cast your vote.
                     </p>
@@ -298,23 +357,10 @@ const VotingModal = ({ isOpen, onClose }) => {
                             )}
 
                             {/* Candidate Image */}
-                            <div className="h-32 overflow-hidden rounded-t-lg">
-                              {candidate.images && candidate.images.length > 0 ? (
-                                candidate.images.length > 1 ? (
-                                  <ImageCarousel images={candidate.images} />
-                                ) : (
-                                  <img
-                                    src={candidate.images[0]}
-                                    alt={candidate.name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                  />
-                                )
-                              ) : (
-                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                  <UserIcon className="h-12 w-12 text-gray-400" />
-                                </div>
-                              )}
-                            </div>
+                            <CandidateImageCarousel 
+                              images={candidate.images} 
+                              candidateId={candidate.id}
+                            />
 
                             {/* Candidate Info */}
                             <div className="p-4">
@@ -364,23 +410,10 @@ const VotingModal = ({ isOpen, onClose }) => {
                             )}
 
                             {/* Candidate Image */}
-                            <div className="h-32 overflow-hidden rounded-t-lg">
-                              {candidate.images && candidate.images.length > 0 ? (
-                                candidate.images.length > 1 ? (
-                                  <ImageCarousel images={candidate.images} />
-                                ) : (
-                                  <img
-                                    src={candidate.images[0]}
-                                    alt={candidate.name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                  />
-                                )
-                              ) : (
-                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                  <UserIcon className="h-12 w-12 text-gray-400" />
-                                </div>
-                              )}
-                            </div>
+                            <CandidateImageCarousel 
+                              images={candidate.images} 
+                              candidateId={candidate.id}
+                            />
 
                             {/* Candidate Info */}
                             <div className="p-4">
