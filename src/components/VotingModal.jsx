@@ -4,6 +4,8 @@ import Button from './Button';
 import FormModal from './FormModal';
 import SearchFilter from './SearchFilter';
 import Pagination from './Pagination';
+import ConfirmationModal from './ConfirmationModal';
+import { toast } from 'react-hot-toast';
 
 // Custom Image Carousel Component for Voting Modal
 const CandidateImageCarousel = ({ images, candidateId, candidateName, onImageClick }) => {
@@ -91,6 +93,7 @@ const VotingModal = ({ isOpen, onClose }) => {
     female: null
   });
   const [showVoteModal, setShowVoteModal] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [voterInfo, setVoterInfo] = useState({
     name: '',
     email: ''
@@ -210,18 +213,32 @@ const VotingModal = ({ isOpen, onClose }) => {
     e.preventDefault();
     
     if (!voterInfo.name || !voterInfo.email) {
-      alert('Please fill in all fields');
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(voterInfo.email)) {
+      toast.error('Please enter a valid email address');
       return;
     }
 
     // Check if email already voted
     const existingVotes = JSON.parse(localStorage.getItem('votes') || '[]');
     if (existingVotes.some(vote => vote.voterEmail === voterInfo.email)) {
-      alert('This email has already voted');
+      toast.error('This email has already voted');
       return;
     }
 
+    // Show confirmation modal instead of directly submitting
+    setShowVoteModal(false);
+    setShowConfirmationModal(true);
+  };
+
+  const handleConfirmVote = () => {
     // Save vote
+    const existingVotes = JSON.parse(localStorage.getItem('votes') || '[]');
     const newVote = {
       id: Date.now().toString(),
       voterEmail: voterInfo.email,
@@ -240,7 +257,10 @@ const VotingModal = ({ isOpen, onClose }) => {
 
     setVotingComplete(true);
     setHasVoted(true);
-    setShowVoteModal(false);
+    setShowConfirmationModal(false);
+    
+    // Show success toast
+    toast.success('Your vote has been submitted successfully!');
   };
 
   // const handleVoterInfoChange = (field, value) => {
@@ -253,6 +273,7 @@ const VotingModal = ({ isOpen, onClose }) => {
   const handleClose = () => {
     setVotingComplete(false);
     setShowVoteModal(false);
+    setShowConfirmationModal(false);
     setVoterInfo({ name: '', email: '' });
     onClose();
   };
@@ -537,6 +558,7 @@ const VotingModal = ({ isOpen, onClose }) => {
         initialData={voterInfo}
         loading={false}
         isUpdate={false}
+        submitButtonText="Vote"
       />
 
       {/* Image Preview Modal */}
@@ -620,10 +642,23 @@ const VotingModal = ({ isOpen, onClose }) => {
                   </div>
                 )}
           </div>
+          </div>
         </div>
       </div>
-    </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={() => setShowConfirmationModal(false)}
+        onConfirm={handleConfirmVote}
+        title="Confirm Your Vote"
+        message={`Are you sure you want to vote for ${selectedCandidates.male?.name} (Male) and ${selectedCandidates.female?.name} (Female)? This action cannot be undone.`}
+        confirmLabel="Yes, Cast My Vote"
+        cancelLabel="Cancel"
+        icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
+        variant="info"
+      />
     </>
   );
 };

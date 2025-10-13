@@ -14,7 +14,8 @@ const FormModal = ({
   fields = [],
   initialData = {},
   loading = false,
-  isUpdate = false
+  isUpdate = false,
+  submitButtonText = null
 }) => {
   const [formData, setFormData] = useState(initialData);
   const [errors, setErrors] = useState({});
@@ -171,9 +172,9 @@ const FormModal = ({
                   className="flex-1"
                 >
                   {loading ? (
-                    isUpdate ? 'Updating...' : 'Creating...'
+                    submitButtonText ? `${submitButtonText}...` : (isUpdate ? 'Updating...' : 'Creating...')
                   ) : (
-                    isUpdate ? 'Update' : 'Create'
+                    submitButtonText || (isUpdate ? 'Update' : 'Create')
                   )}
                 </Button>
               </div>

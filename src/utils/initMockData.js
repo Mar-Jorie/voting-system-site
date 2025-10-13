@@ -5,7 +5,7 @@ export const initializeMockData = () => {
   const existingVotes = localStorage.getItem('votes');
   
   // Force reinitialize for testing (remove this line in production)
-  localStorage.removeItem('candidates');
+  // localStorage.removeItem('candidates');
 
   if (!existingCandidates) {
     const mockCandidates = [
