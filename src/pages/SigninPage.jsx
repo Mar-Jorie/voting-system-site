@@ -68,7 +68,7 @@ const SignInPage = () => {
           <div className="text-center">
             <div className="flex justify-center mb-4">
               <div className="w-12 h-12 flex items-center justify-center">
-                <img src="/logo.jpeg" alt="Logo" className="w-10 h-10 object-contain" />
+                <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
               </div>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Welcome back</h2>
