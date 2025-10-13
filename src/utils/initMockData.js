@@ -11,7 +11,10 @@ export const initializeMockData = () => {
         name: 'John Smith',
         category: 'male',
         description: 'Experienced leader with a vision for the future.',
-        image: null,
+        images: [
+          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face',
+          'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face'
+        ],
         votes: 0,
         createdAt: new Date().toISOString()
       },
@@ -20,7 +23,9 @@ export const initializeMockData = () => {
         name: 'Michael Johnson',
         category: 'male',
         description: 'Innovative thinker with strong community ties.',
-        image: null,
+        images: [
+          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face'
+        ],
         votes: 0,
         createdAt: new Date().toISOString()
       },
@@ -29,7 +34,10 @@ export const initializeMockData = () => {
         name: 'Sarah Johnson',
         category: 'female',
         description: 'Dedicated advocate for positive change.',
-        image: null,
+        images: [
+          'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop&crop=face',
+          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face'
+        ],
         votes: 0,
         createdAt: new Date().toISOString()
       },
@@ -38,7 +46,9 @@ export const initializeMockData = () => {
         name: 'Emily Davis',
         category: 'female',
         description: 'Passionate about community development and growth.',
-        image: null,
+        images: [
+          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face'
+        ],
         votes: 0,
         createdAt: new Date().toISOString()
       }

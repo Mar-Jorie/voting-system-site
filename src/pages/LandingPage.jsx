@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Bars3Icon, UserIcon, ChartBarIcon, ShieldCheckIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, UserIcon, ChartBarIcon, ShieldCheckIcon, ClockIcon, TrophyIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button';
 import FloatingChatbot from '../components/FloatingChatbot';
 
@@ -9,6 +9,50 @@ const LandingPage = () => {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  // Voting data functions
+  const getTotalVotes = () => {
+    const votes = JSON.parse(localStorage.getItem('votes') || '[]');
+    return votes.length;
+  };
+
+  const getMaleCandidates = () => {
+    const candidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+    const votes = JSON.parse(localStorage.getItem('votes') || '[]');
+    return candidates.filter(c => c.category === 'male').map(candidate => {
+      const candidateVotes = votes.filter(vote => 
+        vote.maleCandidateId === candidate.id || vote.femaleCandidateId === candidate.id
+      ).length;
+      return { ...candidate, votes: candidateVotes };
+    });
+  };
+
+  const getFemaleCandidates = () => {
+    const candidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+    const votes = JSON.parse(localStorage.getItem('votes') || '[]');
+    return candidates.filter(c => c.category === 'female').map(candidate => {
+      const candidateVotes = votes.filter(vote => 
+        vote.maleCandidateId === candidate.id || vote.femaleCandidateId === candidate.id
+      ).length;
+      return { ...candidate, votes: candidateVotes };
+    });
+  };
+
+  const getMaleWinner = () => {
+    const maleCandidates = getMaleCandidates();
+    if (maleCandidates.length === 0) return null;
+    return maleCandidates.reduce((prev, current) => 
+      (prev.votes > current.votes) ? prev : current
+    );
+  };
+
+  const getFemaleWinner = () => {
+    const femaleCandidates = getFemaleCandidates();
+    if (femaleCandidates.length === 0) return null;
+    return femaleCandidates.reduce((prev, current) => 
+      (prev.votes > current.votes) ? prev : current
+    );
   };
 
   return (
@@ -46,10 +90,10 @@ const LandingPage = () => {
             {/* Desktop CTA Buttons - Hidden on Mobile */}
             <div className="hidden md:flex items-center space-x-4">
               <Link to="/signin">
-                <Button variant="ghost" size="md" className="!w-auto">Sign In</Button>
+                <Button variant="ghost" size="md" className="!w-auto">Admin Login</Button>
               </Link>
-              <Link to="/signup">
-                <Button variant="primaryOutline" size="md">Get Started</Button>
+              <Link to="/voting">
+                <Button variant="primaryOutline" size="md">Start Voting</Button>
               </Link>
             </div>
           </div>
@@ -62,16 +106,16 @@ const LandingPage = () => {
                 <div className="space-y-3">
                   <a href="#features" className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Features</a>
                   <a href="#how-it-works" className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">How It Works</a>
-                  <a href="#results" className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Results</a>
+                  <a href="#results" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Results</a>
                 </div>
                 
                 {/* Mobile CTA Buttons */}
                 <div className="flex flex-col space-y-3 pt-4 border-t border-gray-100">
                   <Link to="/signin" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" size="md" className="w-full">Sign In</Button>
+                    <Button variant="ghost" size="md" className="w-full">Admin Login</Button>
                   </Link>
-                  <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="primaryOutline" size="md" className="w-full">Get Started</Button>
+                  <Link to="/voting" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="primaryOutline" size="md" className="w-full">Start Voting</Button>
                   </Link>
                 </div>
               </div>
@@ -95,7 +139,7 @@ const LandingPage = () => {
                 Cast your vote for your preferred candidates in a secure, transparent, and user-friendly voting platform. Your voice matters!
               </p>
               <div className="flex flex-row sm:flex-row items-start space-x-4 sm:space-x-4 mb-6 sm:mb-8">
-                <Link to="/signin">
+                <Link to="/voting">
                   <Button variant="primary" size="lg" className="!w-auto min-w-[160px]">
                     Start Voting
                   </Button>
@@ -182,19 +226,153 @@ const LandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-primary-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">1</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Sign In</h3>
-              <p className="text-sm text-gray-600">Create an account or sign in to access the voting system.</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">View Candidates</h3>
+              <p className="text-sm text-gray-600">Browse through all candidates in both male and female categories.</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-primary-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">2</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Select Candidates</h3>
-              <p className="text-sm text-gray-600">Choose one candidate from each category (male and female).</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Select & Vote</h3>
+              <p className="text-sm text-gray-600">Choose one candidate from each category and provide your email to vote.</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-primary-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">3</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Submit Vote</h3>
-              <p className="text-sm text-gray-600">Confirm your selections and submit your vote securely.</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">See Results</h3>
+              <p className="text-sm text-gray-600">View real-time vote counts and see how your candidates are performing.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Results Section */}
+      <section id="results" className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight">
+              Current Voting Results
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto font-medium">
+              See how the candidates are performing in real-time.
+            </p>
+          </div>
+          
+          {/* Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center">
+                  <ChartBarIcon className="h-6 w-6 text-primary-600" />
+                </div>
+                <span className="text-xs font-medium text-green-800 bg-green-50 px-2 py-1 rounded-full">
+                  Live
+                </span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-1">{getTotalVotes()}</h3>
+              <p className="text-sm text-gray-600">Total Votes Cast</p>
+            </div>
+
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <UserGroupIcon className="h-6 w-6 text-blue-600" />
+                </div>
+                <span className="text-xs font-medium text-blue-800 bg-blue-50 px-2 py-1 rounded-full">
+                  Male
+                </span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-1">{getMaleCandidates().length}</h3>
+              <p className="text-sm text-gray-600">Male Candidates</p>
+            </div>
+
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-12 h-12 bg-pink-50 rounded-lg flex items-center justify-center">
+                  <UserGroupIcon className="h-6 w-6 text-pink-600" />
+                </div>
+                <span className="text-xs font-medium text-pink-800 bg-pink-50 px-2 py-1 rounded-full">
+                  Female
+                </span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-1">{getFemaleCandidates().length}</h3>
+              <p className="text-sm text-gray-600">Female Candidates</p>
+            </div>
+          </div>
+
+          {/* Winners */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Male Winner */}
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 shadow-sm border border-blue-200 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Male Category Winner</h3>
+                <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <TrophyIcon className="h-6 w-6 text-yellow-600" />
+                </div>
+              </div>
+              {getMaleWinner() ? (
+                <div className="text-center">
+                  {getMaleWinner().image && (
+                    <img 
+                      src={getMaleWinner().image} 
+                      alt={getMaleWinner().name}
+                      className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
+                    />
+                  )}
+                  <h4 className="text-xl font-semibold text-gray-900 mb-2">{getMaleWinner().name}</h4>
+                  <p className="text-2xl font-bold text-blue-600 mb-2">{getMaleWinner().votes || 0} votes</p>
+                  <p className="text-sm text-gray-600">
+                    {getTotalVotes() > 0 ? (((getMaleWinner().votes || 0) / getTotalVotes()) * 100).toFixed(1) : 0}% of total votes
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <UserGroupIcon className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500">No votes yet</p>
+                </div>
+              )}
+            </div>
+
+            {/* Female Winner */}
+            <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-6 shadow-sm border border-pink-200 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Female Category Winner</h3>
+                <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <TrophyIcon className="h-6 w-6 text-yellow-600" />
+                </div>
+              </div>
+              {getFemaleWinner() ? (
+                <div className="text-center">
+                  {getFemaleWinner().image && (
+                    <img 
+                      src={getFemaleWinner().image} 
+                      alt={getFemaleWinner().name}
+                      className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
+                    />
+                  )}
+                  <h4 className="text-xl font-semibold text-gray-900 mb-2">{getFemaleWinner().name}</h4>
+                  <p className="text-2xl font-bold text-pink-600 mb-2">{getFemaleWinner().votes || 0} votes</p>
+                  <p className="text-sm text-gray-600">
+                    {getTotalVotes() > 0 ? (((getFemaleWinner().votes || 0) / getTotalVotes()) * 100).toFixed(1) : 0}% of total votes
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <UserGroupIcon className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500">No votes yet</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* View All Results Button */}
+          <div className="text-center">
+            <Link to="/voting">
+              <Button variant="primary" size="lg" className="px-8">
+                Cast Your Vote
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -209,14 +387,14 @@ const LandingPage = () => {
             Join the democratic process and cast your vote for the candidates you believe in.
           </p>
           <div className="flex flex-row sm:flex-row items-center justify-center space-x-4 sm:space-x-6">
-            <Link to="/signin">
+            <Link to="/voting">
               <Button variant="light" size="lg" className="!w-auto min-w-[160px]">
                 Start Voting Now
               </Button>
             </Link>
-            <Link to="/signup">
+            <Link to="/signin">
               <Button variant="secondaryOutline" size="lg" className="!w-auto min-w-[160px] !border-white !text-white hover:!bg-white hover:!text-primary-600">
-                Create Account
+                Admin Login
               </Button>
             </Link>
           </div>
