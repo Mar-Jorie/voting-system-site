@@ -514,7 +514,7 @@ const VotingModal = ({ isOpen, onClose }) => {
         isOpen={showVoteModal}
         onClose={() => setShowVoteModal(false)}
         onSubmit={handleVoteSubmit}
-        title="Cast Your Vote"
+        title="Cast Your Vote - Star of the Night"
         fields={voteFormFields}
         initialData={voterInfo}
         loading={false}
