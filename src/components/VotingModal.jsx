@@ -31,7 +31,7 @@ const CandidateImageCarousel = ({ images, candidateId }) => {
       <img
         src={images[currentIndex]}
         alt={`Candidate ${candidateId}`}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain bg-gray-100"
         onError={(e) => {
           e.target.src = '/api/placeholder/400/300';
         }}
