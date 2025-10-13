@@ -91,9 +91,9 @@ const FormModal = ({
         <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={handleClose}></div>
         
         {/* Modal Content */}
-        <div className="relative z-50 w-full max-w-lg sm:max-w-xl p-6 overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
+        <div className="relative z-50 w-full max-w-lg sm:max-w-xl overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">
               {title}
             </h3>
@@ -106,8 +106,8 @@ const FormModal = ({
           </div>
 
           {/* Form Content - Scrollable */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="max-h-96 overflow-y-auto space-y-4">
+          <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {fields.map((field) => (
                 <div key={field.name}>
                   {field.type === 'select' ? (
@@ -143,36 +143,40 @@ const FormModal = ({
 
             {/* Error Message */}
             {errors.general && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
-                {errors.general}
+              <div className="px-6">
+                <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+                  {errors.general}
+                </div>
               </div>
             )}
 
             {/* Footer */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-              <Button
-                type="button"
-                variant="secondaryOutline"
-                size="md"
-                onClick={handleClose}
-                className="w-full sm:w-auto"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                loading={loading}
-                disabled={loading || !isFormValid() || !hasChanges()}
-                className="w-full sm:w-auto"
-              >
-                {loading ? (
-                  isUpdate ? 'Updating...' : 'Creating...'
-                ) : (
-                  isUpdate ? 'Update' : 'Create'
-                )}
-              </Button>
+            <div className="flex-shrink-0 p-6 border-t border-gray-200">
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="secondaryOutline"
+                  size="md"
+                  onClick={handleClose}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  loading={loading}
+                  disabled={loading || !isFormValid() || !hasChanges()}
+                  className="flex-1"
+                >
+                  {loading ? (
+                    isUpdate ? 'Updating...' : 'Creating...'
+                  ) : (
+                    isUpdate ? 'Update' : 'Create'
+                  )}
+                </Button>
+              </div>
             </div>
           </form>
         </div>
