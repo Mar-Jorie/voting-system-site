@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { Bars3Icon, UserIcon, ChartBarIcon, ShieldCheckIcon, ClockIcon, TrophyIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button';
 import FloatingChatbot from '../components/FloatingChatbot';
+import VotingModal from '../components/VotingModal';
 
 const LandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showVotingModal, setShowVotingModal] = useState(false);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -89,12 +91,13 @@ const LandingPage = () => {
             
             {/* Desktop CTA Buttons - Hidden on Mobile */}
             <div className="hidden md:flex items-center space-x-4">
-              <Link to="/signin">
-                <Button variant="ghost" size="md" className="!w-auto">Admin Login</Button>
-              </Link>
-              <Link to="/voting">
-                <Button variant="primaryOutline" size="md">Start Voting</Button>
-              </Link>
+              <Button 
+                variant="primaryOutline" 
+                size="md"
+                onClick={() => setShowVotingModal(true)}
+              >
+                Start Voting
+              </Button>
             </div>
           </div>
           
@@ -111,12 +114,17 @@ const LandingPage = () => {
                 
                 {/* Mobile CTA Buttons */}
                 <div className="flex flex-col space-y-3 pt-4 border-t border-gray-100">
-                  <Link to="/signin" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" size="md" className="w-full">Admin Login</Button>
-                  </Link>
-                  <Link to="/voting" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="primaryOutline" size="md" className="w-full">Start Voting</Button>
-                  </Link>
+                  <Button 
+                    variant="primaryOutline" 
+                    size="md" 
+                    className="w-full"
+                    onClick={() => {
+                      setShowVotingModal(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Start Voting
+                  </Button>
                 </div>
               </div>
             </div>
@@ -139,11 +147,14 @@ const LandingPage = () => {
                 Cast your vote for your preferred candidates in a secure, transparent, and user-friendly voting platform. Your voice matters!
               </p>
               <div className="flex flex-row sm:flex-row items-start space-x-4 sm:space-x-4 mb-6 sm:mb-8">
-                <Link to="/voting">
-                  <Button variant="primary" size="lg" className="!w-auto min-w-[160px]">
-                    Start Voting
-                  </Button>
-                </Link>
+                <Button 
+                  variant="primary" 
+                  size="lg" 
+                  className="!w-auto min-w-[160px]"
+                  onClick={() => setShowVotingModal(true)}
+                >
+                  Start Voting
+                </Button>
                 <a href="#how-it-works">
                   <Button variant="primaryOutline" size="lg" className="!w-auto min-w-[160px]">
                     Learn More
@@ -459,11 +470,6 @@ const LandingPage = () => {
 
           {/* View All Results Button */}
           <div className="text-center">
-            <Link to="/voting">
-              <Button variant="primary" size="lg" className="px-8">
-                Cast Your Vote
-              </Button>
-            </Link>
           </div>
         </div>
       </section>
@@ -478,27 +484,36 @@ const LandingPage = () => {
             Join the democratic process and cast your vote for the candidates you believe in.
           </p>
           <div className="flex flex-row sm:flex-row items-center justify-center space-x-4 sm:space-x-6">
-            <Link to="/voting">
-              <Button variant="light" size="lg" className="!w-auto min-w-[160px]">
-                Start Voting Now
-              </Button>
-            </Link>
-            <Link to="/signin">
-              <Button variant="secondaryOutline" size="lg" className="!w-auto min-w-[160px] !border-white !text-white hover:!bg-white hover:!text-primary-600">
-                Admin Login
-              </Button>
-            </Link>
+            <Button 
+              variant="light" 
+              size="lg" 
+              className="!w-auto min-w-[160px]"
+              onClick={() => setShowVotingModal(true)}
+            >
+              Start Voting Now
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-gray-900 text-center text-gray-400 py-6 px-4 sm:px-6">
-        <p className="text-xs sm:text-sm">&copy; 2024 Voting System. All rights reserved.</p>
+        <p className="text-xs sm:text-sm">
+          &copy; 2024 Voting System. All rights reserved. | 
+          <Link to="/signin" className="text-gray-400 hover:text-gray-300 underline ml-1">
+            Admin Login
+          </Link>
+        </p>
       </footer>
 
       {/* Floating Elements */}
       <FloatingChatbot />
+      
+      {/* Voting Modal */}
+      <VotingModal 
+        isOpen={showVotingModal} 
+        onClose={() => setShowVotingModal(false)} 
+      />
     </div>
   );
 };
