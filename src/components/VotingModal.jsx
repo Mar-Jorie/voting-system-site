@@ -213,19 +213,7 @@ const VotingModal = ({ isOpen, onClose }) => {
     // Update voter info with form data
     setVoterInfo(formData);
     
-    if (!formData.name || !formData.email) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-
-    // Check if email already voted
+    // Check if email already voted (FormModal handles other validation)
     const existingVotes = JSON.parse(localStorage.getItem('votes') || '[]');
     if (existingVotes.some(vote => vote.voterEmail === formData.email)) {
       toast.error('This email has already voted');

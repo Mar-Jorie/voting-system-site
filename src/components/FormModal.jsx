@@ -40,10 +40,39 @@ const FormModal = ({
     return fields.every(field => {
       if (field.required) {
         const value = formData[field.name];
-        return value !== null && value !== undefined && value !== '';
+        if (value === null || value === undefined || value === '') {
+          return false;
+        }
+        
+        // Email format validation
+        if (field.format === 'email') {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          return emailRegex.test(value);
+        }
       }
       return true;
     });
+  };
+
+  // Get validation error message
+  const getValidationError = () => {
+    for (const field of fields) {
+      if (field.required) {
+        const value = formData[field.name];
+        if (value === null || value === undefined || value === '') {
+          return `${field.label} is required`;
+        }
+        
+        // Email format validation
+        if (field.format === 'email') {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+            return 'Please enter a valid email address';
+          }
+        }
+      }
+    }
+    return null;
   };
 
   const handleFieldChange = (fieldName, value) => {
@@ -65,7 +94,8 @@ const FormModal = ({
     e.preventDefault();
     
     if (!isFormValid()) {
-      setErrors({ general: 'Please fill in all required fields' });
+      const validationError = getValidationError();
+      setErrors({ general: validationError || 'Please fill in all required fields' });
       return;
     }
 
@@ -178,6 +208,15 @@ const FormModal = ({
                   )}
                 </Button>
               </div>
+              
+              {/* Validation Message */}
+              {!isFormValid() && !loading && (
+                <div className="mt-3 text-center">
+                  <p className="text-sm text-gray-500">
+                    {getValidationError() || 'Please fill in all required fields'}
+                  </p>
+                </div>
+              )}
             </div>
           </form>
         </div>
