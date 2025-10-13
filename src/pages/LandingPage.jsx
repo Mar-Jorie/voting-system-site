@@ -140,11 +140,11 @@ const LandingPage = () => {
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight">
                 Corporate Party 2025
                 <span className="block bg-gradient-to-r from-primary-600 to-indigo-600 bg-clip-text text-transparent">
-                  Star of the Night Voting
+                  Outstanding Guest Awards
                 </span>
               </h1>
               <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed">
-                Welcome to our Corporate Party 2025 Star of the Night Voting! 🌟 Vote for your Star of the Night - one male and one female guest who stood out during our event on October 18, 2025 at ICCT Main Campus.
+                Join us in celebrating our Corporate Party 2025 Outstanding Guest Awards! 🌟 Select one male and one female guest who made the biggest impact during our special event on October 18, 2025 at ICCT Main Campus.
               </p>
               <div className="flex flex-row sm:flex-row items-start space-x-4 sm:space-x-4 mb-6 sm:mb-8">
                 <Button 
@@ -153,7 +153,7 @@ const LandingPage = () => {
                   className="!w-auto min-w-[160px]"
                   onClick={() => setShowVotingModal(true)}
                 >
-                  Vote for Star of the Night
+                  Cast Vote
                 </Button>
                 <a href="#how-it-works">
                   <Button variant="primaryOutline" size="lg" className="!w-auto min-w-[160px]">
@@ -168,6 +168,7 @@ const LandingPage = () => {
                 <div className="text-center">
                   <UserIcon className="h-24 w-24 text-primary-600 mx-auto mb-4" />
                   <p className="text-primary-700 font-medium">Vote for Your Candidates</p>
+                  <p className="text-primary-700 text-sm"> October 18, 2025 at ICCT Main Campus.</p>
                 </div>
               </div>
             </div>
@@ -180,10 +181,10 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight">
-              Star of the Night Voting Features
+              Award Selection Features
             </h2>
             <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto font-medium">
-              Secure, transparent, and user-friendly voting for our Corporate Party 2025 event.
+              Secure, transparent, and user-friendly selection process for our Corporate Party 2025 awards.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
@@ -478,10 +479,10 @@ const LandingPage = () => {
       <section className="py-8 sm:py-10 px-4 sm:px-6 bg-gradient-to-r from-primary-400 to-indigo-600 opacity-90">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 tracking-tight">
-            Ready to Vote for Your Star of the Night?
+            Ready to Select Outstanding Guests?
           </h2>
           <p className="text-base sm:text-lg text-primary-100 mb-8 sm:mb-10 font-medium">
-            Cast your vote for the male and female guests who stood out at our Corporate Party 2025 event.
+            Choose the male and female guests who made the biggest impact at our Corporate Party 2025 celebration.
           </p>
           <div className="flex flex-row sm:flex-row items-center justify-center space-x-4 sm:space-x-6">
             <Button 
@@ -490,7 +491,7 @@ const LandingPage = () => {
               className="!w-auto min-w-[160px]"
               onClick={() => setShowVotingModal(true)}
             >
-              Vote Now
+              Select Now
             </Button>
           </div>
         </div>
