@@ -193,7 +193,7 @@ const FormModal = ({
                   
                   {/* Field-specific error message */}
                   {errors[field.name] && (
-                    <p className="mt-1 text-red-600 ">
+                    <p className="mt-1 text-red-600 text-sm">
                       {errors[field.name]}
                     </p>
                   )}

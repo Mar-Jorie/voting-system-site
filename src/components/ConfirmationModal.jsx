@@ -12,7 +12,8 @@ const ConfirmationModal = ({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   icon,
-  variant = 'danger'
+  variant = 'danger',
+  showCancelButton = true
 }) => {
   if (!isOpen) return null;
 
@@ -24,6 +25,8 @@ const ConfirmationModal = ({
         return { iconColor: 'text-orange-600', iconBgColor: 'bg-orange-100' };
       case 'info':
         return { iconColor: 'text-blue-600', iconBgColor: 'bg-blue-100' };
+      case 'success':
+        return { iconColor: 'text-green-600', iconBgColor: 'bg-green-100' };
       default:
         return { iconColor: 'text-red-600', iconBgColor: 'bg-red-100' };
     }
@@ -39,6 +42,8 @@ const ConfirmationModal = ({
         return { confirm: 'warning', cancel: 'primaryOutline' };
       case 'info':
         return { confirm: 'info', cancel: 'primaryOutline' };
+      case 'success':
+        return { confirm: 'success', cancel: 'primaryOutline' };
       default:
         return { confirm: 'danger', cancel: 'primaryOutline' };
     }
@@ -96,20 +101,22 @@ const ConfirmationModal = ({
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              variant={cancelVariant}
-              size="md"
-              onClick={onClose}
-              className="w-full sm:w-auto"
-            >
-              {cancelLabel}
-            </Button>
+          <div className={`flex ${showCancelButton ? 'flex-col sm:flex-row gap-3' : 'justify-center'}`}>
+            {showCancelButton && (
+              <Button
+                variant={cancelVariant}
+                size="md"
+                onClick={onClose}
+                className="w-full sm:w-auto"
+              >
+                {cancelLabel}
+              </Button>
+            )}
             <Button
               variant={confirmVariant}
               size="md"
               onClick={onConfirm}
-              className="w-full sm:w-auto"
+              className={showCancelButton ? "w-full sm:w-auto" : "w-full sm:w-auto min-w-[120px]"}
             >
               {confirmLabel}
             </Button>

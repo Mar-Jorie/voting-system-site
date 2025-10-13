@@ -94,6 +94,7 @@ const VotingModal = ({ isOpen, onClose }) => {
   });
   const [showVoteModal, setShowVoteModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [voterInfo, setVoterInfo] = useState({
     name: '',
     email: ''
@@ -244,9 +245,8 @@ const VotingModal = ({ isOpen, onClose }) => {
     // Reload candidates with updated vote counts
     loadCandidates();
 
-    setVotingComplete(true);
-    setHasVoted(true);
     setShowConfirmationModal(false);
+    setShowSuccessModal(true);
     
     // Show success toast
     toast.success('Your vote has been submitted successfully!');
@@ -263,6 +263,7 @@ const VotingModal = ({ isOpen, onClose }) => {
     setVotingComplete(false);
     setShowVoteModal(false);
     setShowConfirmationModal(false);
+    setShowSuccessModal(false);
     setVoterInfo({ name: '', email: '' });
     onClose();
   };
@@ -336,20 +337,7 @@ const VotingModal = ({ isOpen, onClose }) => {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              {votingComplete ? (
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircleIcon className="h-8 w-8 text-green-600" />
-                  </div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Vote Submitted Successfully!</h2>
-                  <p className="text-gray-600 mb-6">
-                    Thank you for participating in the voting process. Your vote has been recorded.
-                  </p>
-                  <Button variant="primary" size="md" onClick={handleClose}>
-                    Close
-                  </Button>
-                </div>
-              ) : (
+              {!votingComplete && (
                 <div className="space-y-6">
                   {/* Page Header */}
                   <div>
@@ -647,6 +635,19 @@ const VotingModal = ({ isOpen, onClose }) => {
         cancelLabel="Cancel"
         icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
         variant="info"
+      />
+
+      {/* Success Modal */}
+      <ConfirmationModal
+        isOpen={showSuccessModal}
+        onClose={handleClose}
+        onConfirm={handleClose}
+        title="Vote Submitted Successfully!"
+        message="Thank you for participating in the voting process. Your vote has been recorded."
+        confirmLabel="Confirm"
+        icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        variant="success"
+        showCancelButton={false}
       />
     </>
   );
