@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bars3Icon, UserIcon, ChartBarIcon, ShieldCheckIcon, ClockIcon, TrophyIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button';
@@ -300,7 +300,7 @@ const LandingPage = () => {
           {/* Winners */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Male Winner */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 shadow-sm border border-blue-200 hover:shadow-md transition-shadow duration-200">
+            <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-6 shadow-sm border border-primary-200 hover:shadow-md transition-shadow duration-200">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Male Category Winner</h3>
                 <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -317,7 +317,7 @@ const LandingPage = () => {
                     />
                   )}
                   <h4 className="text-xl font-semibold text-gray-900 mb-2">{getMaleWinner().name}</h4>
-                  <p className="text-2xl font-bold text-blue-600 mb-2">{getMaleWinner().votes || 0} votes</p>
+                  <p className="text-2xl font-bold text-primary-600 mb-2">{getMaleWinner().votes || 0} votes</p>
                   <p className="text-sm text-gray-600">
                     {getTotalVotes() > 0 ? (((getMaleWinner().votes || 0) / getTotalVotes()) * 100).toFixed(1) : 0}% of total votes
                   </p>
@@ -333,7 +333,7 @@ const LandingPage = () => {
             </div>
 
             {/* Female Winner */}
-            <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-6 shadow-sm border border-pink-200 hover:shadow-md transition-shadow duration-200">
+            <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-6 shadow-sm border border-primary-200 hover:shadow-md transition-shadow duration-200">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Female Category Winner</h3>
                 <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -350,7 +350,7 @@ const LandingPage = () => {
                     />
                   )}
                   <h4 className="text-xl font-semibold text-gray-900 mb-2">{getFemaleWinner().name}</h4>
-                  <p className="text-2xl font-bold text-pink-600 mb-2">{getFemaleWinner().votes || 0} votes</p>
+                  <p className="text-2xl font-bold text-primary-600 mb-2">{getFemaleWinner().votes || 0} votes</p>
                   <p className="text-sm text-gray-600">
                     {getTotalVotes() > 0 ? (((getFemaleWinner().votes || 0) / getTotalVotes()) * 100).toFixed(1) : 0}% of total votes
                   </p>
@@ -371,8 +371,8 @@ const LandingPage = () => {
             {/* Male Category Results */}
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
               <div className="flex items-center mb-4">
-                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mr-3">
-                  <UserGroupIcon className="h-5 w-5 text-blue-600" />
+                <div className="w-8 h-8 bg-primary-50 rounded-lg flex items-center justify-center mr-3">
+                  <UserGroupIcon className="h-5 w-5 text-primary-600" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">Male Category Results</h3>
               </div>
@@ -398,7 +398,7 @@ const LandingPage = () => {
                       <div className="flex items-center space-x-2 mt-1">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                            className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
                             style={{ 
                               width: `${getTotalVotes() > 0 ? ((candidate.votes || 0) / getTotalVotes()) * 100 : 0}%` 
                             }}
@@ -415,8 +415,8 @@ const LandingPage = () => {
             {/* Female Category Results */}
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
               <div className="flex items-center mb-4">
-                <div className="w-8 h-8 bg-pink-50 rounded-lg flex items-center justify-center mr-3">
-                  <UserGroupIcon className="h-5 w-5 text-pink-600" />
+                <div className="w-8 h-8 bg-primary-50 rounded-lg flex items-center justify-center mr-3">
+                  <UserGroupIcon className="h-5 w-5 text-primary-600" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">Female Category Results</h3>
               </div>
@@ -442,7 +442,7 @@ const LandingPage = () => {
                       <div className="flex items-center space-x-2 mt-1">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div 
-                            className="bg-pink-600 h-2 rounded-full transition-all duration-300" 
+                            className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
                             style={{ 
                               width: `${getTotalVotes() > 0 ? ((candidate.votes || 0) / getTotalVotes()) * 100 : 0}%` 
                             }}
