@@ -364,7 +364,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                         </div>
                         <h2 className="text-xl font-semibold text-gray-900">Male Category</h2>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 3xl:grid-cols-3 gap-4">
                         {maleCandidates.map((candidate) => (
                           <div
                             key={candidate.id}
@@ -419,7 +419,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                         </div>
                         <h2 className="text-xl font-semibold text-gray-900">Female Category</h2>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 3xl:grid-cols-3 gap-4">
                         {femaleCandidates.map((candidate) => (
                           <div
                             key={candidate.id}

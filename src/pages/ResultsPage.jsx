@@ -142,7 +142,7 @@ const ResultsPage = () => {
 
         <div className="space-y-6">
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 3xl:grid-cols-4 gap-6">
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center justify-between mb-3">
               <div className="w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center">
@@ -184,7 +184,7 @@ const ResultsPage = () => {
         </div>
 
         {/* Winners */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-3 gap-6">
           {/* Male Winner */}
           <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-6 shadow-sm border border-primary-200 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center justify-between mb-4">
@@ -253,7 +253,7 @@ const ResultsPage = () => {
         </div>
 
         {/* Detailed Results */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-3 gap-6">
           {/* Male Category Results */}
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center mb-4">

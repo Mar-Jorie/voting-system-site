@@ -54,7 +54,7 @@ const DashboardPage = () => {
 
       <div className="space-y-6">
         {/* Key Metrics Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 3xl:grid-cols-6 gap-4">
           {/* Total Votes */}
           <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-3">
@@ -137,7 +137,7 @@ const DashboardPage = () => {
         </div>
 
         {/* Progress & Timeline */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-3 gap-6">
           {/* Voting Progress Overview */}
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-6">
@@ -210,7 +210,7 @@ const DashboardPage = () => {
               View All
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 3xl:grid-cols-6 gap-4">
             <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
               <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center mb-3">
                 <UserGroupIcon className="h-5 w-5 text-primary-600" />

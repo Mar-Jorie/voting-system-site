@@ -99,7 +99,7 @@ const SignUpPage = () => {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             {/* Name Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 3xl:grid-cols-3 gap-4">
               <InputFactory
                 fieldName="firstName"
                 config={{
@@ -162,7 +162,7 @@ const SignUpPage = () => {
             />
 
             {/* Password Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 3xl:grid-cols-3 gap-4">
               <InputFactory
                 fieldName="password"
                 config={{
