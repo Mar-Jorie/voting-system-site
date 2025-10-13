@@ -198,25 +198,25 @@ const VotingModal = ({ isOpen, onClose }) => {
   return (
     <>
       {/* Modal Backdrop */}
-      <div className="fixed inset-0 z-50 overflow-y-auto">
-        <div className="flex items-center justify-center min-h-screen px-4">
-          {/* Backdrop */}
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4">
+        {/* Backdrop */}
           <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={handleClose}></div>
-          
-          {/* Modal Content */}
+        
+        {/* Modal Content */}
           <div className="relative z-50 w-full max-w-6xl max-h-[90vh] overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
-            {/* Header */}
+          {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
               <h2 className="text-2xl font-semibold text-gray-900">
                 {votingComplete ? 'Vote Submitted Successfully!' : 'Cast Your Vote'}
               </h2>
-              <button
+            <button
                 onClick={handleClose}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
+            >
                 <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
+            </button>
+          </div>
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto max-h-[calc(90vh-120px)] p-6">
@@ -298,7 +298,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                             )}
 
                             {/* Candidate Image */}
-                            <div className="aspect-square overflow-hidden rounded-t-lg">
+                            <div className="h-32 overflow-hidden rounded-t-lg">
                               {candidate.image ? (
                                 Array.isArray(candidate.image) && candidate.image.length > 1 ? (
                                   <ImageCarousel images={candidate.image} />
@@ -311,7 +311,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                                 )
                               ) : (
                                 <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                  <UserIcon className="h-16 w-16 text-gray-400" />
+                                  <UserIcon className="h-12 w-12 text-gray-400" />
                                 </div>
                               )}
                             </div>
@@ -325,10 +325,10 @@ const VotingModal = ({ isOpen, onClose }) => {
                               <div className="flex items-center justify-between">
                                 <div className="text-sm text-gray-500">
                                   <span className="font-medium text-primary-600">{candidate.votes || 0}</span> votes
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+              </div>
+              </div>
+            </div>
+          </div>
                         ))}
                       </div>
                     </div>
@@ -364,7 +364,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                             )}
 
                             {/* Candidate Image */}
-                            <div className="aspect-square overflow-hidden rounded-t-lg">
+                            <div className="h-32 overflow-hidden rounded-t-lg">
                               {candidate.image ? (
                                 Array.isArray(candidate.image) && candidate.image.length > 1 ? (
                                   <ImageCarousel images={candidate.image} />
@@ -377,7 +377,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                                 )
                               ) : (
                                 <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                  <UserIcon className="h-16 w-16 text-gray-400" />
+                                  <UserIcon className="h-12 w-12 text-gray-400" />
                                 </div>
                               )}
                             </div>
@@ -428,16 +428,16 @@ const VotingModal = ({ isOpen, onClose }) => {
             {!votingComplete && !hasVoted && (
               <div className="border-t border-gray-200 p-6 flex-shrink-0 bg-white">
                 <div className="text-center">
-                  <Button
-                    variant="primary"
+              <Button
+                variant="primary"
                     size="lg"
                     onClick={handleVote}
                     disabled={!selectedCandidates.male || !selectedCandidates.female}
                     className="px-8"
                   >
                     Cast Vote
-                  </Button>
-                </div>
+              </Button>
+            </div>
               </div>
             )}
           </div>
