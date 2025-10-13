@@ -209,24 +209,25 @@ const VotingModal = ({ isOpen, onClose }) => {
     setShowVoteModal(true);
   };
 
-  const handleVoteSubmit = (e) => {
-    e.preventDefault();
+  const handleVoteSubmit = (formData) => {
+    // Update voter info with form data
+    setVoterInfo(formData);
     
-    if (!voterInfo.name || !voterInfo.email) {
+    if (!formData.name || !formData.email) {
       toast.error('Please fill in all fields');
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(voterInfo.email)) {
+    if (!emailRegex.test(formData.email)) {
       toast.error('Please enter a valid email address');
       return;
     }
 
     // Check if email already voted
     const existingVotes = JSON.parse(localStorage.getItem('votes') || '[]');
-    if (existingVotes.some(vote => vote.voterEmail === voterInfo.email)) {
+    if (existingVotes.some(vote => vote.voterEmail === formData.email)) {
       toast.error('This email has already voted');
       return;
     }
