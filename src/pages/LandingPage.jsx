@@ -61,7 +61,7 @@ const LandingPage = () => {
     <div className="min-h-screen bg-white overflow-y-auto">
       {/* Navigation */}
       <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="w-full max-w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo */}
             <div className="flex items-center space-x-3">
@@ -133,10 +133,10 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 lg:px-10 bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-            <div className="text-left">
+      <section className="relative py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-white">
+        <div className="w-full max-w-full">
+          <div className="grid lg:grid-cols-2 3xl:grid-cols-3 gap-8 lg:gap-12 3xl:gap-16 items-center">
+            <div className="text-left 3xl:col-span-2">
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight">
                 Corporate Party 2025
                 <span className="block bg-gradient-to-r from-primary-600 to-indigo-600 bg-clip-text text-transparent">
@@ -162,7 +162,7 @@ const LandingPage = () => {
                 </a>
               </div>
             </div>
-            <div className="relative order-last lg:order-last">
+            <div className="relative order-last lg:order-last 3xl:col-span-1">
               {/* Hero Illustration */}
               <div className="w-full h-64 bg-gradient-to-br from-primary-100 to-indigo-100 rounded-2xl flex items-center justify-center">
                 <div className="text-center">
@@ -477,7 +477,7 @@ const LandingPage = () => {
 
       {/* CTA Section */}
       <section className="py-8 sm:py-10 px-4 sm:px-6 bg-gradient-to-r from-primary-400 to-indigo-600 opacity-90">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="w-full max-w-full text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 tracking-tight">
             Ready to Select Outstanding Guests?
           </h2>
