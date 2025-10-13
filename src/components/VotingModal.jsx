@@ -303,7 +303,7 @@ const VotingModal = ({ isOpen, onClose }) => {
           <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={handleClose}></div>
         
         {/* Modal Content */}
-          <div className="relative z-50 w-full max-w-6xl max-h-[90vh] overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
+          <div className="relative z-50 w-full max-w-6xl max-h-[90vh] overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl flex flex-col">
           {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
               <h2 className="text-2xl font-semibold text-gray-900">
@@ -318,7 +318,7 @@ const VotingModal = ({ isOpen, onClose }) => {
           </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto max-h-[calc(90vh-120px)] p-6">
+            <div className="flex-1 overflow-y-auto p-6">
               {votingComplete ? (
                 <div className="text-center">
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -501,18 +501,18 @@ const VotingModal = ({ isOpen, onClose }) => {
 
             {/* Fixed Footer */}
             {!votingComplete && !hasVoted && (
-              <div className="border-t border-gray-200 p-6 flex-shrink-0 bg-white">
+              <div className="border-t border-gray-200 p-6 flex-shrink-0 bg-white rounded-b-xl">
                 <div className="text-center">
-              <Button
-                variant="primary"
+                  <Button
+                    variant="primary"
                     size="lg"
                     onClick={handleVote}
                     disabled={!selectedCandidates.male || !selectedCandidates.female}
-                    className="px-8"
+                    className="px-8 min-w-[200px]"
                   >
                     Cast Vote
-              </Button>
-            </div>
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -604,10 +604,10 @@ const VotingModal = ({ isOpen, onClose }) => {
                     ))}
                   </div>
                 )}
-              </div>
-            </div>
           </div>
         </div>
+      </div>
+    </div>
       )}
     </>
   );
