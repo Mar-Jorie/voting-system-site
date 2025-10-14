@@ -47,12 +47,13 @@ const SmartFloatingActionButton = ({
     return iconMap[iconName] || EllipsisVerticalIcon;
   };
 
-  const IconComponent = getIconComponent(icon);
-
   // Determine current variant and actions based on selection state
   const currentVariant = selectedCount > 0 ? 'dots' : variant;
   const currentActions = selectedCount > 0 ? bulkActions : quickActions;
   const currentLabel = selectedCount > 0 ? 'Toggle bulk actions' : label;
+  const currentIcon = selectedCount > 0 ? 'EllipsisVerticalIcon' : icon;
+  
+  const IconComponent = getIconComponent(currentIcon);
 
   const handleMainButtonClick = () => {
     if (currentVariant === 'single') {

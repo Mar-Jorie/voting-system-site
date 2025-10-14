@@ -488,16 +488,22 @@ const VotesListPage = () => {
 
       {/* Floating Action Button */}
       <SmartFloatingActionButton 
-        variant="dots"
-        icon="EllipsisVerticalIcon"
-        label="Toggle quick actions"
-        action={() => {}}
+        variant="single"
+        icon="ArrowDownTrayIcon"
+        label="Export votes"
+        action={handleBulkExport}
         selectedCount={selectedVotes.size}
         bulkActions={[
           { name: 'Export Selected', icon: 'ArrowDownTrayIcon', action: handleBulkExport, color: 'bg-blue-600' }
         ]}
         quickActions={[
-          { name: 'Export All Votes', icon: 'ArrowDownTrayIcon', action: handleBulkExport, color: 'bg-blue-600' }
+          { name: 'Export All Votes', icon: 'ArrowDownTrayIcon', action: () => {
+            if (filteredVotes.length === 0) {
+              toast.error('No votes to export');
+              return;
+            }
+            setShowExportModal(true);
+          }, color: 'bg-blue-600' }
         ]}
       />
 

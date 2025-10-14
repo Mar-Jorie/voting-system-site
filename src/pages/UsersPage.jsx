@@ -18,6 +18,7 @@ const UsersPage = () => {
   const [loading, setLoading] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
   const [formData, setFormData] = useState({});
@@ -329,8 +330,38 @@ const UsersPage = () => {
       toast.error('No users selected for export');
       return;
     }
-    toast.success(`Exporting ${selectedUsers.length} users...`);
-    // TODO: Implement actual export functionality
+    
+    try {
+      // Create CSV content
+      const headers = ['Name', 'Username', 'Email', 'Role', 'Status', 'Created At'];
+      const csvContent = [
+        headers.join(','),
+        ...selectedUsers.map(user => [
+          `"${getUserDisplayName(user)}"`,
+          `"${user.username}"`,
+          `"${user.email}"`,
+          `"${getRoleDisplayName(user.role)}"`,
+          `"${getStatusDisplayName(user.status)}"`,
+          `"${new Date(user.createdAt).toLocaleDateString()}"`
+        ].join(','))
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `users-export-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(`Exported ${selectedUsers.length} users successfully`);
+    } catch (error) {
+      console.error('Error exporting users:', error);
+      toast.error('Failed to export users');
+    }
   };
 
   const handleBulkDelete = () => {
@@ -339,8 +370,27 @@ const UsersPage = () => {
       toast.error('No users selected for deletion');
       return;
     }
-    // TODO: Implement bulk delete confirmation modal
-    toast.success(`Deleting ${selectedUsers.length} users...`);
+    setShowBulkDeleteModal(true);
+  };
+
+  const confirmBulkDelete = () => {
+    const selectedUsers = filteredUsers.filter((_, index) => selectedRows.has(index));
+    if (selectedUsers.length === 0) return;
+
+    try {
+      // Delete selected users from localStorage
+      const updatedUsers = users.filter(user => 
+        !selectedUsers.some(selected => selected.id === user.id)
+      );
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      setUsers(updatedUsers);
+      setSelectedRows(new Set());
+      setShowBulkDeleteModal(false);
+      toast.success(`Deleted ${selectedUsers.length} users successfully`);
+    } catch (error) {
+      console.error('Error deleting users:', error);
+      toast.error('Failed to delete users');
+    }
   };
 
   const handleBulkStatusToggle = () => {
@@ -533,11 +583,24 @@ const UsersPage = () => {
         variant="danger"
       />
 
+      {/* Bulk Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showBulkDeleteModal}
+        onClose={() => setShowBulkDeleteModal(false)}
+        onConfirm={confirmBulkDelete}
+        title="Delete Selected Users"
+        message={`Are you sure you want to delete ${selectedRows.size} selected users? This action cannot be undone.`}
+        confirmLabel="Delete All"
+        cancelLabel="Cancel"
+        icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
+        variant="danger"
+      />
+
       {/* Floating Action Button */}
       <SmartFloatingActionButton 
-        variant="dots"
-        icon="EllipsisVerticalIcon"
-        label="Toggle quick actions"
+        variant="single"
+        icon="PlusIcon"
+        label="Add new user"
         action={handleAddUser}
         selectedCount={selectedRows.size}
         bulkActions={[
@@ -548,7 +611,36 @@ const UsersPage = () => {
         quickActions={[
           { name: 'Add User', icon: 'PlusIcon', action: handleAddUser, color: 'bg-primary-600' },
           { name: 'Import Users', icon: 'ArrowUpTrayIcon', action: () => toast.info('Import feature coming soon'), color: 'bg-green-600' },
-          { name: 'Export Users', icon: 'ArrowDownTrayIcon', action: () => toast.info('Export feature coming soon'), color: 'bg-blue-600' }
+          { name: 'Export All Users', icon: 'ArrowDownTrayIcon', action: () => {
+            if (filteredUsers.length === 0) {
+              toast.error('No users to export');
+              return;
+            }
+            // Export all filtered users
+            const headers = ['Name', 'Username', 'Email', 'Role', 'Status', 'Created At'];
+            const csvContent = [
+              headers.join(','),
+              ...filteredUsers.map(user => [
+                `"${getUserDisplayName(user)}"`,
+                `"${user.username}"`,
+                `"${user.email}"`,
+                `"${getRoleDisplayName(user.role)}"`,
+                `"${getStatusDisplayName(user.status)}"`,
+                `"${new Date(user.createdAt).toLocaleDateString()}"`
+              ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `all-users-export-${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            toast.success(`Exported ${filteredUsers.length} users successfully`);
+          }, color: 'bg-blue-600' }
         ]}
       />
     </div>

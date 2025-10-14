@@ -849,9 +849,9 @@ const CandidatesPage = () => {
 
       {/* Floating Action Button */}
       <SmartFloatingActionButton 
-        variant="dots"
-        icon="EllipsisVerticalIcon"
-        label="Toggle quick actions"
+        variant="single"
+        icon="PlusIcon"
+        label="Add new candidate"
         action={handleAddCandidate}
         selectedCount={selectedCandidates.size}
         bulkActions={[
@@ -860,8 +860,14 @@ const CandidatesPage = () => {
         ]}
         quickActions={[
           { name: 'Add Candidate', icon: 'PlusIcon', action: handleAddCandidate, color: 'bg-primary-600' },
-          { name: 'Import Candidates', icon: 'ArrowUpTrayIcon', action: () => console.log('Import candidates'), color: 'bg-green-600' },
-          { name: 'Export All Candidates', icon: 'ArrowDownTrayIcon', action: handleBulkExport, color: 'bg-blue-600' }
+          { name: 'Import Candidates', icon: 'ArrowUpTrayIcon', action: () => toast.info('Import feature coming soon'), color: 'bg-green-600' },
+          { name: 'Export All Candidates', icon: 'ArrowDownTrayIcon', action: () => {
+            if (filteredCandidates.length === 0) {
+              toast.error('No candidates to export');
+              return;
+            }
+            setShowExportModal(true);
+          }, color: 'bg-blue-600' }
         ]}
       />
     </div>
