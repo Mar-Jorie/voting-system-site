@@ -189,14 +189,23 @@ const DashboardPage = () => {
   };
 
   const exportAsPDF = () => {
-    const votes = JSON.parse(localStorage.getItem('votes') || '[]');
-    const candidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-    
-    // Calculate results
-    const candidateVotes = {};
-    votes.forEach(vote => {
-      candidateVotes[vote.candidateId] = (candidateVotes[vote.candidateId] || 0) + 1;
-    });
+    try {
+      console.log('PDF Export button clicked');
+      const votes = JSON.parse(localStorage.getItem('votes') || '[]');
+      const candidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+      
+      console.log('PDF Export - Votes:', votes.length, 'Candidates:', candidates.length);
+      
+      if (candidates.length === 0) {
+        toast.error('No candidates found to export');
+        return;
+      }
+      
+      // Calculate results
+      const candidateVotes = {};
+      votes.forEach(vote => {
+        candidateVotes[vote.candidateId] = (candidateVotes[vote.candidateId] || 0) + 1;
+      });
     
     // Create results summary
     const results = candidates.map(candidate => ({
@@ -210,8 +219,8 @@ const DashboardPage = () => {
     
     // Find winners
     const overallWinner = results[0];
-    const maleWinner = maleResults[0];
-    const femaleWinner = femaleResults[0];
+    const maleWinner = maleResults[0] || { name: 'No male candidates', party: 'N/A', gender: 'male', votes: 0 };
+    const femaleWinner = femaleResults[0] || { name: 'No female candidates', party: 'N/A', gender: 'female', votes: 0 };
     
     // Close the export modal first
     setShowExportModal(false);
@@ -331,14 +340,32 @@ const DashboardPage = () => {
     
     document.body.appendChild(printElement);
     
-    // Trigger print
-    setTimeout(() => {
-      window.print();
-      document.body.removeChild(printElement);
-      document.head.removeChild(printStyles);
-    }, 100);
-    
-    toast.success('Election results exported as PDF successfully');
+      // Trigger print
+      setTimeout(() => {
+        try {
+          window.print();
+          console.log('Print dialog triggered');
+        } catch (printError) {
+          console.error('Print error:', printError);
+          toast.error('Print dialog failed. Please try again or check browser settings.');
+        } finally {
+          // Clean up
+          setTimeout(() => {
+            if (document.body.contains(printElement)) {
+              document.body.removeChild(printElement);
+            }
+            if (document.head.contains(printStyles)) {
+              document.head.removeChild(printStyles);
+            }
+          }, 1000);
+        }
+      }, 100);
+      
+      toast.success('Election results exported as PDF successfully');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Failed to export PDF: ' + error.message);
+    }
   };
 
   return (
