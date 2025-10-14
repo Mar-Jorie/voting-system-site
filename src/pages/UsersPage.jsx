@@ -325,7 +325,7 @@ const UsersPage = () => {
 
   // Bulk actions
   const handleBulkExport = () => {
-    const selectedUsers = filteredUsers.filter((_, index) => selectedRows.has(index));
+    const selectedUsers = filteredUsers.filter((user, index) => selectedRows.has(user.id || index));
     if (selectedUsers.length === 0) {
       toast.error('No users selected for export');
       return;
@@ -365,7 +365,7 @@ const UsersPage = () => {
   };
 
   const handleBulkDelete = () => {
-    const selectedUsers = filteredUsers.filter((_, index) => selectedRows.has(index));
+    const selectedUsers = filteredUsers.filter((user, index) => selectedRows.has(user.id || index));
     if (selectedUsers.length === 0) {
       toast.error('No users selected for deletion');
       return;
@@ -374,7 +374,7 @@ const UsersPage = () => {
   };
 
   const confirmBulkDelete = () => {
-    const selectedUsers = filteredUsers.filter((_, index) => selectedRows.has(index));
+    const selectedUsers = filteredUsers.filter((user, index) => selectedRows.has(user.id || index));
     if (selectedUsers.length === 0) return;
 
     try {
@@ -394,7 +394,7 @@ const UsersPage = () => {
   };
 
   const handleBulkStatusToggle = () => {
-    const selectedUsers = filteredUsers.filter((_, index) => selectedRows.has(index));
+    const selectedUsers = filteredUsers.filter((user, index) => selectedRows.has(user.id || index));
     if (selectedUsers.length === 0) {
       toast.error('No users selected for status change');
       return;
