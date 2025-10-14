@@ -1,6 +1,6 @@
 // Dashboard Page - MANDATORY PATTERN
 import React, { useState, useEffect } from 'react';
-import { CalendarDaysIcon, UserGroupIcon, TrophyIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, UserGroupIcon, TrophyIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 
 const DashboardPage = () => {

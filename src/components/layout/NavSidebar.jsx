@@ -121,7 +121,7 @@ const NavSidebar = () => {
               </div>
               <div>
                 <h1 className="text-base font-medium text-gray-900">
-                  Voting System by Mrj
+                  Voting System
                 </h1>
                 <p className="text-xs text-gray-500">
                   Admin Panel

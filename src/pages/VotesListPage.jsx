@@ -142,7 +142,10 @@ const VotesListPage = () => {
   const handleViewDetails = (vote) => {
     // You can implement a modal to show detailed vote information
     console.log('View vote details:', vote);
-    toast.info('View vote details functionality');
+    toast('View vote details functionality', {
+      icon: 'ℹ️',
+      duration: 3000,
+    });
   };
 
   const columns = [
