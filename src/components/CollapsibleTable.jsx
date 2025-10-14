@@ -1,6 +1,23 @@
 // CollapsibleTable Component - MANDATORY PATTERN
-import React, { useState } from 'react';
-import { ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashIcon, EllipsisVerticalIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { 
+  ChevronDownIcon, 
+  ChevronUpIcon, 
+  PencilIcon, 
+  TrashIcon, 
+  EllipsisVerticalIcon,
+  PlusIcon,
+  ArrowUpTrayIcon,
+  ArrowDownTrayIcon,
+  CheckCircleIcon,
+  PlayIcon,
+  EyeIcon,
+  DocumentArrowDownIcon,
+  DocumentArrowUpIcon,
+  CalendarDaysIcon,
+  UserPlusIcon
+} from '@heroicons/react/24/outline';
 import Button from './Button';
 
 const CollapsibleTable = ({
@@ -20,7 +37,29 @@ const CollapsibleTable = ({
 }) => {
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
-  const [showActionsModal, setShowActionsModal] = useState(false);
+  const [showActionsModal, setShowActionsModal] = useState(new Set());
+  const [dropdownPosition, setDropdownPosition] = useState({});
+  const dropdownRefs = useRef({});
+
+  // Icon mapping function
+  const getIconComponent = (iconName) => {
+    const iconMap = {
+      PlusIcon,
+      EllipsisVerticalIcon,
+      TrashIcon,
+      CalendarDaysIcon,
+      UserPlusIcon,
+      CheckCircleIcon,
+      PlayIcon,
+      EyeIcon,
+      PencilIcon,
+      DocumentArrowDownIcon,
+      DocumentArrowUpIcon,
+      ArrowUpTrayIcon,
+      ArrowDownTrayIcon
+    };
+    return iconMap[iconName] || EllipsisVerticalIcon;
+  };
 
   // Selection state
   const isAllSelected = data.length > 0 && selectedRows.size === data.length;
@@ -69,17 +108,66 @@ const CollapsibleTable = ({
 
   const handleAdditionalAction = (e, action, item) => {
     e.stopPropagation();
-    action.action && action.action(item);
+    if (action.action) {
+      action.action(item);
+    } else if (typeof action === 'function') {
+      action(item);
+    }
   };
 
-  const handleActionsModal = (e) => {
+  const handleActionsModal = (e, item) => {
     e.stopPropagation();
-    setShowActionsModal(!showActionsModal);
+    const rowId = item.id || data.indexOf(item);
+    const newShowActionsModal = new Set(showActionsModal);
+    
+    if (newShowActionsModal.has(rowId)) {
+      newShowActionsModal.delete(rowId);
+      setShowActionsModal(newShowActionsModal);
+    } else {
+      // Calculate position for floating dropdown
+      const buttonRect = e.currentTarget.getBoundingClientRect();
+      setDropdownPosition({
+        [rowId]: {
+          top: buttonRect.bottom + window.scrollY + 4,
+          left: buttonRect.right - 200, // Align to right edge, 200px width
+          right: window.innerWidth - buttonRect.right
+        }
+      });
+      newShowActionsModal.add(rowId);
+      setShowActionsModal(newShowActionsModal);
+    }
   };
 
-  const closeActionsModal = () => {
-    setShowActionsModal(false);
+  const closeActionsModal = (item) => {
+    const rowId = item.id || data.indexOf(item);
+    const newShowActionsModal = new Set(showActionsModal);
+    newShowActionsModal.delete(rowId);
+    setShowActionsModal(newShowActionsModal);
+    
+    // Clear position
+    const newPosition = { ...dropdownPosition };
+    delete newPosition[rowId];
+    setDropdownPosition(newPosition);
   };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click is outside any dropdown
+      const isOutsideDropdown = !event.target.closest('.floating-dropdown');
+      const isOutsideButton = !event.target.closest('.dropdown-button');
+      
+      if (isOutsideDropdown && isOutsideButton && showActionsModal.size > 0) {
+        setShowActionsModal(new Set());
+        setDropdownPosition({});
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showActionsModal]);
 
   // Pagination
   const totalPages = Math.ceil(data.length / itemsPerPage);
@@ -176,7 +264,7 @@ const CollapsibleTable = ({
                           colIndex >= 2 ? 'hidden sm:table-cell' : ''
                         }`}
                       >
-                        {column.render ? column.render(item[column.key], item) : item[column.key]}
+                        {column.render ? column.render(item[column.key], item, index) : item[column.key]}
                       </td>
                     ))}
 
@@ -201,7 +289,7 @@ const CollapsibleTable = ({
                               <div key={column.key} className="flex justify-between items-center">
                                 <span className="text-sm font-medium text-gray-500">{column.label}</span>
                                 <div className="text-sm text-gray-900">
-                                  {column.render ? column.render(item[column.key], item) : item[column.key]}
+                                  {column.render ? column.render(item[column.key], item, index) : item[column.key]}
                                 </div>
                               </div>
                             ))}
@@ -211,7 +299,7 @@ const CollapsibleTable = ({
                           {expandableContent && expandableContent(item)}
 
                           {/* Action Buttons - Left corner inside expanded content */}
-                          {(onEdit || onDelete || additionalActions.length > 0) && (
+                          {(onEdit || onDelete || (typeof additionalActions === 'function' ? additionalActions(item).length > 0 : additionalActions.length > 0)) && (
                             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                               {/* Primary Actions */}
                               {onEdit && (
@@ -240,13 +328,18 @@ const CollapsibleTable = ({
 
                               {/* Additional Actions - Smart display logic */}
                               {(() => {
-                                const totalDirectButtons = (onEdit ? 1 : 0) + (onDelete ? 1 : 0) + additionalActions.length;
+                                // Get additional actions (support both array and function)
+                                const currentAdditionalActions = typeof additionalActions === 'function' 
+                                  ? additionalActions(item) 
+                                  : additionalActions;
+                                
+                                const totalDirectButtons = (onEdit ? 1 : 0) + (onDelete ? 1 : 0) + currentAdditionalActions.length;
                                 const maxDirectButtons = 2;
                                 const showDirectly = totalDirectButtons <= maxDirectButtons;
                                 
                                 if (showDirectly) {
                                   // Show all additional actions directly
-                                  return additionalActions.map((action, idx) => (
+                                  return currentAdditionalActions.map((action, idx) => (
                                     <Button
                                       key={idx}
                                       variant={action.variant || "secondaryOutline"}
@@ -254,7 +347,10 @@ const CollapsibleTable = ({
                                       onClick={(e) => handleAdditionalAction(e, action, item)}
                                       className="!w-auto"
                                     >
-                                      {action.icon && <action.icon className="h-4 w-4 mr-2" />}
+                                      {action.icon && (() => {
+                                        const ActionIconComponent = getIconComponent(action.icon);
+                                        return <ActionIconComponent className="h-4 w-4 mr-2" />;
+                                      })()}
                                       {action.label}
                                     </Button>
                                   ));
@@ -262,7 +358,7 @@ const CollapsibleTable = ({
                                   // Show first 2 additional actions + 3-dots for rest
                                   return (
                                     <>
-                                      {additionalActions.slice(0, 2 - (onEdit ? 1 : 0) - (onDelete ? 1 : 0)).map((action, idx) => (
+                                      {currentAdditionalActions.slice(0, 2 - (onEdit ? 1 : 0) - (onDelete ? 1 : 0)).map((action, idx) => (
                                         <Button
                                           key={idx}
                                           variant={action.variant || "secondaryOutline"}
@@ -270,44 +366,23 @@ const CollapsibleTable = ({
                                           onClick={(e) => handleAdditionalAction(e, action, item)}
                                           className="!w-auto"
                                         >
-                                          {action.icon && <action.icon className="h-4 w-4 mr-2" />}
+                                          {action.icon && (() => {
+                                            const ActionIconComponent = getIconComponent(action.icon);
+                                            return <ActionIconComponent className="h-4 w-4 mr-2" />;
+                                          })()}
                                           {action.label}
                                         </Button>
                                       ))}
                                       
                                       {/* 3-dots button for remaining actions */}
-                                      <div className="relative">
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={(e) => handleActionsModal(e, item)}
-                                          className="!w-auto"
-                                        >
-                                          <EllipsisVerticalIcon className="h-4 w-4" />
-                                        </Button>
-                                        
-                                        {/* Actions Modal */}
-                                        {showActionsModal && (
-                                          <div className="absolute right-0 z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[200px]">
-                                            <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-200">
-                                              Additional Actions
-                                            </div>
-                                            {additionalActions.slice(2 - (onEdit ? 1 : 0) - (onDelete ? 1 : 0)).map((action, idx) => (
-                                              <button
-                                                key={idx}
-                                                onClick={(e) => {
-                                                  handleAdditionalAction(e, action, item);
-                                                  closeActionsModal();
-                                                }}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                                              >
-                                                {action.icon && <action.icon className="h-4 w-4" />}
-                                                <span>{action.label}</span>
-                                              </button>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => handleActionsModal(e, item)}
+                                        className="!w-auto dropdown-button"
+                                      >
+                                        <EllipsisVerticalIcon className="h-4 w-4" />
+                                      </Button>
                                     </>
                                   );
                                 }
@@ -388,6 +463,49 @@ const CollapsibleTable = ({
           </div>
         </div>
       )}
+
+      {/* Floating Dropdown Portal */}
+      {Object.keys(dropdownPosition).map(rowId => {
+        const position = dropdownPosition[rowId];
+        const item = data.find((item, index) => (item.id || index) === rowId);
+        if (!item || !showActionsModal.has(rowId)) return null;
+
+        const currentAdditionalActions = typeof additionalActions === 'function' 
+          ? additionalActions(item) 
+          : additionalActions;
+
+        return createPortal(
+          <div 
+            className="floating-dropdown fixed z-[9999] bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[200px]"
+            style={{
+              top: position.top,
+              left: position.left,
+              right: position.right
+            }}
+          >
+            <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-200">
+              Additional Actions
+            </div>
+            {currentAdditionalActions.slice(2 - (onEdit ? 1 : 0) - (onDelete ? 1 : 0)).map((action, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => {
+                  handleAdditionalAction(e, action, item);
+                  closeActionsModal(item);
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+              >
+                {action.icon && (() => {
+                  const ActionIconComponent = getIconComponent(action.icon);
+                  return <ActionIconComponent className="h-4 w-4" />;
+                })()}
+                <span>{action.label}</span>
+              </button>
+            ))}
+          </div>,
+          document.body
+        );
+      })}
     </div>
   );
 };

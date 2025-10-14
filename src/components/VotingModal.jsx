@@ -228,12 +228,26 @@ const VotingModal = ({ isOpen, onClose }) => {
 
     // Reload candidates with updated vote counts
     loadCandidates();
+    
+    // Dispatch custom event to notify other pages of vote update
+    window.dispatchEvent(new CustomEvent('votesUpdated'));
 
     setShowConfirmationModal(false);
     setShowSuccessModal(true);
     
     // Show success toast
     toast.success('Your vote has been submitted successfully!');
+  };
+
+  const handleSuccessConfirm = () => {
+    // Close success modal and voting form modal
+    setShowSuccessModal(false);
+    setShowVoteModal(false);
+    // Reset form for next vote
+    setVoterInfo({ name: '', email: '' });
+    setSelectedCandidates({ male: null, female: null });
+    setVotingComplete(false);
+    // Main VotingModal stays open for continued candidate selection
   };
 
   // const handleVoterInfoChange = (field, value) => {
@@ -624,11 +638,11 @@ const VotingModal = ({ isOpen, onClose }) => {
       {/* Success Modal */}
       <ConfirmationModal
         isOpen={showSuccessModal}
-        onClose={handleClose}
-        onConfirm={handleClose}
+        onClose={handleSuccessConfirm}
+        onConfirm={handleSuccessConfirm}
         title="Vote Submitted Successfully!"
-        message="Thank you for participating in the voting process. Your vote has been recorded."
-        confirmLabel="Confirm"
+        message="Thank you for participating in the voting process. Your vote has been recorded. You can continue voting or close the modal."
+        confirmLabel="Continue Voting"
         icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
         variant="success"
         showCancelButton={false}

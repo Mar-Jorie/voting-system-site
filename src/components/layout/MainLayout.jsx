@@ -52,7 +52,7 @@ const MainLayout = ({ children }) => {
 
           {/* Main Content - Scrollable area */}
           <main className="flex-1 overflow-y-auto scrollbar-hide">
-            <div className="w-full max-w-full overflow-x-hidden p-6">
+            <div className="w-full max-w-full overflow-x-hidden p-4">
               {children}
             </div>
           </main>

@@ -27,6 +27,7 @@ const UsersPage = () => {
     status: '',
     role: ''
   });
+  const [selectedRows, setSelectedRows] = useState(new Set());
 
   // Hooks
   const { user: currentUser } = useApp();
@@ -38,11 +39,10 @@ const UsersPage = () => {
     { value: 'moderator', label: 'Moderator' }
   ];
 
-  // Status options
+  // Status options - Only active and inactive
   const statusOptions = [
     { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'suspended', label: 'Suspended' }
+    { value: 'inactive', label: 'Inactive' }
   ];
 
   // Form fields configuration
@@ -286,8 +286,6 @@ const UsersPage = () => {
         return 'bg-green-100 text-green-800';
       case 'inactive':
         return 'bg-gray-100 text-gray-800';
-      case 'suspended':
-        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -319,25 +317,82 @@ const UsersPage = () => {
     return initials || 'U';
   };
 
+  // Selection management
+  const handleSelectionChange = (newSelectedRows) => {
+    setSelectedRows(newSelectedRows);
+  };
+
+  // Bulk actions
+  const handleBulkExport = () => {
+    const selectedUsers = filteredUsers.filter((_, index) => selectedRows.has(index));
+    if (selectedUsers.length === 0) {
+      toast.error('No users selected for export');
+      return;
+    }
+    toast.success(`Exporting ${selectedUsers.length} users...`);
+    // TODO: Implement actual export functionality
+  };
+
+  const handleBulkDelete = () => {
+    const selectedUsers = filteredUsers.filter((_, index) => selectedRows.has(index));
+    if (selectedUsers.length === 0) {
+      toast.error('No users selected for deletion');
+      return;
+    }
+    // TODO: Implement bulk delete confirmation modal
+    toast.success(`Deleting ${selectedUsers.length} users...`);
+  };
+
+  const handleBulkStatusToggle = () => {
+    const selectedUsers = filteredUsers.filter((_, index) => selectedRows.has(index));
+    if (selectedUsers.length === 0) {
+      toast.error('No users selected for status change');
+      return;
+    }
+    
+    // Determine new status based on first selected user
+    const firstUser = selectedUsers[0];
+    const newStatus = firstUser.status === 'active' ? 'inactive' : 'active';
+    
+    // Update all selected users
+    const updatedUsers = users.map(user => {
+      if (selectedUsers.some(selected => selected.id === user.id)) {
+        return { ...user, status: newStatus, updatedAt: new Date().toISOString() };
+      }
+      return user;
+    });
+    
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    setUsers(updatedUsers);
+    setSelectedRows(new Set());
+    toast.success(`Updated ${selectedUsers.length} users to ${newStatus}`);
+  };
+
+  // Individual user status toggle
+  const handleUserStatusToggle = (user) => {
+    const newStatus = user.status === 'active' ? 'inactive' : 'active';
+    const updatedUsers = users.map(u => 
+      u.id === user.id 
+        ? { ...u, status: newStatus, updatedAt: new Date().toISOString() }
+        : u
+    );
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    setUsers(updatedUsers);
+    toast.success(`User status updated to ${newStatus}`);
+  };
+
   // Table columns configuration
   const columns = [
     {
       key: 'firstName',
       label: 'User',
       render: (value, user) => (
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-            <span className="text-sm font-medium text-primary-700">
-              {getUserInitials(user)}
-            </span>
+        <div className="text-center">
+          <div className="text-sm font-medium text-gray-900">
+            {getUserDisplayName(user)}
           </div>
-          <div>
-            <div className="text-sm font-medium text-gray-900">
-              {getUserDisplayName(user)}
-            </div>
-            <div className="text-sm text-gray-500">
-              {user.email}
-            </div>
+          <div className="text-sm text-gray-500">
+            {user.email}
           </div>
         </div>
       )
@@ -415,6 +470,9 @@ const UsersPage = () => {
           searchable={true}
           pagination={true}
           itemsPerPage={10}
+          enableSelection={true}
+          selectedRows={selectedRows}
+          onSelectionChange={handleSelectionChange}
           expandableContent={(user) => (
             <div className="space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -437,8 +495,13 @@ const UsersPage = () => {
               </div>
             </div>
           )}
-          additionalActions={[
-            { label: 'View Details', icon: 'EyeIcon', variant: 'secondaryOutline' }
+          additionalActions={(user) => [
+            { 
+              label: user.status === 'active' ? 'Set Inactive' : 'Set Active', 
+              icon: user.status === 'active' ? 'CheckCircleIcon' : 'CheckCircleIcon', 
+              variant: user.status === 'active' ? 'warning' : 'success',
+              action: handleUserStatusToggle
+            }
           ]}
           searchPlaceholder="Search users..."
           emptyMessage="No users found"
@@ -472,10 +535,16 @@ const UsersPage = () => {
 
       {/* Floating Action Button */}
       <SmartFloatingActionButton 
-        variant="single"
-        icon="PlusIcon"
-        label="Add new user"
+        variant="dots"
+        icon="EllipsisVerticalIcon"
+        label="Toggle quick actions"
         action={handleAddUser}
+        selectedCount={selectedRows.size}
+        bulkActions={[
+          { name: 'Export Selected', icon: 'ArrowDownTrayIcon', action: handleBulkExport, color: 'bg-blue-600' },
+          { name: 'Delete Selected', icon: 'TrashIcon', action: handleBulkDelete, color: 'bg-red-600' },
+          { name: 'Toggle Status', icon: 'CheckCircleIcon', action: handleBulkStatusToggle, color: 'bg-orange-600' }
+        ]}
         quickActions={[
           { name: 'Add User', icon: 'PlusIcon', action: handleAddUser, color: 'bg-primary-600' },
           { name: 'Import Users', icon: 'ArrowUpTrayIcon', action: () => toast.info('Import feature coming soon'), color: 'bg-green-600' },

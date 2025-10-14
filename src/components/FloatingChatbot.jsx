@@ -15,7 +15,7 @@ const FloatingChatbot = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: 'Hello! I\'m your Voting System assistant. I have full knowledge about our voting system. How can I help you today?',
+      text: 'Hello! I\'m your Corporate Party 2025 Outstanding Guest Awards assistant. I can help you with voting procedures, viewing results, event information, and answer any questions about our voting system. How can I help you today?',
       isBot: true,
       timestamp: new Date(),
       sender: 'Voting System assistant'
@@ -23,13 +23,55 @@ const FloatingChatbot = () => {
   ]);
 
   const quickQuestions = [
-    'How do I vote for candidates?',
-    'What are the voting categories?',
-    'How does the voting system work?'
+    'How do I vote for outstanding guests?',
+    'What are the male and female categories?',
+    'When is the Corporate Party 2025 event?',
+    'How do I view the voting results?',
+    'Is my vote secure and private?',
+    'Can I change my vote after submitting?'
   ];
 
   const handleQuickQuestion = (question) => {
     setMessage(question);
+  };
+
+  const getBotResponse = (userMessage) => {
+    const message = userMessage.toLowerCase();
+    
+    if (message.includes('how do i vote') || message.includes('vote for outstanding guests')) {
+      return 'To vote for outstanding guests, click the "Cast Vote" or "Start Voting" button on the page. You\'ll need to select one male and one female guest who made the biggest impact at our Corporate Party 2025 event. Don\'t forget to provide your email address to submit your vote!';
+    }
+    
+    if (message.includes('male and female categories') || message.includes('categories')) {
+      return 'Our voting system has two categories: Male Outstanding Guest and Female Outstanding Guest. You must select one candidate from each category to complete your vote. This ensures we recognize outstanding guests from both categories fairly.';
+    }
+    
+    if (message.includes('when is the corporate party') || message.includes('event date')) {
+      return 'The Corporate Party 2025 Outstanding Guest Awards event is scheduled for October 18, 2025 at ICCT Main Campus. This voting system allows you to select the guests who made the biggest impact during this special celebration.';
+    }
+    
+    if (message.includes('view results') || message.includes('voting results')) {
+      return 'You can view the current voting results in real-time on the landing page! Scroll down to the "Current Voting Results" section to see live vote counts, winners, and detailed statistics for both male and female categories.';
+    }
+    
+    if (message.includes('secure') || message.includes('private')) {
+      return 'Yes, your vote is completely secure and private! We use advanced security measures and one-vote-per-email validation to ensure the integrity of the voting process. Your personal information is protected and your vote remains confidential.';
+    }
+    
+    if (message.includes('change my vote') || message.includes('modify vote')) {
+      return 'Unfortunately, you cannot change your vote once it has been submitted. This ensures the fairness and integrity of the voting process. Please make sure you\'re satisfied with your selections before clicking submit.';
+    }
+    
+    if (message.includes('outstanding guest') || message.includes('award')) {
+      return 'The Outstanding Guest Awards recognize guests who made the biggest impact during our Corporate Party 2025 celebration on October 18, 2025 at ICCT Main Campus. You can vote for one male and one female guest who you believe deserve this recognition.';
+    }
+    
+    if (message.includes('help') || message.includes('support')) {
+      return 'I\'m here to help you with the Corporate Party 2025 Outstanding Guest Awards voting system! You can ask me about how to vote, view results, event details, or any other questions about the voting process.';
+    }
+    
+    // Default response
+    return 'Thank you for your question about the Corporate Party 2025 Outstanding Guest Awards voting system! I can help you with voting procedures, viewing results, event information, and more. Feel free to ask me anything!';
   };
 
   const handleSendMessage = (e) => {
@@ -47,11 +89,12 @@ const FloatingChatbot = () => {
 
     setMessages(prev => [...prev, userMessage]);
 
-    // Simulate bot response
+    // Generate bot response
     setTimeout(() => {
+      const responseText = getBotResponse(message);
       const botResponse = {
         id: messages.length + 2,
-        text: 'Thank you for your question! This is a demo response. In a real implementation, this would connect to an AI assistant.',
+        text: responseText,
         isBot: true,
         timestamp: new Date(),
         sender: 'Voting System assistant'

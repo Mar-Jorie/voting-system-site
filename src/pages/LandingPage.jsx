@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Bars3Icon, UserIcon, ChartBarIcon, ShieldCheckIcon, ClockIcon, TrophyIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button';
@@ -8,12 +8,26 @@ import VotingModal from '../components/VotingModal';
 const LandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showVotingModal, setShowVotingModal] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  // Voting data functions
+  useEffect(() => {
+    // Listen for vote updates
+    const handleVotesUpdated = () => {
+      setRefreshTrigger(prev => prev + 1);
+    };
+    
+    window.addEventListener('votesUpdated', handleVotesUpdated);
+    
+    return () => {
+      window.removeEventListener('votesUpdated', handleVotesUpdated);
+    };
+  }, []);
+
+  // Voting data functions (reactive to refreshTrigger)
   const getTotalVotes = () => {
     const votes = JSON.parse(localStorage.getItem('votes') || '[]');
     return votes.length;
@@ -24,7 +38,7 @@ const LandingPage = () => {
     const votes = JSON.parse(localStorage.getItem('votes') || '[]');
     return candidates.filter(c => c.category === 'male').map(candidate => {
       const candidateVotes = votes.filter(vote => 
-        vote.maleCandidateId === candidate.id || vote.femaleCandidateId === candidate.id
+        vote.maleCandidateId === candidate.id
       ).length;
       return { ...candidate, votes: candidateVotes };
     });
@@ -35,7 +49,7 @@ const LandingPage = () => {
     const votes = JSON.parse(localStorage.getItem('votes') || '[]');
     return candidates.filter(c => c.category === 'female').map(candidate => {
       const candidateVotes = votes.filter(vote => 
-        vote.maleCandidateId === candidate.id || vote.femaleCandidateId === candidate.id
+        vote.femaleCandidateId === candidate.id
       ).length;
       return { ...candidate, votes: candidateVotes };
     });
@@ -71,12 +85,12 @@ const LandingPage = () => {
               <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Voting System</span>
             </div>
             
-            {/* Navigation Links - Hidden on Mobile */}
-            <div className="hidden md:flex items-center space-x-10">
-              <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Features</a>
-              <a href="#how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">How It Works</a>
-              <a href="#results" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Results</a>
-            </div>
+        {/* Navigation Links - Hidden on Mobile */}
+        <div className="hidden md:flex items-center space-x-10">
+          <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Features</a>
+          <a href="#how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">How It Works</a>
+          <a href="#results" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Results</a>
+        </div>
             
             {/* Mobile Hamburger Menu - Right Corner */}
             <div className="md:hidden">
@@ -109,7 +123,7 @@ const LandingPage = () => {
                 <div className="space-y-3">
                   <a href="#features" className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Features</a>
                   <a href="#how-it-works" className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">How It Works</a>
-                  <a href="#results" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Results</a>
+                  <a href="#results" className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Results</a>
                 </div>
                 
                 {/* Mobile CTA Buttons */}
@@ -474,6 +488,7 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+
 
       {/* CTA Section */}
       <section className="py-8 sm:py-10 px-4 sm:px-6 bg-gradient-to-r from-primary-400 to-indigo-600 opacity-90">

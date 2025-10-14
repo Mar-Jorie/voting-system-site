@@ -1,6 +1,6 @@
 // Candidates Page - MANDATORY PATTERN
 import React, { useState, useEffect } from 'react';
-import { PencilIcon, TrashIcon, EyeIcon, PlusIcon, UserIcon, EllipsisVerticalIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, EyeIcon, PlusIcon, UserIcon, EllipsisVerticalIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button';
 import FormModal from '../components/FormModal';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -16,6 +16,8 @@ const CandidatesPage = () => {
   const [loading, _setLoading] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState(null);
   const [deletingCandidate, setDeletingCandidate] = useState(null);
   const [formData, setFormData] = useState({
@@ -35,6 +37,17 @@ const CandidatesPage = () => {
 
   useEffect(() => {
     loadCandidates();
+    
+    // Listen for vote updates
+    const handleVotesUpdated = () => {
+      loadCandidates();
+    };
+    
+    window.addEventListener('votesUpdated', handleVotesUpdated);
+    
+    return () => {
+      window.removeEventListener('votesUpdated', handleVotesUpdated);
+    };
   }, []);
 
   // Filter candidates based on search and filters
@@ -59,8 +72,27 @@ const CandidatesPage = () => {
 
   const loadCandidates = () => {
     const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-    setCandidates(storedCandidates);
-    setFilteredCandidates(storedCandidates);
+    const storedVotes = JSON.parse(localStorage.getItem('votes') || '[]');
+    
+    // Calculate vote counts for each candidate
+    const candidatesWithVotes = storedCandidates.map(candidate => {
+      const voteCount = storedVotes.filter(vote => {
+        if (candidate.category === 'male') {
+          return vote.maleCandidateId === candidate.id;
+        } else if (candidate.category === 'female') {
+          return vote.femaleCandidateId === candidate.id;
+        }
+        return false;
+      }).length;
+      
+      return {
+        ...candidate,
+        votes: voteCount
+      };
+    });
+    
+    setCandidates(candidatesWithVotes);
+    setFilteredCandidates(candidatesWithVotes);
   };
 
   const handleAddCandidate = () => {
@@ -215,32 +247,138 @@ const CandidatesPage = () => {
   // Bulk action handlers
   const handleBulkDelete = () => {
     if (selectedCandidates.size === 0) return;
-    
+    setShowBulkDeleteModal(true);
+  };
+
+  const confirmBulkDelete = () => {
     const candidatesToDelete = filteredCandidates.filter(c => selectedCandidates.has(c.id));
-    const candidateNames = candidatesToDelete.map(c => c.name).join(', ');
-    
-    if (window.confirm(`Are you sure you want to delete ${candidatesToDelete.length} candidate(s): ${candidateNames}?`)) {
-      const updatedCandidates = candidates.filter(c => !selectedCandidates.has(c.id));
-      setCandidates(updatedCandidates);
-      localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
-      setSelectedCandidates(new Set());
-      toast.success(`${candidatesToDelete.length} candidate(s) deleted successfully`);
-    }
+    const updatedCandidates = candidates.filter(c => !selectedCandidates.has(c.id));
+    setCandidates(updatedCandidates);
+    localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
+    setSelectedCandidates(new Set());
+    setShowBulkDeleteModal(false);
+    toast.success(`${candidatesToDelete.length} candidate(s) deleted successfully`);
   };
 
   const handleBulkExport = () => {
     if (selectedCandidates.size === 0) return;
-    
+    setShowExportModal(true);
+  };
+
+
+  const exportAsCSV = () => {
     const candidatesToExport = filteredCandidates.filter(c => selectedCandidates.has(c.id));
-    const dataStr = JSON.stringify(candidatesToExport, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const csvHeaders = ['Name', 'Category', 'Description', 'Votes'];
+    const csvData = candidatesToExport.map(candidate => [
+      candidate.name,
+      candidate.category,
+      candidate.description || '',
+      candidate.votes || 0
+    ]);
+    
+    const csvContent = [csvHeaders, ...csvData]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+    
+    const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `candidates-export-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `candidates-export-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success(`${candidatesToExport.length} candidate(s) exported successfully`);
+    setShowExportModal(false);
+    toast.success(`${candidatesToExport.length} candidate(s) exported as CSV successfully`);
+  };
+
+  const exportAsPDF = () => {
+    const candidatesToExport = filteredCandidates.filter(c => selectedCandidates.has(c.id));
+    
+    // Create a print-specific stylesheet
+    const printStyles = document.createElement('style');
+    printStyles.textContent = `
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .print-content, .print-content * {
+          visibility: visible;
+        }
+        .print-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        @page {
+          margin: 0.5in;
+          size: A4;
+        }
+      }
+    `;
+    document.head.appendChild(printStyles);
+    
+    // Create print content with table design
+    const printElement = document.createElement('div');
+    printElement.className = 'print-content';
+    printElement.innerHTML = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; background: white;">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #2563eb; padding-bottom: 20px;">
+          <h1 style="color: #2563eb; margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Candidates Export Report</h1>
+          <p style="color: #666; margin: 5px 0; font-size: 14px;">Generated: ${new Date().toLocaleDateString()}</p>
+          <p style="color: #666; margin: 5px 0; font-size: 14px;">Total Candidates: ${candidatesToExport.length}</p>
+        </div>
+        
+        <!-- Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <thead>
+            <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">#</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Name</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Category</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Description</th>
+              <th style="padding: 12px; text-align: center; font-weight: bold; color: #374151;">Votes</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${candidatesToExport.map((candidate, index) => `
+              <tr style="border-bottom: 1px solid #e2e8f0; ${index % 2 === 0 ? 'background-color: #ffffff;' : 'background-color: #f9fafb;'}">
+                <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0; font-weight: 500;">${index + 1}</td>
+                <td style="padding: 12px; color: #111827; border-right: 1px solid #e2e8f0; font-weight: 600;">${candidate.name}</td>
+                <td style="padding: 12px; color: #374151; border-right: 1px solid #e2e8f0;">
+                  <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; text-transform: capitalize; ${candidate.category === 'male' ? 'background-color: #dbeafe; color: #1e40af;' : 'background-color: #fce7f3; color: #be185d;'}">
+                    ${candidate.category}
+                  </span>
+                </td>
+                <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0; max-width: 200px; word-wrap: break-word;">${candidate.description || 'N/A'}</td>
+                <td style="padding: 12px; text-align: center; color: #2563eb; font-weight: bold; font-size: 16px;">${candidate.votes || 0}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <!-- Footer -->
+        <div style="margin-top: 30px; text-align: center; color: #9ca3af; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+          <p>This report was generated from the Voting System Admin Panel</p>
+        </div>
+      </div>
+    `;
+    
+    // Add to document
+    document.body.appendChild(printElement);
+    
+    // Trigger print dialog
+    window.print();
+    
+    // Clean up after printing
+    setTimeout(() => {
+      document.body.removeChild(printElement);
+      document.head.removeChild(printStyles);
+    }, 100);
+    
+    setShowExportModal(false);
+    toast.success(`${candidatesToExport.length} candidate(s) ready for printing`);
   };
 
   const categoryOptions = [
@@ -251,7 +389,7 @@ const CandidatesPage = () => {
   return (
     <div>
       {/* Page Header */}
-      <div className="mb-8">
+      <div className="mb-4">
         <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
           Candidates Management
         </h1>
@@ -261,7 +399,7 @@ const CandidatesPage = () => {
       </div>
 
       {/* Search and Filter */}
-      <div className="mb-6">
+      <div className="mb-4">
         <SearchFilter
           placeholder="Search candidates..."
           value={searchValue}
@@ -277,7 +415,7 @@ const CandidatesPage = () => {
 
       {/* Selection Header */}
       {filteredCandidates.length > 0 && (
-        <div className="mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+        <div className="mb-4 p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <label className="flex items-center space-x-2">
@@ -295,29 +433,14 @@ const CandidatesPage = () => {
                 </span>
               </label>
             </div>
-            {selectedCandidates.size > 0 && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">
-                  {selectedCandidates.size} selected
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearSelection}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  Clear
-                </Button>
-              </div>
-            )}
           </div>
         </div>
       )}
 
       {/* Male Candidates */}
       {getCandidatesByCategory('male').length > 0 && (
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Male Candidates</h2>
+        <div className="p-4">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Male Candidates</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {getCandidatesByCategory('male').map((candidate) => {
               const images = getCandidateImages(candidate);
@@ -328,7 +451,7 @@ const CandidatesPage = () => {
               return (
                 <div 
                   key={candidate.id} 
-                  className={`relative bg-white border-2 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                  className={`relative border-2 rounded-xl overflow-hidden transition-all duration-200 cursor-pointer ${
                     isSelected ? 'border-primary-500 ring-2 ring-primary-200' : 'border-gray-200 hover:border-gray-300'
                   }`}
                   onClick={() => handleCandidateSelect(candidate.id)}
@@ -446,8 +569,8 @@ const CandidatesPage = () => {
 
       {/* Female Candidates */}
       {getCandidatesByCategory('female').length > 0 && (
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Female Candidates</h2>
+        <div className="p-4">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Female Candidates</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {getCandidatesByCategory('female').map((candidate) => {
               const images = getCandidateImages(candidate);
@@ -458,7 +581,7 @@ const CandidatesPage = () => {
               return (
                 <div 
                   key={candidate.id} 
-                  className={`relative bg-white border-2 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                  className={`relative border-2 rounded-xl overflow-hidden transition-all duration-200 cursor-pointer ${
                     isSelected ? 'border-primary-500 ring-2 ring-primary-200' : 'border-gray-200 hover:border-gray-300'
                   }`}
                   onClick={() => handleCandidateSelect(candidate.id)}
@@ -576,7 +699,7 @@ const CandidatesPage = () => {
 
       {/* No candidates found */}
       {filteredCandidates.length === 0 && (
-        <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-100 text-center">
+        <div className="p-6 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <UserIcon className="h-8 w-8 text-gray-400" />
           </div>
@@ -660,16 +783,82 @@ const CandidatesPage = () => {
         variant="danger"
       />
 
+      {/* Bulk Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showBulkDeleteModal}
+        onClose={() => setShowBulkDeleteModal(false)}
+        onConfirm={confirmBulkDelete}
+        title="Delete Selected Candidates"
+        message={`Are you sure you want to delete ${selectedCandidates.size} selected candidate(s)? This action cannot be undone.`}
+        confirmLabel="Delete All"
+        cancelLabel="Cancel"
+        icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
+        variant="danger"
+      />
+
+      {/* Export Options Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={() => setShowExportModal(false)}></div>
+            
+            {/* Modal Content */}
+            <div className="relative z-50 w-full max-w-md p-6 overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Export Selected Candidates</h3>
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+              
+              {/* Content */}
+              <div className="mb-6">
+                <p className="text-sm text-gray-600 mb-4">
+                  Choose export format for {selectedCandidates.size} selected candidate(s):
+                </p>
+                
+                <div className="space-y-3">
+                  <Button
+                    variant="primaryOutline"
+                    size="md"
+                    onClick={exportAsCSV}
+                    className="w-full"
+                  >
+                    Export as CSV
+                  </Button>
+                  <Button
+                    variant="secondaryOutline"
+                    size="md"
+                    onClick={exportAsPDF}
+                    className="w-full"
+                  >
+                    Export as PDF
+                  </Button>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Floating Action Button */}
       <SmartFloatingActionButton 
-        variant={selectedCandidates.size > 0 ? "dots" : "single"}
-        icon={selectedCandidates.size > 0 ? "EllipsisVerticalIcon" : "PlusIcon"}
-        label={selectedCandidates.size > 0 ? "Toggle bulk actions" : "Add new candidate"}
-        action={selectedCandidates.size > 0 ? undefined : handleAddCandidate}
-        quickActions={selectedCandidates.size > 0 ? [
+        variant="dots"
+        icon="EllipsisVerticalIcon"
+        label="Toggle quick actions"
+        action={handleAddCandidate}
+        selectedCount={selectedCandidates.size}
+        bulkActions={[
           { name: 'Delete Selected', icon: 'TrashIcon', action: handleBulkDelete, color: 'bg-red-600' },
           { name: 'Export Selected', icon: 'ArrowDownTrayIcon', action: handleBulkExport, color: 'bg-blue-600' }
-        ] : [
+        ]}
+        quickActions={[
           { name: 'Add Candidate', icon: 'PlusIcon', action: handleAddCandidate, color: 'bg-primary-600' },
           { name: 'Import Candidates', icon: 'ArrowUpTrayIcon', action: () => console.log('Import candidates'), color: 'bg-green-600' },
           { name: 'Export All Candidates', icon: 'ArrowDownTrayIcon', action: handleBulkExport, color: 'bg-blue-600' }

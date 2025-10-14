@@ -38,7 +38,11 @@ const SearchFilter = ({
     onFilterChange && onFilterChange(filterKey, filterValue);
   };
 
-  const applyFilters = () => {
+  const clearFilters = () => {
+    // Clear all filters
+    Object.keys(filters).forEach(key => {
+      handleFilterChange(key, '');
+    });
     setIsFilterPanelOpen(false);
   };
 
@@ -163,10 +167,10 @@ const SearchFilter = ({
           {/* Filter Actions */}
           <div className="p-4 sm:p-6 border-t border-gray-200 flex-shrink-0">
             <button
-              onClick={applyFilters}
+              onClick={clearFilters}
               className="w-full bg-primary-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-primary-700 transition-colors"
             >
-              Apply Filters
+              Clear
             </button>
           </div>
         </div>

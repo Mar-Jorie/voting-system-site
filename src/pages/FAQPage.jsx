@@ -1,6 +1,6 @@
 // FAQ Management Page - MANDATORY PATTERN
 import React, { useState, useEffect } from 'react';
-import { PencilIcon, TrashIcon, PlusIcon, QuestionMarkCircleIcon, EllipsisVerticalIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, PlusIcon, QuestionMarkCircleIcon, EllipsisVerticalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button';
 import FormModal from '../components/FormModal';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -21,9 +21,14 @@ const FAQPage = () => {
   // Modal states
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [editingFaq, setEditingFaq] = useState(null);
   const [deletingFaq, setDeletingFaq] = useState(null);
   const [formData, setFormData] = useState({});
+  
+  // Selection state
+  const [selectedFaqs, setSelectedFaqs] = useState(new Set());
 
   useEffect(() => {
     loadFAQs();
@@ -167,6 +172,152 @@ const FAQPage = () => {
     }));
   };
 
+  // Selection handlers
+  const handleSelectionChange = (newSelectedFaqs) => {
+    setSelectedFaqs(newSelectedFaqs);
+  };
+
+  // Bulk action handlers
+  const handleBulkDelete = () => {
+    if (selectedFaqs.size === 0) return;
+    setShowBulkDeleteModal(true);
+  };
+
+  const handleBulkDeleteConfirm = () => {
+    try {
+      const faqsToDelete = filteredFaqs.filter(faq => selectedFaqs.has(faq.id));
+      const updatedFAQs = faqs.filter(faq => !selectedFaqs.has(faq.id));
+      saveFAQs(updatedFAQs);
+      setSelectedFaqs(new Set());
+      setShowBulkDeleteModal(false);
+      toast.success(`${faqsToDelete.length} FAQ(s) deleted successfully`);
+    } catch (error) {
+      console.error('Error deleting FAQs:', error);
+      toast.error('Failed to delete FAQs');
+    }
+  };
+
+  const handleBulkExport = () => {
+    if (selectedFaqs.size === 0) return;
+    setShowExportModal(true);
+  };
+
+  const exportAsCSV = () => {
+    const faqsToExport = filteredFaqs.filter(faq => selectedFaqs.has(faq.id));
+    
+    // Create CSV headers
+    const headers = ['Question', 'Answer', 'Category', 'Last Updated'];
+    
+    // Create CSV rows
+    const csvRows = [
+      headers.join(','),
+      ...faqsToExport.map(faq => [
+        `"${faq.question.replace(/"/g, '""')}"`,
+        `"${faq.answer.replace(/"/g, '""')}"`,
+        `"${faq.category}"`,
+        `"${new Date(faq.lastUpdated).toLocaleDateString()}"`
+      ].join(','))
+    ];
+    
+    const csvContent = csvRows.join('\n');
+    const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `faqs-export-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setShowExportModal(false);
+    toast.success(`${faqsToExport.length} FAQ(s) exported as CSV successfully`);
+  };
+
+  const exportAsPDF = () => {
+    const faqsToExport = filteredFaqs.filter(faq => selectedFaqs.has(faq.id));
+    
+    // Close the export modal first
+    setShowExportModal(false);
+    
+    // Add print styles to hide interface elements
+    const printStyles = document.createElement('style');
+    printStyles.innerHTML = `
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .print-content, .print-content * {
+          visibility: visible;
+        }
+        .print-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        nav, header, .sidebar, .floating-chatbot, .smart-floating-action-button {
+          display: none !important;
+        }
+      }
+    `;
+    document.head.appendChild(printStyles);
+    
+    // Create print content
+    const printElement = document.createElement('div');
+    printElement.className = 'print-content';
+    printElement.innerHTML = `
+      <div style="font-family: Arial, sans-serif; margin: 20px; background: white; color: black;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #333; margin-bottom: 10px; font-size: 24px;">FAQ Export Report</h1>
+          <p style="color: #666; margin: 5px 0;">Generated: ${new Date().toLocaleDateString()}</p>
+          <p style="color: #666; margin: 5px 0;">Total FAQs: ${faqsToExport.length}</p>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+          <thead>
+            <tr style="background-color: #f8f9fa;">
+              <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left; font-weight: bold; width: 5%;">#</th>
+              <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left; font-weight: bold; width: 25%;">Question</th>
+              <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left; font-weight: bold; width: 50%;">Answer</th>
+              <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left; font-weight: bold; width: 10%;">Category</th>
+              <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left; font-weight: bold; width: 10%;">Last Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${faqsToExport.map((faq, index) => `
+              <tr style="background-color: ${index % 2 === 0 ? '#ffffff' : '#f8f9fa'};">
+                <td style="border: 1px solid #dee2e6; padding: 12px; vertical-align: top;">${index + 1}</td>
+                <td style="border: 1px solid #dee2e6; padding: 12px; vertical-align: top; font-weight: 500;">${faq.question}</td>
+                <td style="border: 1px solid #dee2e6; padding: 12px; vertical-align: top; line-height: 1.4;">${faq.answer}</td>
+                <td style="border: 1px solid #dee2e6; padding: 12px; vertical-align: top;">
+                  <span style="background-color: ${faq.category === 'general' ? '#e9ecef' : faq.category === 'voting' ? '#cce5ff' : faq.category === 'technical' ? '#d4edda' : '#e2e3e5'}; color: ${faq.category === 'general' ? '#495057' : faq.category === 'voting' ? '#004085' : faq.category === 'technical' ? '#155724' : '#6c757d'}; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">
+                    ${faq.category.charAt(0).toUpperCase() + faq.category.slice(1)}
+                  </span>
+                </td>
+                <td style="border: 1px solid #dee2e6; padding: 12px; vertical-align: top; font-size: 12px;">${faq.updatedAt ? new Date(faq.updatedAt).toLocaleDateString() : 'N/A'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d; font-size: 12px;">
+          <p>Generated by Voting System - ${new Date().toLocaleDateString()}</p>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(printElement);
+    
+    // Use setTimeout to ensure the modal closes before printing
+    setTimeout(() => {
+      window.print();
+      
+      // Clean up after printing
+      document.body.removeChild(printElement);
+      document.head.removeChild(printStyles);
+      
+      toast.success(`${faqsToExport.length} FAQ(s) exported as PDF successfully`);
+    }, 100);
+  };
+
   const formatDate = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', {
@@ -183,19 +334,8 @@ const FAQPage = () => {
       key: 'question',
       label: 'Question',
       render: (value) => (
-        <div className="max-w-xs">
-          <p className="font-medium text-gray-900 truncate" title={value}>
-            {value}
-          </p>
-        </div>
-      )
-    },
-    {
-      key: 'answer',
-      label: 'Answer',
-      render: (value) => (
-        <div className="max-w-xs">
-          <p className="text-sm text-gray-600 truncate" title={value}>
+        <div className="text-center">
+          <p className="font-medium text-gray-900" title={value}>
             {value}
           </p>
         </div>
@@ -344,18 +484,25 @@ const FAQPage = () => {
           expandableContent={expandableContent}
           searchPlaceholder="Search FAQs..."
           emptyMessage="No FAQs found"
-          enableSelection={false}
+          enableSelection={true}
+          selectedRows={selectedFaqs}
+          onSelectionChange={handleSelectionChange}
         />
       </div>
 
       {/* Floating Action Button */}
       <SmartFloatingActionButton 
-        variant="single"
-        icon="PlusIcon"
-        label="Add new FAQ"
-        action={handleAddFAQ}
+        variant={selectedFaqs.size > 0 ? "dots" : "single"}
+        icon={selectedFaqs.size > 0 ? "EllipsisVerticalIcon" : "PlusIcon"}
+        label={selectedFaqs.size > 0 ? "Toggle bulk actions" : "Add new FAQ"}
+        action={selectedFaqs.size > 0 ? () => {} : handleAddFAQ}
+        selectedCount={selectedFaqs.size}
         quickActions={[
           { name: 'Add FAQ', icon: 'PlusIcon', action: handleAddFAQ, color: 'bg-primary-600' }
+        ]}
+        bulkActions={[
+          { name: 'Export Selected', icon: 'ArrowDownTrayIcon', action: handleBulkExport, color: 'bg-blue-600' },
+          { name: 'Delete Selected', icon: 'TrashIcon', action: handleBulkDelete, color: 'bg-red-600' }
         ]}
       />
 
@@ -390,6 +537,68 @@ const FAQPage = () => {
         icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
         variant="danger"
       />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showBulkDeleteModal}
+        onClose={() => setShowBulkDeleteModal(false)}
+        onConfirm={handleBulkDeleteConfirm}
+        title="Delete Selected FAQs"
+        message={`Are you sure you want to delete ${selectedFaqs.size} selected FAQ(s)? This action cannot be undone.`}
+        confirmLabel="Delete All"
+        cancelLabel="Cancel"
+        icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
+        variant="danger"
+      />
+
+      {/* Export Options Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={() => setShowExportModal(false)}></div>
+            
+            {/* Modal Content */}
+            <div className="relative z-50 w-full max-w-md p-6 overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Export Selected FAQs</h3>
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="mb-6">
+                <p className="text-sm text-gray-600 mb-4">
+                  Choose export format for {selectedFaqs.size} selected FAQ(s):
+                </p>
+                <div className="space-y-3">
+                  <Button
+                    variant="primaryOutline"
+                    size="md"
+                    onClick={exportAsCSV}
+                    className="w-full"
+                  >
+                    Export as CSV
+                  </Button>
+                  <Button
+                    variant="secondaryOutline"
+                    size="md"
+                    onClick={exportAsPDF}
+                    className="w-full"
+                  >
+                    Export as PDF
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

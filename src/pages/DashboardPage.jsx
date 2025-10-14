@@ -15,6 +15,17 @@ const DashboardPage = () => {
 
   useEffect(() => {
     loadData();
+    
+    // Listen for vote updates
+    const handleVotesUpdated = () => {
+      loadData();
+    };
+    
+    window.addEventListener('votesUpdated', handleVotesUpdated);
+    
+    return () => {
+      window.removeEventListener('votesUpdated', handleVotesUpdated);
+    };
   }, []);
 
   const loadData = () => {
@@ -35,10 +46,15 @@ const DashboardPage = () => {
     });
   };
 
-  const getCandidateVotes = (candidateId) => {
-    return votes.filter(vote => 
-      vote.maleCandidateId === candidateId || vote.femaleCandidateId === candidateId
-    ).length;
+  const getCandidateVotes = (candidateId, category) => {
+    return votes.filter(vote => {
+      if (category === 'male') {
+        return vote.maleCandidateId === candidateId;
+      } else if (category === 'female') {
+        return vote.femaleCandidateId === candidateId;
+      }
+      return false;
+    }).length;
   };
 
   const getTotalVotes = () => {
@@ -48,14 +64,14 @@ const DashboardPage = () => {
   const getMaleCandidates = () => {
     return candidates
       .filter(c => c.category === 'male')
-      .map(c => ({ ...c, voteCount: getCandidateVotes(c.id) }))
+      .map(c => ({ ...c, voteCount: getCandidateVotes(c.id, 'male') }))
       .sort((a, b) => b.voteCount - a.voteCount);
   };
 
   const getFemaleCandidates = () => {
     return candidates
       .filter(c => c.category === 'female')
-      .map(c => ({ ...c, voteCount: getCandidateVotes(c.id) }))
+      .map(c => ({ ...c, voteCount: getCandidateVotes(c.id, 'female') }))
       .sort((a, b) => b.voteCount - a.voteCount);
   };
 
