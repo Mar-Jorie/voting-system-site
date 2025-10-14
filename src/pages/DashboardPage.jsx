@@ -1,6 +1,6 @@
 // Dashboard Page - MANDATORY PATTERN
 import React, { useState, useEffect } from 'react';
-import { ChartBarIcon, CalendarDaysIcon, UserGroupIcon, CheckCircleIcon, TrophyIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, UserGroupIcon, TrophyIcon } from '@heroicons/react/24/outline';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 
 const DashboardPage = () => {
@@ -176,71 +176,6 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* Progress & Timeline */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-3 gap-6">
-          {/* Voting Progress Overview */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Voting Progress</h3>
-              <div className="w-6 h-6 bg-primary-50 rounded-lg flex items-center justify-center">
-                <ChartBarIcon className="h-6 w-6 text-primary-600" />
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Male Category</span>
-                  <span className="text-gray-900">65%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-primary-600 h-2 rounded-full" style={{ width: '65%' }}></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Female Category</span>
-                  <span className="text-gray-900">78%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-600 h-2 rounded-full" style={{ width: '78%' }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-              <div className="w-6 h-6 bg-emerald-50 rounded-lg flex items-center justify-center">
-                <CalendarDaysIcon className="h-6 w-6 text-green-800" />
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">New vote cast for Sarah Johnson</p>
-                  <p className="text-xs text-gray-500">2 minutes ago</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">New vote cast for John Smith</p>
-                  <p className="text-xs text-gray-500">5 minutes ago</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">Voting session started</p>
-                  <p className="text-xs text-gray-500">1 hour ago</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Winners */}
         <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-3 gap-6">
@@ -402,43 +337,36 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Recent Activity */}
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-            <button className="text-primary-600 hover:text-primary-700 text-sm font-medium hover:underline">
-              View All
-            </button>
+            <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+            <div className="w-6 h-6 bg-emerald-50 rounded-lg flex items-center justify-center">
+              <CalendarDaysIcon className="h-6 w-6 text-green-800" />
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 3xl:grid-cols-6 gap-4">
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-              <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center mb-3">
-                <UserGroupIcon className="h-5 w-5 text-primary-600" />
+          <div className="space-y-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-900">New vote cast for Sarah Johnson</p>
+                <p className="text-xs text-gray-500">2 minutes ago</p>
               </div>
-              <h4 className="font-medium text-gray-900 mb-1">Add Candidate</h4>
-              <p className="text-sm text-gray-600">Add new candidate to the voting system</p>
-            </button>
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mb-3">
-                <ChartBarIcon className="h-5 w-5 text-green-600" />
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-900">New vote cast for John Smith</p>
+                <p className="text-xs text-gray-500">5 minutes ago</p>
               </div>
-              <h4 className="font-medium text-gray-900 mb-1">View Results</h4>
-              <p className="text-sm text-gray-600">Check current voting results</p>
-            </button>
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
-                <CalendarDaysIcon className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-900">Voting session started</p>
+                <p className="text-xs text-gray-500">1 hour ago</p>
               </div>
-              <h4 className="font-medium text-gray-900 mb-1">Export Data</h4>
-              <p className="text-sm text-gray-600">Export voting data to CSV</p>
-            </button>
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mb-3">
-                <CheckCircleIcon className="h-5 w-5 text-orange-600" />
-              </div>
-              <h4 className="font-medium text-gray-900 mb-1">End Voting</h4>
-              <p className="text-sm text-gray-600">Close the current voting session</p>
-            </button>
+            </div>
           </div>
         </div>
       </div>
