@@ -1,6 +1,6 @@
 // Users Page - MANDATORY PATTERN
 import React, { useState, useEffect } from 'react';
-import { PencilIcon, TrashIcon, EyeIcon, PlusIcon, UserIcon, EllipsisVerticalIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, EyeIcon, PlusIcon, UserIcon, EllipsisVerticalIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button';
 import FormModal from '../components/FormModal';
 import ConfirmationModal from '../components/ConfirmationModal';
