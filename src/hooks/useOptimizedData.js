@@ -275,11 +275,14 @@ export const useOptimizedCandidatesData = (filters = {}) => {
   // Load candidates with votes
   const loadCandidatesData = useCallback(async () => {
     try {
+      console.log('🔄 Starting to load candidates data...');
       setLoading(true);
       setError(null);
 
       // Load candidates first
+      console.log('📡 Making API call to fetch candidates...');
       const candidatesData = await apiClient.findObjects('candidates', filters);
+      console.log('✅ API call successful, candidates data:', candidatesData);
       setCandidates(candidatesData || []);
 
       // Load votes for vote count calculation
@@ -299,19 +302,26 @@ export const useOptimizedCandidatesData = (filters = {}) => {
       }
 
     } catch (err) {
-      console.error('Error loading candidates data:', err);
+      console.error('❌ Error loading candidates data:', err);
+      console.error('❌ Error type:', typeof err);
+      console.error('❌ Error message:', err.message);
       const errorMessage = err.message || 'Failed to load candidates data';
+      console.log('🔧 Setting error state:', errorMessage);
       setError(errorMessage);
       
       // Show more specific error messages
       if (err.message?.includes('403') || err.message?.includes('Unauthorized')) {
+        console.log('🚫 403/Unauthorized error detected');
         toast.error('API access denied. Please check your credentials.');
       } else if (err.message?.includes('Network') || err.message?.includes('fetch')) {
+        console.log('🌐 Network error detected');
         toast.error('Network error. Please check your connection.');
       } else {
+        console.log('❓ Generic error detected');
         toast.error('Failed to load candidates data');
       }
     } finally {
+      console.log('🏁 Setting loading to false');
       setLoading(false);
     }
   }, [filters]);

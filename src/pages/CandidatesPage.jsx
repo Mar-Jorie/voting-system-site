@@ -493,6 +493,7 @@ const CandidatesPage = () => {
       )}
 
       {/* Progressive Loading with Skeleton */}
+      {console.log('🔍 CandidatesPage render - loading:', loading, 'error:', error)}
       <ProgressiveLoader
         loading={loading}
         error={error}
