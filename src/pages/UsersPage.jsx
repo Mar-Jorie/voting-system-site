@@ -19,6 +19,7 @@ const UsersPage = () => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
   const [formData, setFormData] = useState({});
@@ -330,38 +331,7 @@ const UsersPage = () => {
       toast.error('No users selected for export');
       return;
     }
-    
-    try {
-      // Create CSV content
-      const headers = ['Name', 'Username', 'Email', 'Role', 'Status', 'Created At'];
-      const csvContent = [
-        headers.join(','),
-        ...selectedUsers.map(user => [
-          `"${getUserDisplayName(user)}"`,
-          `"${user.username}"`,
-          `"${user.email}"`,
-          `"${getRoleDisplayName(user.role)}"`,
-          `"${getStatusDisplayName(user.status)}"`,
-          `"${new Date(user.createdAt).toLocaleDateString()}"`
-        ].join(','))
-      ].join('\n');
-
-      // Create and download file
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `users-export-${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success(`Exported ${selectedUsers.length} users successfully`);
-    } catch (error) {
-      console.error('Error exporting users:', error);
-      toast.error('Failed to export users');
-    }
+    setShowExportModal(true);
   };
 
   const handleBulkDelete = () => {
@@ -416,6 +386,111 @@ const UsersPage = () => {
     setUsers(updatedUsers);
     setSelectedRows(new Set());
     toast.success(`Updated ${selectedUsers.length} users to ${newStatus}`);
+  };
+
+  // Export functions
+  const exportAsCSV = () => {
+    const usersToExport = selectedRows.size > 0 
+      ? filteredUsers.filter((user, index) => selectedRows.has(user.id || index))
+      : filteredUsers;
+    
+    try {
+      // Create CSV content
+      const headers = ['Name', 'Username', 'Email', 'Role', 'Status', 'Created At'];
+      const csvContent = [
+        headers.join(','),
+        ...usersToExport.map(user => [
+          `"${getUserDisplayName(user)}"`,
+          `"${user.username}"`,
+          `"${user.email}"`,
+          `"${getRoleDisplayName(user.role)}"`,
+          `"${getStatusDisplayName(user.status)}"`,
+          `"${new Date(user.createdAt).toLocaleDateString()}"`
+        ].join(','))
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `users-export-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setShowExportModal(false);
+      toast.success(`Exported ${usersToExport.length} users as CSV successfully`);
+    } catch (error) {
+      console.error('Error exporting users:', error);
+      toast.error('Failed to export users');
+    }
+  };
+
+  const exportAsPDF = () => {
+    const usersToExport = selectedRows.size > 0 
+      ? filteredUsers.filter((user, index) => selectedRows.has(user.id || index))
+      : filteredUsers;
+    
+    try {
+      // Create a simple HTML table for PDF conversion
+      const tableHTML = `
+        <html>
+          <head>
+            <title>Users Export</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f2f2f2; }
+              h1 { color: #333; }
+            </style>
+          </head>
+          <body>
+            <h1>Users Export - ${new Date().toLocaleDateString()}</h1>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Username</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Created At</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${usersToExport.map(user => `
+                  <tr>
+                    <td>${getUserDisplayName(user)}</td>
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td>${getRoleDisplayName(user.role)}</td>
+                    <td>${getStatusDisplayName(user.status)}</td>
+                    <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </body>
+        </html>
+      `;
+
+      // Create a new window and print
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(tableHTML);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+      
+      setShowExportModal(false);
+      toast.success(`Exported ${usersToExport.length} users as PDF successfully`);
+    } catch (error) {
+      console.error('Error exporting users as PDF:', error);
+      toast.error('Failed to export users as PDF');
+    }
   };
 
   // Individual user status toggle
@@ -616,33 +691,58 @@ const UsersPage = () => {
               toast.error('No users to export');
               return;
             }
-            // Export all filtered users
-            const headers = ['Name', 'Username', 'Email', 'Role', 'Status', 'Created At'];
-            const csvContent = [
-              headers.join(','),
-              ...filteredUsers.map(user => [
-                `"${getUserDisplayName(user)}"`,
-                `"${user.username}"`,
-                `"${user.email}"`,
-                `"${getRoleDisplayName(user.role)}"`,
-                `"${getStatusDisplayName(user.status)}"`,
-                `"${new Date(user.createdAt).toLocaleDateString()}"`
-              ].join(','))
-            ].join('\n');
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `all-users-export-${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            toast.success(`Exported ${filteredUsers.length} users successfully`);
+            setShowExportModal(true);
           }, color: 'bg-blue-600' }
         ]}
       />
+
+      {/* Export Options Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={() => setShowExportModal(false)}></div>
+            
+            {/* Modal Content */}
+            <div className="relative z-50 w-full max-w-md p-6 overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedRows.size > 0 ? 'Export Selected Users' : 'Export All Users'}
+                </h3>
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="mb-6">
+                <p className="text-sm text-gray-600 mb-4">
+                  Choose export format for {selectedRows.size > 0 ? selectedRows.size : filteredUsers.length} user(s):
+                </p>
+                <div className="space-y-3">
+                  <Button
+                    variant="primaryOutline"
+                    size="md"
+                    onClick={exportAsCSV}
+                    className="w-full"
+                  >
+                    Export as CSV
+                  </Button>
+                  <Button
+                    variant="secondaryOutline"
+                    size="md"
+                    onClick={exportAsPDF}
+                    className="w-full"
+                  >
+                    Export as PDF
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
