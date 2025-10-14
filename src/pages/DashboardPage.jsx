@@ -4,7 +4,7 @@ import { CalendarDaysIcon, UserGroupIcon, TrophyIcon, CheckCircleIcon, PlusIcon,
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import Button from '../components/Button';
 import { toast } from 'react-hot-toast';
-import { getVotingStatusInfo, stopVoting, startVoting, setAutoStopDate, formatTimeRemaining, VOTE_STATUS } from '../utils/voteControl';
+import { getVotingStatusInfo, stopVoting, startVoting, setAutoStopDate, formatTimeRemaining, VOTE_STATUS, getResultsVisibility, setResultsVisibility, RESULTS_VISIBILITY } from '../utils/voteControl';
 
 const DashboardPage = () => {
   const [metrics, setMetrics] = useState({
@@ -15,6 +15,7 @@ const DashboardPage = () => {
   });
   const [candidates, setCandidates] = useState([]);
   const [votes, setVotes] = useState([]);
+  const [resultsVisibility, setResultsVisibilityState] = useState(RESULTS_VISIBILITY.HIDDEN);
 
   useEffect(() => {
     loadData();
@@ -44,6 +45,27 @@ const DashboardPage = () => {
     const interval = setInterval(loadVotingStatus, 60000);
     
     return () => clearInterval(interval);
+  }, []);
+
+  // Load results visibility
+  useEffect(() => {
+    const loadResultsVisibility = () => {
+      const visibility = getResultsVisibility();
+      setResultsVisibilityState(visibility);
+    };
+
+    loadResultsVisibility();
+    
+    // Listen for results visibility changes
+    const handleResultsVisibilityChanged = () => {
+      loadResultsVisibility();
+    };
+    
+    window.addEventListener('resultsVisibilityChanged', handleResultsVisibilityChanged);
+    
+    return () => {
+      window.removeEventListener('resultsVisibilityChanged', handleResultsVisibilityChanged);
+    };
   }, []);
 
   const loadData = () => {
@@ -159,6 +181,24 @@ const DashboardPage = () => {
       toast.success(`Auto-stop set for ${stopDateTime.toLocaleString()}`);
     } else {
       toast.error('Failed to set auto-stop date');
+    }
+  };
+
+  const handleShowResults = () => {
+    if (setResultsVisibility(RESULTS_VISIBILITY.PUBLIC)) {
+      setResultsVisibilityState(RESULTS_VISIBILITY.PUBLIC);
+      toast.success('Results are now publicly visible');
+    } else {
+      toast.error('Failed to show results');
+    }
+  };
+
+  const handleHideResults = () => {
+    if (setResultsVisibility(RESULTS_VISIBILITY.HIDDEN)) {
+      setResultsVisibilityState(RESULTS_VISIBILITY.HIDDEN);
+      toast.success('Results are now hidden from public view');
+    } else {
+      toast.error('Failed to hide results');
     }
   };
 
@@ -629,6 +669,56 @@ const DashboardPage = () => {
             </div>
           </div>
         )}
+
+        {/* Results Visibility Control Section */}
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Results Visibility</h3>
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+              <span className={`text-sm font-medium ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'text-green-600' : 'text-orange-600'}`}>
+                {resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'Results Public' : 'Results Hidden'}
+              </span>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Control whether candidate names are visible to the public on the landing page results section.
+            </p>
+            
+            <div className="flex space-x-3">
+              {resultsVisibility === RESULTS_VISIBILITY.HIDDEN ? (
+                <Button
+                  onClick={handleShowResults}
+                  variant="success"
+                  size="sm"
+                  className="flex items-center"
+                >
+                  <CheckCircleIcon className="h-4 w-4 mr-2" />
+                  Make Results Public
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleHideResults}
+                  variant="warning"
+                  size="sm"
+                  className="flex items-center"
+                >
+                  <XMarkIcon className="h-4 w-4 mr-2" />
+                  Hide Results
+                </Button>
+              )}
+            </div>
+            
+            <div className="text-xs text-gray-500">
+              {resultsVisibility === RESULTS_VISIBILITY.HIDDEN 
+                ? "Candidate names will show as asterisks (*****) on the landing page"
+                : "Candidate names are fully visible on the landing page"
+              }
+            </div>
+          </div>
+        </div>
 
         {/* Winners */}
         <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-3 gap-6">

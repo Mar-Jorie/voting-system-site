@@ -6,6 +6,11 @@ export const VOTE_STATUS = {
   STOPPED: 'stopped'
 };
 
+export const RESULTS_VISIBILITY = {
+  HIDDEN: 'hidden',
+  PUBLIC: 'public'
+};
+
 export const VOTE_CONTROL_STORAGE_KEY = 'voteControl';
 
 // Get current vote control settings
@@ -135,4 +140,38 @@ export const formatTimeRemaining = (milliseconds) => {
   } else {
     return `${minutes} minute${minutes > 1 ? 's' : ''}`;
   }
+};
+
+// Results Visibility Functions
+export const getResultsVisibility = () => {
+  try {
+    const stored = localStorage.getItem('resultsVisibility');
+    return stored || RESULTS_VISIBILITY.HIDDEN;
+  } catch (error) {
+    console.error('Error getting results visibility:', error);
+    return RESULTS_VISIBILITY.HIDDEN;
+  }
+};
+
+export const setResultsVisibility = (visibility) => {
+  try {
+    localStorage.setItem('resultsVisibility', visibility);
+    window.dispatchEvent(new Event('resultsVisibilityChanged'));
+    return true;
+  } catch (error) {
+    console.error('Error setting results visibility:', error);
+    return false;
+  }
+};
+
+export const isResultsPublic = () => {
+  return getResultsVisibility() === RESULTS_VISIBILITY.PUBLIC;
+};
+
+export const hideResults = () => {
+  return setResultsVisibility(RESULTS_VISIBILITY.HIDDEN);
+};
+
+export const showResults = () => {
+  return setResultsVisibility(RESULTS_VISIBILITY.PUBLIC);
 };

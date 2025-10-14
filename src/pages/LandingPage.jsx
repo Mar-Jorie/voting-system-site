@@ -4,13 +4,14 @@ import { Bars3Icon, UserIcon, ChartBarIcon, ShieldCheckIcon, ClockIcon, TrophyIc
 import Button from '../components/Button';
 import FloatingChatbot from '../components/FloatingChatbot';
 import VotingModal from '../components/VotingModal';
-import { isVotingActive, getVotingStatusInfo } from '../utils/voteControl';
+import { isVotingActive, getVotingStatusInfo, getResultsVisibility, RESULTS_VISIBILITY } from '../utils/voteControl';
 
 const LandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showVotingModal, setShowVotingModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [votingStatus, setVotingStatus] = useState(null);
+  const [resultsVisibility, setResultsVisibility] = useState(RESULTS_VISIBILITY.HIDDEN);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -23,23 +24,46 @@ const LandingPage = () => {
       setVotingStatus(status);
     };
 
+    // Check results visibility
+    const checkResultsVisibility = () => {
+      const visibility = getResultsVisibility();
+      setResultsVisibility(visibility);
+    };
+
     checkVotingStatus();
+    checkResultsVisibility();
     
     // Listen for vote updates
     const handleVotesUpdated = () => {
       setRefreshTrigger(prev => prev + 1);
     };
     
+    // Listen for results visibility changes
+    const handleResultsVisibilityChanged = () => {
+      checkResultsVisibility();
+    };
+    
     window.addEventListener('votesUpdated', handleVotesUpdated);
+    window.addEventListener('resultsVisibilityChanged', handleResultsVisibilityChanged);
     
     // Check voting status every minute
     const interval = setInterval(checkVotingStatus, 60000);
     
     return () => {
       window.removeEventListener('votesUpdated', handleVotesUpdated);
+      window.removeEventListener('resultsVisibilityChanged', handleResultsVisibilityChanged);
       clearInterval(interval);
     };
   }, []);
+
+  // Helper function to display candidate names with asterisks when results are not public
+  const getDisplayName = (candidate) => {
+    if (resultsVisibility === RESULTS_VISIBILITY.PUBLIC) {
+      return candidate.name;
+    } else {
+      return '*****';
+    }
+  };
 
   // Voting data functions (reactive to refreshTrigger)
   const getTotalVotes = () => {
@@ -454,7 +478,7 @@ const LandingPage = () => {
                       />
                     )}
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{candidate.name}</p>
+                      <p className="font-medium text-gray-900">{getDisplayName(candidate)}</p>
                       <div className="flex items-center space-x-2 mt-1">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div 
@@ -498,7 +522,7 @@ const LandingPage = () => {
                       />
                     )}
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{candidate.name}</p>
+                      <p className="font-medium text-gray-900">{getDisplayName(candidate)}</p>
                       <div className="flex items-center space-x-2 mt-1">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div 
