@@ -103,24 +103,81 @@ const DashboardPage = () => {
   // Export functions
   const exportAsCSV = () => {
     try {
-      // Get all votes data for export
+      // Get all votes and candidates data
       const votes = JSON.parse(localStorage.getItem('votes') || '[]');
       const candidates = JSON.parse(localStorage.getItem('candidates') || '[]');
       
-      // Create CSV content
-      const headers = ['Vote ID', 'Voter Name', 'Voter Email', 'Candidate', 'Vote Date'];
+      // Calculate results
+      const candidateVotes = {};
+      votes.forEach(vote => {
+        candidateVotes[vote.candidateId] = (candidateVotes[vote.candidateId] || 0) + 1;
+      });
+      
+      // Create results summary
+      const results = candidates.map(candidate => ({
+        ...candidate,
+        votes: candidateVotes[candidate.id] || 0
+      })).sort((a, b) => b.votes - a.votes);
+      
+      // Separate male and female results
+      const maleResults = results.filter(c => c.gender === 'male').sort((a, b) => b.votes - a.votes);
+      const femaleResults = results.filter(c => c.gender === 'female').sort((a, b) => b.votes - a.votes);
+      
+      // Find winners
+      const overallWinner = results[0];
+      const maleWinner = maleResults[0];
+      const femaleWinner = femaleResults[0];
+      
+      // Create CSV content with results summary
       const csvContent = [
-        headers.join(','),
-        ...votes.map((vote, index) => {
-          const candidate = candidates.find(c => c.id === vote.candidateId);
-          return [
-            `"VOTE-${String(index + 1).padStart(3, '0')}"`,
-            `"${vote.voterName || 'Anonymous'}"`,
-            `"${vote.voterEmail || 'N/A'}"`,
-            `"${candidate ? candidate.name : 'Unknown'}"`,
-            `"${new Date(vote.createdAt).toLocaleDateString()}"`
-          ].join(',');
-        })
+        // Header
+        'ELECTION RESULTS SUMMARY',
+        `Generated: ${new Date().toLocaleDateString()}`,
+        `Total Votes: ${votes.length}`,
+        `Total Candidates: ${candidates.length}`,
+        '',
+        
+        // Overall Winner
+        'OVERALL WINNER',
+        'Name,Party,Gender,Votes,Percentage',
+        `"${overallWinner.name}","${overallWinner.party || 'Independent'}","${overallWinner.gender}","${overallWinner.votes}","${((overallWinner.votes / votes.length) * 100).toFixed(1)}%"`,
+        '',
+        
+        // Male Results (Ranked)
+        'MALE CANDIDATES RANKED',
+        'Rank,Name,Party,Votes,Percentage',
+        ...maleResults.map((candidate, index) => [
+          index + 1,
+          `"${candidate.name}"`,
+          `"${candidate.party || 'Independent'}"`,
+          candidate.votes,
+          `"${((candidate.votes / votes.length) * 100).toFixed(1)}%"`
+        ].join(',')),
+        '',
+        
+        // Female Results (Ranked)
+        'FEMALE CANDIDATES RANKED',
+        'Rank,Name,Party,Votes,Percentage',
+        ...femaleResults.map((candidate, index) => [
+          index + 1,
+          `"${candidate.name}"`,
+          `"${candidate.party || 'Independent'}"`,
+          candidate.votes,
+          `"${((candidate.votes / votes.length) * 100).toFixed(1)}%"`
+        ].join(',')),
+        '',
+        
+        // Complete Results
+        'COMPLETE RESULTS (All Candidates)',
+        'Rank,Name,Party,Gender,Votes,Percentage',
+        ...results.map((candidate, index) => [
+          index + 1,
+          `"${candidate.name}"`,
+          `"${candidate.party || 'Independent'}"`,
+          `"${candidate.gender}"`,
+          candidate.votes,
+          `"${((candidate.votes / votes.length) * 100).toFixed(1)}%"`
+        ].join(','))
       ].join('\n');
 
       // Create and download file
@@ -128,23 +185,44 @@ const DashboardPage = () => {
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      link.setAttribute('download', `votes-export-${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `election-results-${new Date().toISOString().split('T')[0]}.csv`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
       setShowExportModal(false);
-      toast.success(`Exported ${votes.length} votes as CSV successfully`);
+      toast.success('Election results exported as CSV successfully');
     } catch (error) {
-      console.error('Error exporting votes:', error);
-      toast.error('Failed to export votes');
+      console.error('Error exporting results:', error);
+      toast.error('Failed to export results');
     }
   };
 
   const exportAsPDF = () => {
     const votes = JSON.parse(localStorage.getItem('votes') || '[]');
     const candidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+    
+    // Calculate results
+    const candidateVotes = {};
+    votes.forEach(vote => {
+      candidateVotes[vote.candidateId] = (candidateVotes[vote.candidateId] || 0) + 1;
+    });
+    
+    // Create results summary
+    const results = candidates.map(candidate => ({
+      ...candidate,
+      votes: candidateVotes[candidate.id] || 0
+    })).sort((a, b) => b.votes - a.votes);
+    
+    // Separate male and female results
+    const maleResults = results.filter(c => c.gender === 'male').sort((a, b) => b.votes - a.votes);
+    const femaleResults = results.filter(c => c.gender === 'female').sort((a, b) => b.votes - a.votes);
+    
+    // Find winners
+    const overallWinner = results[0];
+    const maleWinner = maleResults[0];
+    const femaleWinner = femaleResults[0];
     
     // Close the export modal first
     setShowExportModal(false);
@@ -173,46 +251,115 @@ const DashboardPage = () => {
     `;
     document.head.appendChild(printStyles);
     
-    // Create print content with table design
+    // Create print content with results summary
     const printElement = document.createElement('div');
     printElement.className = 'print-content';
     printElement.innerHTML = `
       <div style="font-family: Arial, sans-serif; padding: 20px; background: white;">
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #2563eb; padding-bottom: 20px;">
-          <h1 style="color: #2563eb; margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Voting Data Export Report</h1>
+          <h1 style="color: #2563eb; margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">ELECTION RESULTS SUMMARY</h1>
           <p style="color: #666; margin: 5px 0; font-size: 14px;">Generated: ${new Date().toLocaleDateString()}</p>
-          <p style="color: #666; margin: 5px 0; font-size: 14px;">Total Votes: ${votes.length}</p>
+          <p style="color: #666; margin: 5px 0; font-size: 14px;">Total Votes: ${votes.length} | Total Candidates: ${candidates.length}</p>
         </div>
         
-        <!-- Table -->
-        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <thead>
-            <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">#</th>
-              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Vote ID</th>
-              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Voter Name</th>
-              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Voter Email</th>
-              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Candidate</th>
-              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151;">Vote Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${votes.map((vote, index) => {
-              const candidate = candidates.find(c => c.id === vote.candidateId);
-              return `
-                <tr style="border-bottom: 1px solid #e2e8f0;">
-                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${index + 1}</td>
-                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">VOTE-${String(index + 1).padStart(3, '0')}</td>
-                  <td style="padding: 12px; color: #374151; font-weight: 500; border-right: 1px solid #e2e8f0;">${vote.voterName || 'Anonymous'}</td>
-                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${vote.voterEmail || 'N/A'}</td>
-                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${candidate ? candidate.name : 'Unknown'}</td>
-                  <td style="padding: 12px; color: #6b7280;">${new Date(vote.createdAt).toLocaleDateString()}</td>
+        <!-- Overall Winner -->
+        <div style="margin-bottom: 30px; padding: 20px; background-color: #f0f9ff; border: 2px solid #2563eb; border-radius: 8px;">
+          <h2 style="color: #2563eb; margin: 0 0 15px 0; font-size: 20px; font-weight: bold;">🏆 OVERALL WINNER</h2>
+          <div style="display: flex; align-items: center; gap: 20px;">
+            <div style="flex: 1;">
+              <h3 style="color: #1e40af; margin: 0 0 5px 0; font-size: 24px; font-weight: bold;">${overallWinner.name}</h3>
+              <p style="color: #666; margin: 0; font-size: 16px;">${overallWinner.party || 'Independent'} • ${overallWinner.gender}</p>
+            </div>
+            <div style="text-align: right;">
+              <p style="color: #2563eb; margin: 0; font-size: 32px; font-weight: bold;">${overallWinner.votes}</p>
+              <p style="color: #666; margin: 0; font-size: 14px;">votes (${((overallWinner.votes / votes.length) * 100).toFixed(1)}%)</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Male Results -->
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #2563eb; margin: 0 0 15px 0; font-size: 18px; font-weight: bold;">👨 MALE CANDIDATES RANKED</h2>
+          <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <thead>
+              <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Rank</th>
+                <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Name</th>
+                <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Party</th>
+                <th style="padding: 12px; text-align: center; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Votes</th>
+                <th style="padding: 12px; text-align: center; font-weight: bold; color: #374151;">Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${maleResults.map((candidate, index) => `
+                <tr style="border-bottom: 1px solid #e2e8f0; ${index === 0 ? 'background-color: #fef3c7;' : ''}">
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0; font-weight: bold;">${index + 1}</td>
+                  <td style="padding: 12px; color: #374151; font-weight: 500; border-right: 1px solid #e2e8f0;">${candidate.name}</td>
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${candidate.party || 'Independent'}</td>
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0; text-align: center; font-weight: bold;">${candidate.votes}</td>
+                  <td style="padding: 12px; color: #6b7280; text-align: center;">${((candidate.votes / votes.length) * 100).toFixed(1)}%</td>
                 </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Female Results -->
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #2563eb; margin: 0 0 15px 0; font-size: 18px; font-weight: bold;">👩 FEMALE CANDIDATES RANKED</h2>
+          <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <thead>
+              <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Rank</th>
+                <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Name</th>
+                <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Party</th>
+                <th style="padding: 12px; text-align: center; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Votes</th>
+                <th style="padding: 12px; text-align: center; font-weight: bold; color: #374151;">Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${femaleResults.map((candidate, index) => `
+                <tr style="border-bottom: 1px solid #e2e8f0; ${index === 0 ? 'background-color: #fef3c7;' : ''}">
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0; font-weight: bold;">${index + 1}</td>
+                  <td style="padding: 12px; color: #374151; font-weight: 500; border-right: 1px solid #e2e8f0;">${candidate.name}</td>
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${candidate.party || 'Independent'}</td>
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0; text-align: center; font-weight: bold;">${candidate.votes}</td>
+                  <td style="padding: 12px; color: #6b7280; text-align: center;">${((candidate.votes / votes.length) * 100).toFixed(1)}%</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Complete Results Summary -->
+        <div>
+          <h2 style="color: #2563eb; margin: 0 0 15px 0; font-size: 18px; font-weight: bold;">📊 COMPLETE RESULTS SUMMARY</h2>
+          <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <thead>
+              <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Rank</th>
+                <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Name</th>
+                <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Party</th>
+                <th style="padding: 12px; text-align: center; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Gender</th>
+                <th style="padding: 12px; text-align: center; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Votes</th>
+                <th style="padding: 12px; text-align: center; font-weight: bold; color: #374151;">Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${results.map((candidate, index) => `
+                <tr style="border-bottom: 1px solid #e2e8f0; ${index === 0 ? 'background-color: #fef3c7;' : ''}">
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0; font-weight: bold;">${index + 1}</td>
+                  <td style="padding: 12px; color: #374151; font-weight: 500; border-right: 1px solid #e2e8f0;">${candidate.name}</td>
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${candidate.party || 'Independent'}</td>
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0; text-align: center;">${candidate.gender}</td>
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0; text-align: center; font-weight: bold;">${candidate.votes}</td>
+                  <td style="padding: 12px; color: #6b7280; text-align: center;">${((candidate.votes / votes.length) * 100).toFixed(1)}%</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
     
@@ -225,7 +372,7 @@ const DashboardPage = () => {
       document.head.removeChild(printStyles);
     }, 100);
     
-    toast.success(`${votes.length} vote(s) exported as PDF successfully`);
+    toast.success('Election results exported as PDF successfully');
   };
 
   return (
@@ -541,7 +688,7 @@ const DashboardPage = () => {
             <div className="relative z-50 w-full max-w-md p-6 overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Export Voting Data
+                  Export Election Results
                 </h3>
                 <button
                   onClick={() => setShowExportModal(false)}
