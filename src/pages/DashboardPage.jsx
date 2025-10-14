@@ -1,7 +1,9 @@
 // Dashboard Page - MANDATORY PATTERN
 import React, { useState, useEffect } from 'react';
-import { CalendarDaysIcon, UserGroupIcon, TrophyIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, UserGroupIcon, TrophyIcon, CheckCircleIcon, PlusIcon, ArrowDownTrayIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
+import Button from '../components/Button';
+import { toast } from 'react-hot-toast';
 
 const DashboardPage = () => {
   const [metrics, setMetrics] = useState({
@@ -92,8 +94,138 @@ const DashboardPage = () => {
     console.log('View voting results');
   };
 
+  const [showExportModal, setShowExportModal] = useState(false);
+
   const handleExportData = () => {
-    console.log('Export voting data');
+    setShowExportModal(true);
+  };
+
+  // Export functions
+  const exportAsCSV = () => {
+    try {
+      // Get all votes data for export
+      const votes = JSON.parse(localStorage.getItem('votes') || '[]');
+      const candidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+      
+      // Create CSV content
+      const headers = ['Vote ID', 'Voter Name', 'Voter Email', 'Candidate', 'Vote Date'];
+      const csvContent = [
+        headers.join(','),
+        ...votes.map((vote, index) => {
+          const candidate = candidates.find(c => c.id === vote.candidateId);
+          return [
+            `"VOTE-${String(index + 1).padStart(3, '0')}"`,
+            `"${vote.voterName || 'Anonymous'}"`,
+            `"${vote.voterEmail || 'N/A'}"`,
+            `"${candidate ? candidate.name : 'Unknown'}"`,
+            `"${new Date(vote.createdAt).toLocaleDateString()}"`
+          ].join(',');
+        })
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `votes-export-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setShowExportModal(false);
+      toast.success(`Exported ${votes.length} votes as CSV successfully`);
+    } catch (error) {
+      console.error('Error exporting votes:', error);
+      toast.error('Failed to export votes');
+    }
+  };
+
+  const exportAsPDF = () => {
+    const votes = JSON.parse(localStorage.getItem('votes') || '[]');
+    const candidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+    
+    // Close the export modal first
+    setShowExportModal(false);
+    
+    // Create a print-specific stylesheet
+    const printStyles = document.createElement('style');
+    printStyles.textContent = `
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .print-content, .print-content * {
+          visibility: visible;
+        }
+        .print-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        @page {
+          margin: 0.5in;
+          size: A4;
+        }
+      }
+    `;
+    document.head.appendChild(printStyles);
+    
+    // Create print content with table design
+    const printElement = document.createElement('div');
+    printElement.className = 'print-content';
+    printElement.innerHTML = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; background: white;">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #2563eb; padding-bottom: 20px;">
+          <h1 style="color: #2563eb; margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Voting Data Export Report</h1>
+          <p style="color: #666; margin: 5px 0; font-size: 14px;">Generated: ${new Date().toLocaleDateString()}</p>
+          <p style="color: #666; margin: 5px 0; font-size: 14px;">Total Votes: ${votes.length}</p>
+        </div>
+        
+        <!-- Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <thead>
+            <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">#</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Vote ID</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Voter Name</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Voter Email</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Candidate</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151;">Vote Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${votes.map((vote, index) => {
+              const candidate = candidates.find(c => c.id === vote.candidateId);
+              return `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${index + 1}</td>
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">VOTE-${String(index + 1).padStart(3, '0')}</td>
+                  <td style="padding: 12px; color: #374151; font-weight: 500; border-right: 1px solid #e2e8f0;">${vote.voterName || 'Anonymous'}</td>
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${vote.voterEmail || 'N/A'}</td>
+                  <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${candidate ? candidate.name : 'Unknown'}</td>
+                  <td style="padding: 12px; color: #6b7280;">${new Date(vote.createdAt).toLocaleDateString()}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+    document.body.appendChild(printElement);
+    
+    // Trigger print
+    setTimeout(() => {
+      window.print();
+      document.body.removeChild(printElement);
+      document.head.removeChild(printStyles);
+    }, 100);
+    
+    toast.success(`${votes.length} vote(s) exported as PDF successfully`);
   };
 
   return (
@@ -393,11 +525,60 @@ const DashboardPage = () => {
         icon="EllipsisVerticalIcon"
         label="Toggle quick actions"
         quickActions={[
-          { name: 'Add Candidate', icon: 'UserGroupIcon', action: handleAddCandidate, color: 'bg-primary-600' },
-          { name: 'View Results', icon: 'ChartBarIcon', action: handleViewResults, color: 'bg-green-600' },
-          { name: 'Export Data', icon: 'CalendarDaysIcon', action: handleExportData, color: 'bg-blue-600' }
+          { name: 'Add Candidate', icon: 'PlusIcon', action: handleAddCandidate, color: 'bg-primary-600' },
+          { name: 'Export Data', icon: 'ArrowDownTrayIcon', action: handleExportData, color: 'bg-blue-600' }
         ]}
       />
+
+      {/* Export Options Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={() => setShowExportModal(false)}></div>
+            
+            {/* Modal Content */}
+            <div className="relative z-50 w-full max-w-md p-6 overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Export Voting Data
+                </h3>
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-6">
+                Choose the format for exporting voting data:
+              </p>
+              
+              <div className="space-y-3">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={exportAsCSV}
+                  className="w-full"
+                >
+                  <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                  Export as CSV
+                </Button>
+                
+                <Button
+                  variant="secondaryOutline"
+                  size="md"
+                  onClick={exportAsPDF}
+                  className="w-full"
+                >
+                  Export as PDF
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
