@@ -5,6 +5,8 @@ import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import Button from '../components/Button';
 import { toast } from 'react-hot-toast';
 import { getVotingStatusInfo, stopVoting, startVoting, setAutoStopDate, formatTimeRemaining, VOTE_STATUS, getResultsVisibility, setResultsVisibility, RESULTS_VISIBILITY } from '../utils/voteControl';
+import apiClient from '../usecases/api';
+import auditLogger from '../utils/auditLogger.js';
 
 const DashboardPage = () => {
   const [metrics, setMetrics] = useState({
@@ -15,6 +17,7 @@ const DashboardPage = () => {
   });
   const [candidates, setCandidates] = useState([]);
   const [votes, setVotes] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
   const [resultsVisibility, setResultsVisibilityState] = useState(RESULTS_VISIBILITY.HIDDEN);
 
   useEffect(() => {
@@ -68,22 +71,36 @@ const DashboardPage = () => {
     };
   }, []);
 
-  const loadData = () => {
-    const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-    const storedVotes = JSON.parse(localStorage.getItem('votes') || '[]');
-    setCandidates(storedCandidates);
-    setVotes(storedVotes);
-    
-    setMetrics({
-      totalVotes: storedVotes.length,
-      totalCandidates: storedCandidates.length,
-      totalVoters: new Set(storedVotes.map(vote => vote.voterEmail)).size,
-      activeVoting: storedVotes.filter(vote => {
-        const voteDate = new Date(vote.timestamp);
-        const today = new Date();
+  const loadData = async () => {
+    try {
+      // Fetch candidates, votes, and audit logs from database
+      const [candidatesData, votesData, auditLogsData] = await Promise.all([
+        apiClient.findObjects('candidates', {}),
+        apiClient.findObjects('votes', {}),
+        apiClient.findObjects('audit_logs', {}, { limit: 20, sort: { created: -1 } })
+      ]);
+      
+      setCandidates(candidatesData);
+      setVotes(votesData);
+      setAuditLogs(auditLogsData);
+      
+      // Calculate metrics from real database data
+      const today = new Date();
+      const todayVotes = votesData.filter(vote => {
+        const voteDate = new Date(vote.created);
         return voteDate.toDateString() === today.toDateString();
-      }).length
-    });
+      });
+      
+      setMetrics({
+        totalVotes: votesData.length,
+        totalCandidates: candidatesData.length,
+        totalVoters: new Set(votesData.map(vote => vote.voter_email)).size,
+        activeVoting: todayVotes.length
+      });
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      toast.error('Failed to load dashboard data');
+    }
   };
 
   // Helper function to get display name and blur class for candidate names
@@ -96,14 +113,22 @@ const DashboardPage = () => {
   };
 
   const getCandidateVotes = (candidateId, category) => {
-    return votes.filter(vote => {
-      if (category === 'male') {
-        return vote.maleCandidateId === candidateId;
-      } else if (category === 'female') {
-        return vote.femaleCandidateId === candidateId;
+    let voteCount = 0;
+    
+    votes.forEach(vote => {
+      if (vote.vote_type === 'dual_selection') {
+        // Check if this candidate is selected as male or female
+        if ((category === 'male' && vote.male_candidate_id === candidateId) ||
+            (category === 'female' && vote.female_candidate_id === candidateId)) {
+          voteCount++;
+        }
+      } else if (vote.candidate_id === candidateId && vote.category === category) {
+        // Handle legacy votes (if any exist)
+        voteCount++;
       }
-      return false;
-    }).length;
+    });
+    
+    return voteCount;
   };
 
   const getTotalVotes = () => {
@@ -162,8 +187,21 @@ const DashboardPage = () => {
     }
   };
 
-  const confirmStopVoting = () => {
+  const confirmStopVoting = async () => {
     if (stopVoting('admin', 'Manually stopped by administrator', true)) {
+      // Log voting stop operation
+      await auditLogger.log({
+        action: 'voting_stopped',
+        entity_type: 'system',
+        entity_name: 'Voting System',
+        details: {
+          reason: 'Manually stopped by administrator',
+          auto_stop_cleared: true
+        },
+        category: 'voting',
+        severity: 'warning'
+      });
+      
       setVotingStatus(getVotingStatusInfo());
       setShowStopConfirmationModal(false);
       toast.success('Voting has been stopped and auto-stop schedule cleared');
@@ -172,8 +210,20 @@ const DashboardPage = () => {
     }
   };
 
-  const handleStartVoting = () => {
+  const handleStartVoting = async () => {
     if (startVoting()) {
+      // Log voting start operation
+      await auditLogger.log({
+        action: 'voting_started',
+        entity_type: 'system',
+        entity_name: 'Voting System',
+        details: {
+          reason: 'Manually started by administrator'
+        },
+        category: 'voting',
+        severity: 'info'
+      });
+      
       setVotingStatus(getVotingStatusInfo());
       toast.success('Voting has been resumed');
     } else {
@@ -181,7 +231,7 @@ const DashboardPage = () => {
     }
   };
 
-  const handleSetAutoStop = () => {
+  const handleSetAutoStop = async () => {
     if (!selectedDate || !selectedTime) {
       toast.error('Please select both date and time');
       return;
@@ -194,6 +244,28 @@ const DashboardPage = () => {
     }
 
     if (setAutoStopDate(stopDateTime)) {
+      // Log auto-stop operation
+      await auditLogger.log({
+        action: 'auto_stop_set',
+        entity_type: 'system',
+        entity_name: 'Voting System',
+        details: {
+          stop_date: stopDateTime.toISOString(),
+          stop_date_formatted: stopDateTime.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: '2-digit' 
+          }),
+          stop_time_formatted: stopDateTime.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+          })
+        },
+        category: 'voting',
+        severity: 'info'
+      });
+      
       setVotingStatus(getVotingStatusInfo());
       setShowVoteControlModal(false);
       setSelectedDate('');
@@ -212,8 +284,20 @@ const DashboardPage = () => {
     }
   };
 
-  const handleShowResults = () => {
+  const handleShowResults = async () => {
     if (setResultsVisibility(RESULTS_VISIBILITY.PUBLIC)) {
+      // Log results visibility change
+      await auditLogger.log({
+        action: 'results_shown',
+        entity_type: 'system',
+        entity_name: 'Election Results',
+        details: {
+          visibility: 'public'
+        },
+        category: 'voting',
+        severity: 'info'
+      });
+      
       setResultsVisibilityState(RESULTS_VISIBILITY.PUBLIC);
       toast.success('Results are now publicly visible');
     } else {
@@ -221,8 +305,20 @@ const DashboardPage = () => {
     }
   };
 
-  const handleHideResults = () => {
+  const handleHideResults = async () => {
     if (setResultsVisibility(RESULTS_VISIBILITY.HIDDEN)) {
+      // Log results visibility change
+      await auditLogger.log({
+        action: 'results_hidden',
+        entity_type: 'system',
+        entity_name: 'Election Results',
+        details: {
+          visibility: 'hidden'
+        },
+        category: 'voting',
+        severity: 'info'
+      });
+      
       setResultsVisibilityState(RESULTS_VISIBILITY.HIDDEN);
       toast.success('Results are now hidden from public view');
     } else {
@@ -231,54 +327,57 @@ const DashboardPage = () => {
   };
 
   // Export functions
-  const exportAsCSV = () => {
+  const exportAsCSV = async () => {
     try {
-      // Get all votes and candidates data
-      const votes = JSON.parse(localStorage.getItem('votes') || '[]');
-      const candidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+      // Use state data instead of localStorage
+      const currentVotes = votes;
+      const currentCandidates = candidates;
       
       // Calculate results
       const candidateVotes = {};
-      votes.forEach(vote => {
-        // Count male candidate votes
-        if (vote.maleCandidateId) {
-          candidateVotes[vote.maleCandidateId] = (candidateVotes[vote.maleCandidateId] || 0) + 1;
-        }
-        // Count female candidate votes
-        if (vote.femaleCandidateId) {
-          candidateVotes[vote.femaleCandidateId] = (candidateVotes[vote.femaleCandidateId] || 0) + 1;
+      currentVotes.forEach(vote => {
+        // Count votes by candidate_id and category
+        if (vote.candidate_id) {
+          const key = `${vote.candidate_id}_${vote.category}`;
+          candidateVotes[key] = (candidateVotes[key] || 0) + 1;
         }
       });
       
       // Create results summary
-      const results = candidates.map(candidate => ({
-        ...candidate,
-        votes: candidateVotes[candidate.id] || 0
-      })).sort((a, b) => b.votes - a.votes);
+      const results = currentCandidates.map(candidate => {
+        const maleVotes = candidateVotes[`${candidate.id}_male`] || 0;
+        const femaleVotes = candidateVotes[`${candidate.id}_female`] || 0;
+        return {
+          ...candidate,
+          maleVotes,
+          femaleVotes,
+          totalVotes: maleVotes + femaleVotes
+        };
+      }).sort((a, b) => b.totalVotes - a.totalVotes);
       
     // Separate male and female results
-    const maleResults = results.filter(c => c.category === 'male').sort((a, b) => b.votes - a.votes);
-    const femaleResults = results.filter(c => c.category === 'female').sort((a, b) => b.votes - a.votes);
+    const maleResults = results.filter(c => c.category === 'male').sort((a, b) => b.maleVotes - a.maleVotes);
+    const femaleResults = results.filter(c => c.category === 'female').sort((a, b) => b.femaleVotes - a.femaleVotes);
       
       // Find winners
       const overallWinner = results[0];
-      const maleWinner = maleResults[0] || { name: 'No male candidates', party: 'N/A', category: 'male', votes: 0 };
-      const femaleWinner = femaleResults[0] || { name: 'No female candidates', party: 'N/A', category: 'female', votes: 0 };
+      const maleWinner = maleResults[0] || { name: 'No male candidates', party: 'N/A', category: 'male', maleVotes: 0 };
+      const femaleWinner = femaleResults[0] || { name: 'No female candidates', party: 'N/A', category: 'female', femaleVotes: 0 };
       
       // Create CSV content with results summary
       const csvContent = [
         // Header
         'ELECTION RESULTS SUMMARY',
         `Generated: ${new Date().toLocaleDateString()}`,
-        `Total Votes: ${votes.length}`,
-        `Total Candidates: ${candidates.length}`,
+        `Total Votes: ${currentVotes.length}`,
+        `Total Candidates: ${currentCandidates.length}`,
         '',
         
         // Winners
         'WINNERS',
         'Category,Name,Party,Gender,Votes,Percentage',
-        `"Male Winner","${maleWinner.name}","${maleWinner.party || 'Independent'}","${maleWinner.category}","${maleWinner.votes}","${votes.length > 0 ? ((maleWinner.votes / votes.length) * 100).toFixed(1) : 0}%"`,
-        `"Female Winner","${femaleWinner.name}","${femaleWinner.party || 'Independent'}","${femaleWinner.category}","${femaleWinner.votes}","${votes.length > 0 ? ((femaleWinner.votes / votes.length) * 100).toFixed(1) : 0}%"`,
+        `"Male Winner","${maleWinner.name}","${maleWinner.party || 'Independent'}","${maleWinner.category}","${maleWinner.maleVotes}","${currentVotes.length > 0 ? ((maleWinner.maleVotes / currentVotes.length) * 100).toFixed(1) : 0}%"`,
+        `"Female Winner","${femaleWinner.name}","${femaleWinner.party || 'Independent'}","${femaleWinner.category}","${femaleWinner.femaleVotes}","${currentVotes.length > 0 ? ((femaleWinner.femaleVotes / currentVotes.length) * 100).toFixed(1) : 0}%"`,
         '',
         
         // Male Results (Ranked)
@@ -288,8 +387,8 @@ const DashboardPage = () => {
           index + 1,
           `"${candidate.name}"`,
           `"${candidate.party || 'Independent'}"`,
-          candidate.votes,
-          `"${currentVotes.length > 0 ? ((candidate.votes / currentVotes.length) * 100).toFixed(1) : 0}%"`
+          candidate.maleVotes,
+          `"${currentVotes.length > 0 ? ((candidate.maleVotes / currentVotes.length) * 100).toFixed(1) : 0}%"`
         ].join(',')),
         '',
         
@@ -300,8 +399,8 @@ const DashboardPage = () => {
           index + 1,
           `"${candidate.name}"`,
           `"${candidate.party || 'Independent'}"`,
-          candidate.votes,
-          `"${currentVotes.length > 0 ? ((candidate.votes / currentVotes.length) * 100).toFixed(1) : 0}%"`
+          candidate.femaleVotes,
+          `"${currentVotes.length > 0 ? ((candidate.femaleVotes / currentVotes.length) * 100).toFixed(1) : 0}%"`
         ].join(',')),
         ''
       ].join('\n');
@@ -317,6 +416,20 @@ const DashboardPage = () => {
       link.click();
       document.body.removeChild(link);
       
+      // Log export operation
+      await auditLogger.log({
+        action: 'export_data',
+        entity_type: 'system',
+        entity_name: 'Election Results',
+        details: {
+          format: 'CSV',
+          record_count: currentVotes.length,
+          candidate_count: currentCandidates.length
+        },
+        category: 'export_import',
+        severity: 'info'
+      });
+      
       setShowExportModal(false);
       toast.success('Election results exported as CSV successfully');
     } catch (error) {
@@ -325,12 +438,12 @@ const DashboardPage = () => {
     }
   };
 
-  const exportAsPDF = () => {
+  const exportAsPDF = async () => {
     try {
       console.log('PDF Export button clicked');
-      // Get fresh data from localStorage to ensure we have the latest
-      const currentVotes = JSON.parse(localStorage.getItem('votes') || '[]');
-      const currentCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+      // Use state data instead of localStorage
+      const currentVotes = votes;
+      const currentCandidates = candidates;
       
       console.log('PDF Export - Votes:', currentVotes.length, 'Candidates:', currentCandidates.length);
       
@@ -342,30 +455,33 @@ const DashboardPage = () => {
       // Calculate results
       const candidateVotes = {};
       currentVotes.forEach(vote => {
-        // Count male candidate votes
-        if (vote.maleCandidateId) {
-          candidateVotes[vote.maleCandidateId] = (candidateVotes[vote.maleCandidateId] || 0) + 1;
-        }
-        // Count female candidate votes
-        if (vote.femaleCandidateId) {
-          candidateVotes[vote.femaleCandidateId] = (candidateVotes[vote.femaleCandidateId] || 0) + 1;
+        // Count votes by candidate_id and category
+        if (vote.candidate_id) {
+          const key = `${vote.candidate_id}_${vote.category}`;
+          candidateVotes[key] = (candidateVotes[key] || 0) + 1;
         }
       });
     
     // Create results summary
-    const results = currentCandidates.map(candidate => ({
-      ...candidate,
-      votes: candidateVotes[candidate.id] || 0
-    })).sort((a, b) => b.votes - a.votes);
+    const results = currentCandidates.map(candidate => {
+      const maleVotes = candidateVotes[`${candidate.id}_male`] || 0;
+      const femaleVotes = candidateVotes[`${candidate.id}_female`] || 0;
+      return {
+        ...candidate,
+        maleVotes,
+        femaleVotes,
+        totalVotes: maleVotes + femaleVotes
+      };
+    }).sort((a, b) => b.totalVotes - a.totalVotes);
     
     // Separate male and female results
-    const maleResults = results.filter(c => c.category === 'male').sort((a, b) => b.votes - a.votes);
-    const femaleResults = results.filter(c => c.category === 'female').sort((a, b) => b.votes - a.votes);
+    const maleResults = results.filter(c => c.category === 'male').sort((a, b) => b.maleVotes - a.maleVotes);
+    const femaleResults = results.filter(c => c.category === 'female').sort((a, b) => b.femaleVotes - a.femaleVotes);
     
     // Find winners
     const overallWinner = results[0];
-    const maleWinner = maleResults[0] || { name: 'No male candidates', party: 'N/A', category: 'male', votes: 0 };
-    const femaleWinner = femaleResults[0] || { name: 'No female candidates', party: 'N/A', category: 'female', votes: 0 };
+    const maleWinner = maleResults[0] || { name: 'No male candidates', party: 'N/A', category: 'male', maleVotes: 0 };
+    const femaleWinner = femaleResults[0] || { name: 'No female candidates', party: 'N/A', category: 'female', femaleVotes: 0 };
     
     // Close the export modal first
     setShowExportModal(false);
@@ -505,6 +621,20 @@ const DashboardPage = () => {
           }, 1000);
         }
       }, 100);
+      
+      // Log export operation
+      await auditLogger.log({
+        action: 'export_data',
+        entity_type: 'system',
+        entity_name: 'Election Results',
+        details: {
+          format: 'PDF',
+          record_count: currentVotes.length,
+          candidate_count: currentCandidates.length
+        },
+        category: 'export_import',
+        severity: 'info'
+      });
       
       toast.success('Election results exported as PDF successfully');
     } catch (error) {
@@ -826,38 +956,48 @@ const DashboardPage = () => {
               <h3 className="text-lg font-semibold text-gray-900">Male Category Results</h3>
             </div>
             <div className="space-y-4">
-              {maleCandidates.map((candidate, index) => (
-                <div key={candidate.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                  <div className="flex-shrink-0">
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                      index === 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {index + 1}
-                    </span>
-                  </div>
-                  {candidate.image && (
-                    <img 
-                      src={candidate.image} 
-                      alt={candidate.name}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{candidate.name}</p>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
-                            style={{ 
-                              width: `${getTotalVotes() > 0 ? (candidate.voteCount / getTotalVotes()) * 100 : 0}%` 
-                            }}
-                          ></div>
+              {maleCandidates.length > 0 ? (
+                maleCandidates.map((candidate, index) => (
+                  <div key={candidate.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                    <div className="flex-shrink-0">
+                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                        index === 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {index + 1}
+                      </span>
+                    </div>
+                    {candidate.image && (
+                      <img 
+                        src={candidate.image} 
+                        alt={candidate.name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{candidate.name}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
+                              style={{ 
+                                width: `${getTotalVotes() > 0 ? (candidate.voteCount / getTotalVotes()) * 100 : 0}%` 
+                              }}
+                            ></div>
+                          </div>
+                          <span className="text-sm font-medium text-gray-600 min-w-[2rem]">{candidate.voteCount}</span>
                         </div>
-                        <span className="text-sm font-medium text-gray-600 min-w-[2rem]">{candidate.voteCount}</span>
-                      </div>
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <UserGroupIcon className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 font-medium">No male candidates yet</p>
+                  <p className="text-sm text-gray-400 mt-1">Add candidates to see results here</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -870,38 +1010,48 @@ const DashboardPage = () => {
               <h3 className="text-lg font-semibold text-gray-900">Female Category Results</h3>
             </div>
             <div className="space-y-4">
-              {femaleCandidates.map((candidate, index) => (
-                <div key={candidate.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                  <div className="flex-shrink-0">
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                      index === 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {index + 1}
-                    </span>
-                  </div>
-                  {candidate.image && (
-                    <img 
-                      src={candidate.image} 
-                      alt={candidate.name}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{candidate.name}</p>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
-                            style={{ 
-                              width: `${getTotalVotes() > 0 ? (candidate.voteCount / getTotalVotes()) * 100 : 0}%` 
-                            }}
-                          ></div>
+              {femaleCandidates.length > 0 ? (
+                femaleCandidates.map((candidate, index) => (
+                  <div key={candidate.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                    <div className="flex-shrink-0">
+                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                        index === 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {index + 1}
+                      </span>
+                    </div>
+                    {candidate.image && (
+                      <img 
+                        src={candidate.image} 
+                        alt={candidate.name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{candidate.name}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
+                              style={{ 
+                                width: `${getTotalVotes() > 0 ? (candidate.voteCount / getTotalVotes()) * 100 : 0}%` 
+                              }}
+                            ></div>
+                          </div>
+                          <span className="text-sm font-medium text-gray-600 min-w-[2rem]">{candidate.voteCount}</span>
                         </div>
-                        <span className="text-sm font-medium text-gray-600 min-w-[2rem]">{candidate.voteCount}</span>
-                      </div>
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <UserGroupIcon className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 font-medium">No female candidates yet</p>
+                  <p className="text-sm text-gray-400 mt-1">Add candidates to see results here</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -914,28 +1064,108 @@ const DashboardPage = () => {
               <CalendarDaysIcon className="h-6 w-6 text-green-800" />
             </div>
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-900">New vote cast for Sarah Johnson</p>
-                <p className="text-xs text-gray-500">2 minutes ago</p>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {auditLogs.length > 0 ? (
+              auditLogs.map((log, index) => {
+                const getActivityIcon = (action, category) => {
+                  switch (action) {
+                    case 'login':
+                      return <div className="w-2 h-2 bg-green-500 rounded-full"></div>;
+                    case 'logout':
+                      return <div className="w-2 h-2 bg-red-500 rounded-full"></div>;
+                    case 'create':
+                      return <div className="w-2 h-2 bg-blue-500 rounded-full"></div>;
+                    case 'update':
+                      return <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>;
+                    case 'delete':
+                      return <div className="w-2 h-2 bg-red-500 rounded-full"></div>;
+                    case 'vote_cast':
+                      return <div className="w-2 h-2 bg-purple-500 rounded-full"></div>;
+                    case 'voting_started':
+                      return <div className="w-2 h-2 bg-green-500 rounded-full"></div>;
+                    case 'voting_stopped':
+                      return <div className="w-2 h-2 bg-red-500 rounded-full"></div>;
+                    case 'results_shown':
+                      return <div className="w-2 h-2 bg-green-500 rounded-full"></div>;
+                    case 'results_hidden':
+                      return <div className="w-2 h-2 bg-orange-500 rounded-full"></div>;
+                    case 'export_data':
+                      return <div className="w-2 h-2 bg-blue-500 rounded-full"></div>;
+                    default:
+                      return <div className="w-2 h-2 bg-gray-500 rounded-full"></div>;
+                  }
+                };
+
+                const getActivityText = (log) => {
+                  const action = log.action;
+                  const entityType = log.entity_type;
+                  const entityName = log.entity_name;
+                  const userName = log.user_name;
+
+                  switch (action) {
+                    case 'login':
+                      return `${userName || 'User'} signed in`;
+                    case 'logout':
+                      return `${userName || 'User'} signed out`;
+                    case 'create':
+                      return `${userName || 'User'} created ${entityType}${entityName ? ` "${entityName}"` : ''}`;
+                    case 'update':
+                      return `${userName || 'User'} updated ${entityType}${entityName ? ` "${entityName}"` : ''}`;
+                    case 'delete':
+                      return `${userName || 'User'} deleted ${entityType}${entityName ? ` "${entityName}"` : ''}`;
+                    case 'vote_cast':
+                      return `Vote cast for ${entityName || 'candidate'}`;
+                    case 'voting_started':
+                      return 'Voting started';
+                    case 'voting_stopped':
+                      return 'Voting stopped';
+                    case 'results_shown':
+                      return 'Results made public';
+                    case 'results_hidden':
+                      return 'Results hidden';
+                    case 'export_data':
+                      return `Data exported (${log.details?.format || 'unknown format'})`;
+                    case 'auto_stop_set':
+                      return 'Auto-stop date set';
+                    default:
+                      return `${action} on ${entityType}`;
+                  }
+                };
+
+                const getActivityTime = (created) => {
+                  const now = new Date();
+                  const logTime = new Date(created);
+                  const diffMs = now - logTime;
+                  const diffMins = Math.floor(diffMs / 60000);
+                  const diffHours = Math.floor(diffMs / 3600000);
+                  const diffDays = Math.floor(diffMs / 86400000);
+
+                  if (diffMins < 1) return 'Just now';
+                  if (diffMins < 60) return `${diffMins}m ago`;
+                  if (diffHours < 24) return `${diffHours}h ago`;
+                  if (diffDays < 7) return `${diffDays}d ago`;
+                  return logTime.toLocaleDateString();
+                };
+
+                return (
+                  <div key={log.id || index} className="flex items-center space-x-3">
+                    {getActivityIcon(log.action, log.category)}
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-900">{getActivityText(log)}</p>
+                      <p className="text-xs text-gray-500">{getActivityTime(log.created)}</p>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CalendarDaysIcon className="h-8 w-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">No activity yet</p>
+                <p className="text-sm text-gray-400 mt-1">System activities will appear here</p>
               </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-900">New vote cast for John Smith</p>
-                <p className="text-xs text-gray-500">5 minutes ago</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-900">Voting session started</p>
-                <p className="text-xs text-gray-500">1 hour ago</p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

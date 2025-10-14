@@ -1,8 +1,8 @@
 // api.js
 
 const API_BASE = "https://api.innque.com/v1";
-const APP_ID = import.meta.env.VITE_APP_ID || "your-application-id";
-const MASTER_KEY = import.meta.env.VITE_MASTER_KEY;
+const APP_ID = import.meta.env.VITE_APP_ID || "votes";
+const MASTER_KEY = import.meta.env.VITE_MASTER_KEY || "Cbd9e198-8f76-4d8f-93b1-04201de94e5d";
 const DEFAULT_RETRIES = 3; // Number of retry attempts
 
 // —————— Native Cookie Helpers ——————
@@ -57,13 +57,9 @@ async function request(path, { method = "GET", body = null, headers: customHeade
     
     const token = getToken();
     
-    // Don't send authorization header for signin/signup requests
-    if (token && !path.includes('/signin') && !path.includes('/signup')) {
-      headers.set("Authorization", `Bearer ${token}`);
-    } else {
-      headers.set("X-Application-Id", APP_ID);
-    }
-    
+    // Authentication logic: Always use master key for API requests
+    // The Innque API uses master key authentication, not JWT tokens
+    headers.set("X-Application-Id", APP_ID);
     if (MASTER_KEY) {
       headers.set("X-Master-Key", MASTER_KEY);
     }
@@ -286,8 +282,8 @@ export async function signUp({ email, password, firstName, lastName, username })
 
 // —————— Complete Login & Session Implementation ——————
 export async function signIn({ email, password }) {
-  // Clear any existing token before signin
-  clearToken();
+  // Clear any existing user data before signin
+  localStorage.removeItem('user');
   
   // Hash password with MD5 (single hash - schema will apply transform:md5)
   const { MD5 } = await import('crypto-js');
@@ -321,19 +317,10 @@ export async function signIn({ email, password }) {
         role = roles[0] || null;
       }
       
-      // Create JWT token
-      const token = btoa(JSON.stringify({
-        userId: user.id,
-        email: user.email,
-        role: role?.name || 'user',
-        exp: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
-      }));
-      
-      // Store token and user data
-      saveToken(token);
+      // Store user data in localStorage (no JWT token needed with master key auth)
       localStorage.setItem('user', JSON.stringify({ ...user, role }));
       
-      return { success: true, user, token };
+      return { success: true, user };
     } else {
       throw new Error('Invalid email or password');
     }
@@ -343,13 +330,11 @@ export async function signIn({ email, password }) {
 }
 
 export async function signOut(options) {
-  try {
-    await request("/signout", { method: "POST", ...options });
-  } catch (error) {
-    console.error(error.message);
-  } finally {
-    clearToken();
-  }
+  // Clear user data from localStorage
+  localStorage.removeItem('user');
+  // Clear any other session data
+  localStorage.removeItem('candidates');
+  localStorage.removeItem('votes');
 }
 
 export const getCurrentUser = (options) => request("/me", options);

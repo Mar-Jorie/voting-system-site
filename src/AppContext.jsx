@@ -5,6 +5,8 @@ const AppContext = createContext({
   setUser: () => {},
   schemas: [],
   setSchemas: () => {},
+  logout: () => {},
+  login: () => {},
 });
 
 export { AppContext };

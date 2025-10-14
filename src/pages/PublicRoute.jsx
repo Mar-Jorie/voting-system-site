@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { AppContext } from '../AppContext';
 
-const ProtectedRoute = ({ children }) => {
+const PublicRoute = ({ children }) => {
   const location = useLocation();
   const { user, setUser } = useContext(AppContext);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -38,13 +38,15 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // If user is authenticated, render children
+  // If user is authenticated, redirect to dashboard
   if (user) {
-    return children;
+    // Get the intended destination from location state, or default to dashboard
+    const from = location.state?.from?.pathname || '/dashboard';
+    return <Navigate to={from} replace />;
   }
 
-  // If no user, redirect to signin with current location
-  return <Navigate to="/signin" state={{ from: location }} replace />;
+  // If no user, render public content
+  return children;
 };
 
-export default ProtectedRoute;
+export default PublicRoute;

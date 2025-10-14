@@ -25,6 +25,41 @@ const FileUpload = ({
   const [previewImage, setPreviewImage] = useState(null);
   const fileInputRef = useRef(null);
 
+  // Image compression function
+  const compressImage = (file, maxWidth = 800, quality = 0.7) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // Calculate new dimensions
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL(file.type, quality);
+        
+        resolve({
+          name: file.name,
+          size: Math.round(compressedDataUrl.length * 0.75), // Approximate compressed size
+          type: file.type,
+          dataUrl: compressedDataUrl,
+          file: file
+        });
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleFileSelect = async (files) => {
     if (disabled) return;
 
@@ -52,20 +87,25 @@ const FileUpload = ({
 
     try {
       const filePromises = fileArray.map(file => {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            resolve({
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              dataUrl: event.target.result,
-              file: file
-            });
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
+        // Compress images, keep other files as is
+        if (file.type.startsWith('image/')) {
+          return compressImage(file);
+        } else {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              resolve({
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                dataUrl: event.target.result,
+                file: file
+              });
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        }
       });
 
       const uploadedFiles = await Promise.all(filePromises);
@@ -233,6 +273,11 @@ const FileUpload = ({
             <p className="text-xs text-gray-400">
               Max file size: {Math.round(maxSize / 1024 / 1024)}MB
               {multiple && ` • Max files: ${maxFiles}`}
+              {accept.includes('image') && (
+                <span className="block mt-1 text-blue-600">
+                  Images will be automatically compressed for optimal storage
+                </span>
+              )}
             </p>
           )}
         </div>

@@ -8,17 +8,25 @@ import CandidatesPage from "./pages/CandidatesPage";
 import UsersPage from "./pages/UsersPage";
 import MainPage from "./pages/MainPage";
 import ProtectedRoute from "./pages/ProtectedRoute";
+import PublicRoute from "./pages/PublicRoute";
 import MainLayout from "./components/layout/MainLayout";
 import Toast from "./components/Toast";
-import "./utils/initMockData"; // Initialize mock data
 
 function App() {
   return (
     <Router>
       <Routes>
         {/* Public routes without MainLayout */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/" element={
+          <PublicRoute>
+            <LandingPage />
+          </PublicRoute>
+        } />
+        <Route path="/signin" element={
+          <PublicRoute>
+            <SignInPage />
+          </PublicRoute>
+        } />
         
         {/* Protected routes with MainLayout */}
         <Route path="/dashboard" element={

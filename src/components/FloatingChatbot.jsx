@@ -1,5 +1,5 @@
 // FloatingChatbot Component - MANDATORY PATTERN
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   ChatBubbleLeftRightIcon, 
   XMarkIcon, 
@@ -8,10 +8,13 @@ import {
   QuestionMarkCircleIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
+import apiClient from '../usecases/api';
 
 const FloatingChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
+  const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -22,14 +25,34 @@ const FloatingChatbot = () => {
     }
   ]);
 
-  const quickQuestions = [
-    'How do I vote for outstanding guests?',
-    'What are the male and female categories?',
-    'When is the Corporate Party 2025 event?',
-    'How do I view the voting results?',
-    'Is my vote secure and private?',
-    'Can I change my vote after submitting?'
-  ];
+  // Load FAQs from database
+  useEffect(() => {
+    const loadFAQs = async () => {
+      try {
+        const faqData = await apiClient.findObjects('faqs', {});
+        setFaqs(faqData || []);
+      } catch (error) {
+        console.error('Error loading FAQs:', error);
+        setFaqs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFAQs();
+  }, []);
+
+  // Generate quick questions from database FAQs
+  const quickQuestions = faqs.length > 0 
+    ? faqs.slice(0, 6).map(faq => faq.question)
+    : [
+        'How do I vote for outstanding guests?',
+        'What are the male and female categories?',
+        'When is the Corporate Party 2025 event?',
+        'How do I view the voting results?',
+        'Is my vote secure and private?',
+        'Can I change my vote after submitting?'
+      ];
 
   const handleQuickQuestion = (question) => {
     setMessage(question);
@@ -38,6 +61,42 @@ const FloatingChatbot = () => {
   const getBotResponse = (userMessage) => {
     const message = userMessage.toLowerCase();
     
+    // First, try to find a matching FAQ from database
+    if (faqs.length > 0) {
+      // Check for exact question match
+      const exactMatch = faqs.find(faq => 
+        faq.question.toLowerCase() === userMessage.toLowerCase()
+      );
+      if (exactMatch) {
+        return exactMatch.answer;
+      }
+      
+      // Check for keyword matches
+      const keywordMatch = faqs.find(faq => {
+        if (faq.keywords && faq.keywords.length > 0) {
+          return faq.keywords.some(keyword => 
+            message.includes(keyword.toLowerCase())
+          );
+        }
+        return false;
+      });
+      if (keywordMatch) {
+        return keywordMatch.answer;
+      }
+      
+      // Check for partial question matches
+      const partialMatch = faqs.find(faq => {
+        const faqWords = faq.question.toLowerCase().split(' ');
+        return faqWords.some(word => 
+          word.length > 3 && message.includes(word)
+        );
+      });
+      if (partialMatch) {
+        return partialMatch.answer;
+      }
+    }
+    
+    // Fallback to hardcoded responses if no FAQ match found
     if (message.includes('how do i vote') || message.includes('vote for outstanding guests')) {
       return 'To vote for outstanding guests, click the "Cast Vote" or "Start Voting" button on the page. You\'ll need to select one male and one female guest who made the biggest impact at our Corporate Party 2025 event. Don\'t forget to provide your email address to submit your vote!';
     }
@@ -150,20 +209,32 @@ const FloatingChatbot = () => {
               <div className="mt-4 space-y-3">
                 <div className="flex items-center space-x-2">
                   <LightBulbIcon className="h-4 w-4 text-yellow-500" />
-                  <span className="text-sm font-medium text-gray-700">Quick questions you can ask:</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    {loading ? 'Loading FAQs...' : 'Quick questions you can ask:'}
+                  </span>
                 </div>
-                <div className="space-y-2">
-                  {quickQuestions.map((question, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleQuickQuestion(question)}
-                      className="w-full text-left p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-gray-700 flex items-center space-x-2 transition-colors"
-                    >
-                      <QuestionMarkCircleIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <span>{question}</span>
-                    </button>
-                  ))}
-                </div>
+                {loading ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="w-full p-2 bg-gray-50 rounded-lg animate-pulse">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {quickQuestions.map((question, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleQuickQuestion(question)}
+                        className="w-full text-left p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-gray-700 flex items-center space-x-2 transition-colors"
+                      >
+                        <QuestionMarkCircleIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <span>{question}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

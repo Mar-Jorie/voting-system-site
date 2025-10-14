@@ -8,6 +8,8 @@ import CollapsibleTable from '../components/CollapsibleTable';
 import SearchFilter from '../components/SearchFilter';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import { toast } from 'react-hot-toast';
+import apiClient from '../usecases/api';
+import auditLogger from '../utils/auditLogger.js';
 
 const FAQPage = () => {
   const [faqs, setFaqs] = useState([]);
@@ -23,9 +25,11 @@ const FAQPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [editingFaq, setEditingFaq] = useState(null);
   const [deletingFaq, setDeletingFaq] = useState(null);
   const [formData, setFormData] = useState({});
+  const [pendingFormData, setPendingFormData] = useState(null);
   
   // Selection state
   const [selectedFaqs, setSelectedFaqs] = useState(new Set());
@@ -38,11 +42,11 @@ const FAQPage = () => {
     filterFAQs();
   }, [faqs, searchValue, filters]);
 
-  const loadFAQs = () => {
+  const loadFAQs = async () => {
     setLoading(true);
     try {
-      const storedFAQs = JSON.parse(localStorage.getItem('faqs') || '[]');
-      setFaqs(storedFAQs);
+      const faqsData = await apiClient.findObjects('faqs', {});
+      setFaqs(faqsData);
     } catch (error) {
       console.error('Error loading FAQs:', error);
       toast.error('Failed to load FAQs');
@@ -51,15 +55,6 @@ const FAQPage = () => {
     }
   };
 
-  const saveFAQs = (updatedFAQs) => {
-    try {
-      localStorage.setItem('faqs', JSON.stringify(updatedFAQs));
-      setFaqs(updatedFAQs);
-    } catch (error) {
-      console.error('Error saving FAQs:', error);
-      toast.error('Failed to save FAQs');
-    }
-  };
 
   const filterFAQs = () => {
     let filtered = [...faqs];
@@ -111,46 +106,69 @@ const FAQPage = () => {
   };
 
   const handleSubmitFAQ = async (formData) => {
+    setPendingFormData(formData);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSave = async () => {
     try {
-      const newFAQ = {
-        id: editingFaq ? editingFaq.id : `faq-${Date.now()}`,
-        question: formData.question,
-        answer: formData.answer,
-        keywords: Array.isArray(formData.keywords) ? formData.keywords : 
-                 formData.keywords ? formData.keywords.split(',').map(k => k.trim()) : [],
-        category: formData.category || 'general',
-        createdAt: editingFaq ? editingFaq.createdAt : new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+      const faqData = {
+        question: pendingFormData.question,
+        answer: pendingFormData.answer,
+        keywords: Array.isArray(pendingFormData.keywords) ? pendingFormData.keywords : 
+                 pendingFormData.keywords ? pendingFormData.keywords.split(',').map(k => k.trim()) : [],
+        category: pendingFormData.category || 'general'
       };
 
-      let updatedFAQs;
       if (editingFaq) {
-        updatedFAQs = faqs.map(faq => 
-          faq.id === editingFaq.id ? newFAQ : faq
-        );
+        await apiClient.updateObject('faqs', editingFaq.id, faqData);
+        await auditLogger.logUpdate('faq', editingFaq.id, faqData.question, {
+          category: faqData.category,
+          answer: faqData.answer
+        });
         toast.success('FAQ updated successfully');
       } else {
-        updatedFAQs = [...faqs, newFAQ];
+        const newFaq = await apiClient.createObject('faqs', faqData);
+        await auditLogger.logCreate('faq', newFaq.id, faqData.question, {
+          category: faqData.category,
+          answer: faqData.answer
+        });
         toast.success('FAQ added successfully');
       }
 
-      saveFAQs(updatedFAQs);
+      // Reload FAQs from database
+      await loadFAQs();
+      
       setShowFormModal(false);
       setEditingFaq(null);
       setFormData({});
+      setShowConfirmModal(false);
+      setPendingFormData(null);
     } catch (error) {
       console.error('Error saving FAQ:', error);
       toast.error('Failed to save FAQ');
+      setShowConfirmModal(false);
+      setPendingFormData(null);
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleCancelSave = () => {
+    setShowConfirmModal(false);
+    setPendingFormData(null);
+  };
+
+  const handleConfirmDelete = async () => {
     try {
-      const updatedFAQs = faqs.filter(faq => faq.id !== deletingFaq.id);
-      saveFAQs(updatedFAQs);
+      await apiClient.deleteObject('faqs', deletingFaq.id);
+      await auditLogger.logDelete('faq', deletingFaq.id, deletingFaq.question, {
+        category: deletingFaq.category
+      });
       setShowDeleteModal(false);
       setDeletingFaq(null);
       toast.success('FAQ deleted successfully');
+      
+      // Reload FAQs from database
+      await loadFAQs();
     } catch (error) {
       console.error('Error deleting FAQ:', error);
       toast.error('Failed to delete FAQ');
@@ -183,14 +201,35 @@ const FAQPage = () => {
     setShowBulkDeleteModal(true);
   };
 
-  const handleBulkDeleteConfirm = () => {
+  const handleBulkDeleteConfirm = async () => {
     try {
       const faqsToDelete = filteredFaqs.filter(faq => selectedFaqs.has(faq.id));
-      const updatedFAQs = faqs.filter(faq => !selectedFaqs.has(faq.id));
-      saveFAQs(updatedFAQs);
+      
+      // Delete all selected FAQs from database
+      await Promise.all(
+        faqsToDelete.map(faq => apiClient.deleteObject('faqs', faq.id))
+      );
+      
+      // Log bulk delete operation
+      await auditLogger.log({
+        action: 'delete',
+        entity_type: 'faq',
+        entity_name: `${faqsToDelete.length} FAQs`,
+        details: {
+          count: faqsToDelete.length,
+          faq_ids: faqsToDelete.map(f => f.id),
+          questions: faqsToDelete.map(f => f.question)
+        },
+        category: 'data_management',
+        severity: 'warning'
+      });
+      
       setSelectedFaqs(new Set());
       setShowBulkDeleteModal(false);
       toast.success(`${faqsToDelete.length} FAQ(s) deleted successfully`);
+      
+      // Reload FAQs from database
+      await loadFAQs();
     } catch (error) {
       console.error('Error deleting FAQs:', error);
       toast.error('Failed to delete FAQs');
@@ -520,6 +559,18 @@ const FAQPage = () => {
         initialData={formData}
         loading={false}
         isUpdate={!!editingFaq}
+      />
+
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={handleCancelSave}
+        onConfirm={handleConfirmSave}
+        title="Confirm Save"
+        message={`Are you sure you want to ${editingFaq ? 'update' : 'create'} this FAQ?`}
+        confirmLabel={editingFaq ? "Update FAQ" : "Create FAQ"}
+        cancelLabel="Cancel"
+        variant="info"
+        icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
 
       {/* Delete Confirmation Modal */}

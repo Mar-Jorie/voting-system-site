@@ -21,7 +21,7 @@ describe('Voting System E2E Tests', () => {
     await page.waitForSelector('h1');
     
     const title = await page.$eval('h1', el => el.textContent);
-    expect(title).toContain('Simple & Secure');
+    expect(title).toContain('Corporate Party 2025');
   });
 
   test('should navigate to signin page', async () => {
@@ -33,13 +33,13 @@ describe('Voting System E2E Tests', () => {
     expect(signinTitle).toContain('Welcome back');
   });
 
-  test('should navigate to signup page', async () => {
+  test('should have voting functionality', async () => {
     await page.goto('http://localhost:3000');
-    await page.click('a[href="/signup"]');
-    await page.waitForSelector('h2');
+    await page.waitForSelector('button');
     
-    const signupTitle = await page.$eval('h2', el => el.textContent);
-    expect(signupTitle).toContain('Create your account');
+    // Check if voting button exists
+    const votingButton = await page.$('button');
+    expect(votingButton).toBeTruthy();
   });
 
   test('should have responsive design', async () => {

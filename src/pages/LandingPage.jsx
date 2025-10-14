@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import FloatingChatbot from '../components/FloatingChatbot';
 import VotingModal from '../components/VotingModal';
 import { isVotingActive, getVotingStatusInfo, getResultsVisibility, RESULTS_VISIBILITY } from '../utils/voteControl';
+import apiClient from '../usecases/api';
 
 const LandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -12,12 +13,17 @@ const LandingPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [votingStatus, setVotingStatus] = useState(null);
   const [resultsVisibility, setResultsVisibility] = useState(RESULTS_VISIBILITY.HIDDEN);
+  const [candidates, setCandidates] = useState([]);
+  const [votes, setVotes] = useState([]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   useEffect(() => {
+    // Load data from database
+    loadData();
+    
     // Check voting status
     const checkVotingStatus = () => {
       const status = getVotingStatusInfo();
@@ -35,6 +41,7 @@ const LandingPage = () => {
     
     // Listen for vote updates
     const handleVotesUpdated = () => {
+      loadData();
       setRefreshTrigger(prev => prev + 1);
     };
     
@@ -56,6 +63,40 @@ const LandingPage = () => {
     };
   }, []);
 
+  const loadData = async () => {
+    try {
+      const [candidatesData, votesData] = await Promise.all([
+        apiClient.findObjects('candidates', {}),
+        apiClient.findObjects('votes', {})
+      ]);
+      
+      // Calculate vote counts for each candidate
+      const candidatesWithVotes = candidatesData.map(candidate => {
+        let voteCount = 0;
+        
+        // Count votes from the new single vote structure
+        votesData.forEach(vote => {
+          if (vote.vote_type === 'dual_selection') {
+            // Check if this candidate is selected as male or female
+            if (vote.male_candidate_id === candidate.id || vote.female_candidate_id === candidate.id) {
+              voteCount++;
+            }
+          } else if (vote.candidate_id === candidate.id) {
+            // Handle legacy votes (if any exist)
+            voteCount++;
+          }
+        });
+        
+        return { ...candidate, votes: voteCount };
+      });
+      
+      setCandidates(candidatesWithVotes);
+      setVotes(votesData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
+
   // Helper function to get display name and blur class for candidate names
   const getDisplayName = (candidate) => {
     return candidate.name;
@@ -67,46 +108,81 @@ const LandingPage = () => {
 
   // Voting data functions (reactive to refreshTrigger)
   const getTotalVotes = () => {
-    const votes = JSON.parse(localStorage.getItem('votes') || '[]');
     return votes.length;
   };
 
   const getMaleCandidates = () => {
-    const candidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-    const votes = JSON.parse(localStorage.getItem('votes') || '[]');
-    return candidates.filter(c => c.category === 'male').map(candidate => {
-      const candidateVotes = votes.filter(vote => 
-        vote.maleCandidateId === candidate.id
-      ).length;
-      return { ...candidate, votes: candidateVotes };
-    });
+    return candidates.filter(c => c.category === 'male');
   };
 
   const getFemaleCandidates = () => {
-    const candidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-    const votes = JSON.parse(localStorage.getItem('votes') || '[]');
-    return candidates.filter(c => c.category === 'female').map(candidate => {
-      const candidateVotes = votes.filter(vote => 
-        vote.femaleCandidateId === candidate.id
-      ).length;
-      return { ...candidate, votes: candidateVotes };
-    });
+    return candidates.filter(c => c.category === 'female');
+  };
+
+  // Get total votes within each category
+  const getTotalMaleVotes = () => {
+    return votes.length; // Each vote record has 1 male selection
+  };
+
+  const getTotalFemaleVotes = () => {
+    return votes.length; // Each vote record has 1 female selection
+  };
+
+  // Calculate percentage within category
+  const getCategoryPercentage = (candidateVotes, category) => {
+    const totalInCategory = category === 'male' ? getTotalMaleVotes() : getTotalFemaleVotes();
+    return totalInCategory > 0 ? ((candidateVotes / totalInCategory) * 100).toFixed(1) : 0;
   };
 
   const getMaleWinner = () => {
     const maleCandidates = getMaleCandidates();
     if (maleCandidates.length === 0) return null;
-    return maleCandidates.reduce((prev, current) => 
-      (prev.votes > current.votes) ? prev : current
-    );
+    
+    // Sort by votes (descending) and then by name (ascending) for tie-breaking
+    const sortedCandidates = maleCandidates.sort((a, b) => {
+      if (b.votes !== a.votes) {
+        return b.votes - a.votes; // Higher votes first
+      }
+      return a.name.localeCompare(b.name); // Alphabetical order for ties
+    });
+    
+    return sortedCandidates[0];
   };
 
   const getFemaleWinner = () => {
     const femaleCandidates = getFemaleCandidates();
     if (femaleCandidates.length === 0) return null;
-    return femaleCandidates.reduce((prev, current) => 
-      (prev.votes > current.votes) ? prev : current
-    );
+    
+    // Sort by votes (descending) and then by name (ascending) for tie-breaking
+    const sortedCandidates = femaleCandidates.sort((a, b) => {
+      if (b.votes !== a.votes) {
+        return b.votes - a.votes; // Higher votes first
+      }
+      return a.name.localeCompare(b.name); // Alphabetical order for ties
+    });
+    
+    return sortedCandidates[0];
+  };
+
+  // Check if there are ties for winners
+  const getMaleTiedCandidates = () => {
+    const maleCandidates = getMaleCandidates();
+    if (maleCandidates.length === 0) return [];
+    
+    const sortedCandidates = maleCandidates.sort((a, b) => b.votes - a.votes);
+    const maxVotes = sortedCandidates[0]?.votes || 0;
+    
+    return sortedCandidates.filter(candidate => candidate.votes === maxVotes && maxVotes > 0);
+  };
+
+  const getFemaleTiedCandidates = () => {
+    const femaleCandidates = getFemaleCandidates();
+    if (femaleCandidates.length === 0) return [];
+    
+    const sortedCandidates = femaleCandidates.sort((a, b) => b.votes - a.votes);
+    const maxVotes = sortedCandidates[0]?.votes || 0;
+    
+    return sortedCandidates.filter(candidate => candidate.votes === maxVotes && maxVotes > 0);
   };
 
   return (
@@ -386,25 +462,43 @@ const LandingPage = () => {
             {/* Male Winner */}
             <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-6 shadow-sm border border-primary-200 hover:shadow-md transition-shadow duration-200">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Male Category Winner</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {getMaleTiedCandidates().length > 1 ? 'Male Category Winners (Tied)' : 'Male Category Winner'}
+                </h3>
                 <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
                   <TrophyIcon className="h-6 w-6 text-yellow-600" />
                 </div>
               </div>
               {getMaleWinner() ? (
                 <div className="text-center">
-                  {getMaleWinner().image && (
-                    <img 
-                      src={getMaleWinner().image} 
-                      alt={getMaleWinner().name}
-                      className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
-                    />
+                  {getMaleTiedCandidates().length > 1 ? (
+                    // Show tied candidates
+                    <div className="text-center">
+                      <h4 className={`text-xl font-semibold text-gray-900 mb-2 ${getBlurClass()}`}>
+                        {getMaleTiedCandidates().map(candidate => candidate.name).join(' & ')}
+                      </h4>
+                      <p className="text-2xl font-bold text-primary-600 mb-2">{getMaleWinner().votes || 0} votes</p>
+                      <p className="text-sm text-gray-600">
+                        {getCategoryPercentage(getMaleWinner().votes || 0, 'male')}% of male votes
+                      </p>
+                    </div>
+                  ) : (
+                    // Show single winner
+                    <div>
+                      {getMaleWinner().image && (
+                        <img 
+                          src={getMaleWinner().image} 
+                          alt={getMaleWinner().name}
+                          className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
+                        />
+                      )}
+                      <h4 className={`text-xl font-semibold text-gray-900 mb-2 ${getBlurClass()}`}>{getMaleWinner().name}</h4>
+                      <p className="text-2xl font-bold text-primary-600 mb-2">{getMaleWinner().votes || 0} votes</p>
+                      <p className="text-sm text-gray-600">
+                        {getCategoryPercentage(getMaleWinner().votes || 0, 'male')}% of male votes
+                      </p>
+                    </div>
                   )}
-                  <h4 className={`text-xl font-semibold text-gray-900 mb-2 ${getBlurClass()}`}>{getMaleWinner().name}</h4>
-                  <p className="text-2xl font-bold text-primary-600 mb-2">{getMaleWinner().votes || 0} votes</p>
-                  <p className="text-sm text-gray-600">
-                    {getTotalVotes() > 0 ? (((getMaleWinner().votes || 0) / getTotalVotes()) * 100).toFixed(1) : 0}% of total votes
-                  </p>
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -419,25 +513,43 @@ const LandingPage = () => {
             {/* Female Winner */}
             <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-6 shadow-sm border border-primary-200 hover:shadow-md transition-shadow duration-200">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Female Category Winner</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {getFemaleTiedCandidates().length > 1 ? 'Female Category Winners (Tied)' : 'Female Category Winner'}
+                </h3>
                 <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
                   <TrophyIcon className="h-6 w-6 text-yellow-600" />
                 </div>
               </div>
               {getFemaleWinner() ? (
                 <div className="text-center">
-                  {getFemaleWinner().image && (
-                    <img 
-                      src={getFemaleWinner().image} 
-                      alt={getFemaleWinner().name}
-                      className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
-                    />
+                  {getFemaleTiedCandidates().length > 1 ? (
+                    // Show tied candidates
+                    <div className="text-center">
+                      <h4 className={`text-xl font-semibold text-gray-900 mb-2 ${getBlurClass()}`}>
+                        {getFemaleTiedCandidates().map(candidate => candidate.name).join(' & ')}
+                      </h4>
+                      <p className="text-2xl font-bold text-primary-600 mb-2">{getFemaleWinner().votes || 0} votes</p>
+                      <p className="text-sm text-gray-600">
+                        {getCategoryPercentage(getFemaleWinner().votes || 0, 'female')}% of female votes
+                      </p>
+                    </div>
+                  ) : (
+                    // Show single winner
+                    <div>
+                      {getFemaleWinner().image && (
+                        <img 
+                          src={getFemaleWinner().image} 
+                          alt={getFemaleWinner().name}
+                          className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
+                        />
+                      )}
+                      <h4 className={`text-xl font-semibold text-gray-900 mb-2 ${getBlurClass()}`}>{getFemaleWinner().name}</h4>
+                      <p className="text-2xl font-bold text-primary-600 mb-2">{getFemaleWinner().votes || 0} votes</p>
+                      <p className="text-sm text-gray-600">
+                        {getCategoryPercentage(getFemaleWinner().votes || 0, 'female')}% of female votes
+                      </p>
+                    </div>
                   )}
-                  <h4 className={`text-xl font-semibold text-gray-900 mb-2 ${getBlurClass()}`}>{getFemaleWinner().name}</h4>
-                  <p className="text-2xl font-bold text-primary-600 mb-2">{getFemaleWinner().votes || 0} votes</p>
-                  <p className="text-sm text-gray-600">
-                    {getTotalVotes() > 0 ? (((getFemaleWinner().votes || 0) / getTotalVotes()) * 100).toFixed(1) : 0}% of total votes
-                  </p>
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -461,7 +573,12 @@ const LandingPage = () => {
                 <h3 className="text-lg font-semibold text-gray-900">Male Category Results</h3>
               </div>
               <div className="space-y-4">
-                {getMaleCandidates().sort((a, b) => (b.votes || 0) - (a.votes || 0)).map((candidate, index) => (
+                {getMaleCandidates().sort((a, b) => {
+                  if (b.votes !== a.votes) {
+                    return b.votes - a.votes; // Higher votes first
+                  }
+                  return a.name.localeCompare(b.name); // Alphabetical order for ties
+                }).map((candidate, index) => (
                   <div key={candidate.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">
                     <div className="flex-shrink-0">
                       <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
@@ -484,11 +601,12 @@ const LandingPage = () => {
                           <div 
                             className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
                             style={{ 
-                              width: `${getTotalVotes() > 0 ? ((candidate.votes || 0) / getTotalVotes()) * 100 : 0}%` 
+                              width: `${getCategoryPercentage(candidate.votes || 0, 'male')}%` 
                             }}
                           ></div>
                         </div>
                         <span className="text-sm font-medium text-gray-600 min-w-[2rem]">{candidate.votes || 0}</span>
+                        <span className="text-xs text-gray-500 ml-1">({getCategoryPercentage(candidate.votes || 0, 'male')}%)</span>
                       </div>
                     </div>
                   </div>
@@ -505,7 +623,12 @@ const LandingPage = () => {
                 <h3 className="text-lg font-semibold text-gray-900">Female Category Results</h3>
               </div>
               <div className="space-y-4">
-                {getFemaleCandidates().sort((a, b) => (b.votes || 0) - (a.votes || 0)).map((candidate, index) => (
+                {getFemaleCandidates().sort((a, b) => {
+                  if (b.votes !== a.votes) {
+                    return b.votes - a.votes; // Higher votes first
+                  }
+                  return a.name.localeCompare(b.name); // Alphabetical order for ties
+                }).map((candidate, index) => (
                   <div key={candidate.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">
                     <div className="flex-shrink-0">
                       <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
@@ -528,11 +651,12 @@ const LandingPage = () => {
                           <div 
                             className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
                             style={{ 
-                              width: `${getTotalVotes() > 0 ? ((candidate.votes || 0) / getTotalVotes()) * 100 : 0}%` 
+                              width: `${getCategoryPercentage(candidate.votes || 0, 'female')}%` 
                             }}
                           ></div>
                         </div>
                         <span className="text-sm font-medium text-gray-600 min-w-[2rem]">{candidate.votes || 0}</span>
+                        <span className="text-xs text-gray-500 ml-1">({getCategoryPercentage(candidate.votes || 0, 'female')}%)</span>
                       </div>
                     </div>
                   </div>

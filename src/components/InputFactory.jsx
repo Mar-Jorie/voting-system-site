@@ -35,6 +35,18 @@ export default function InputFactory({ fieldName, config, value, onChange, class
   };
 
   const inputId = `field-${fieldName}`;
+  
+  // Filter out file-specific props that shouldn't be passed to DOM elements
+  const { 
+    multiple, 
+    maxFiles, 
+    maxSize, 
+    accept, 
+    showPreview, 
+    previewSize, 
+    ...domSafeProps 
+  } = otherProps;
+  
   const commonProps = {
     id: inputId,
     name: fieldName,
@@ -43,7 +55,7 @@ export default function InputFactory({ fieldName, config, value, onChange, class
     className: `w-full h-10 px-3 border border-gray-300 rounded-md text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${className}`,
     placeholder: placeholder || `Enter ${label || fieldName}`,
     required: required,
-    ...otherProps
+    ...domSafeProps
   };
 
   const renderInput = () => {

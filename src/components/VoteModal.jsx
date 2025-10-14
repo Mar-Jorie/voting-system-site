@@ -4,6 +4,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import Button from './Button';
 import InputFactory from './InputFactory';
 import { toast } from 'react-hot-toast';
+import apiClient from '../usecases/api';
 
 const VoteModal = ({
   isOpen,
@@ -48,37 +49,39 @@ const VoteModal = ({
     
     try {
       // Check if email has already voted for this category
-      const existingVotes = JSON.parse(localStorage.getItem('votes') || '[]');
-      const hasVoted = existingVotes.some(vote => 
-        vote.email === formData.email && vote.candidateCategory === candidate.category
-      );
+      const existingVotes = await apiClient.findObjects('votes', {
+        where: {
+          voter_email: formData.email,
+          category: candidate.category
+        }
+      });
       
-      if (hasVoted) {
+      if (existingVotes.length > 0) {
         toast.error('You have already voted for this category');
         setLoading(false);
         return;
       }
       
-      // Store the vote
+      // Create the vote in the database
       const newVote = {
-        id: Date.now(),
-        candidateId: candidate.id,
-        candidateName: candidate.name,
-        candidateCategory: candidate.category,
-        voterName: formData.name,
-        voterEmail: formData.email,
-        timestamp: new Date().toISOString()
+        candidate_id: candidate.id,
+        voter_name: formData.name,
+        voter_email: formData.email,
+        category: candidate.category
       };
       
-      existingVotes.push(newVote);
-      localStorage.setItem('votes', JSON.stringify(existingVotes));
+      await apiClient.createObject('votes', newVote);
       
       toast.success('Your vote has been recorded successfully!');
       onSubmit(formData);
       
       // Reset form
       setFormData({ name: '', email: '' });
-    } catch {
+      
+      // Trigger vote update event for real-time updates
+      window.dispatchEvent(new CustomEvent('votesUpdated'));
+    } catch (error) {
+      console.error('Error submitting vote:', error);
       toast.error('Failed to submit vote. Please try again.');
     } finally {
       setLoading(false);

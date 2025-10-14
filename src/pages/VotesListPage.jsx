@@ -6,7 +6,8 @@ import SearchFilter from '../components/SearchFilter';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import Button from '../components/Button';
 import { toast } from 'react-hot-toast';
-import { cleanupInvalidVotes } from '../utils/cleanupVotes';
+import apiClient from '../usecases/api';
+import auditLogger from '../utils/auditLogger.js';
 
 const VotesListPage = () => {
   const [votes, setVotes] = useState([]);
@@ -42,19 +43,19 @@ const VotesListPage = () => {
     filterVotes();
   }, [votes, searchValue, filters]);
 
-  const loadData = () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      // Clean up any invalid votes first
-      cleanupInvalidVotes();
+      // Fetch votes and candidates from database
+      const [votesData, candidatesData] = await Promise.all([
+        apiClient.findObjects('votes', {}),
+        apiClient.findObjects('candidates', {})
+      ]);
       
-      const storedVotes = JSON.parse(localStorage.getItem('votes') || '[]');
-      const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-      
-      
-      setVotes(storedVotes);
-      setCandidates(storedCandidates);
+      setVotes(votesData);
+      setCandidates(candidatesData);
     } catch (error) {
+      console.error('Error loading votes data:', error);
       toast.error('Failed to load votes data');
     } finally {
       setLoading(false);
@@ -66,23 +67,35 @@ const VotesListPage = () => {
 
     // Search filter
     if (searchValue) {
-      filtered = filtered.filter(vote => 
-        vote.voterName?.toLowerCase().includes(searchValue.toLowerCase()) ||
-        vote.voterEmail?.toLowerCase().includes(searchValue.toLowerCase()) ||
-        getCandidateName(vote.maleCandidateId)?.toLowerCase().includes(searchValue.toLowerCase()) ||
-        getCandidateName(vote.femaleCandidateId)?.toLowerCase().includes(searchValue.toLowerCase())
-      );
+      filtered = filtered.filter(vote => {
+        const searchLower = searchValue.toLowerCase();
+        return (
+          vote.voter_name?.toLowerCase().includes(searchLower) ||
+          vote.voter_email?.toLowerCase().includes(searchLower) ||
+          (vote.vote_type === 'dual_selection' ? 
+            (getCandidateName(vote.male_candidate_id)?.toLowerCase().includes(searchLower) ||
+             getCandidateName(vote.female_candidate_id)?.toLowerCase().includes(searchLower)) :
+            getCandidateName(vote.candidate_id)?.toLowerCase().includes(searchLower)
+          )
+        );
+      });
     }
 
     // Category filter
     if (filters.category) {
       filtered = filtered.filter(vote => {
-        if (filters.category === 'male') {
-          return vote.maleCandidateId;
-        } else if (filters.category === 'female') {
-          return vote.femaleCandidateId;
+        if (vote.vote_type === 'dual_selection') {
+          // For dual selection votes, show them for both categories
+          return true;
+        } else {
+          // Handle legacy votes
+          if (filters.category === 'male') {
+            return vote.category === 'male';
+          } else if (filters.category === 'female') {
+            return vote.category === 'female';
+          }
+          return true;
         }
-        return true;
       });
     }
 
@@ -99,10 +112,10 @@ const VotesListPage = () => {
     return candidate ? candidate.category : 'unknown';
   };
 
-  const formatDate = (timestamp) => {
-    if (!timestamp) return 'N/A';
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     
-    const date = new Date(timestamp);
+    const date = new Date(dateString);
     
     // Check if date is valid
     if (isNaN(date.getTime())) {
@@ -119,20 +132,12 @@ const VotesListPage = () => {
   };
 
   const formatVoteId = (vote, index) => {
-    // Always create a formatted ID based on the vote's timestamp or current date
+    // Always create a formatted ID based on the vote's created date
     let date;
     
-    // Try to get date from vote.id (timestamp string)
-    if (vote.id && !isNaN(Number(vote.id))) {
-      date = new Date(Number(vote.id));
-    }
-    // Try to get date from timestamp field
-    else if (vote.timestamp) {
-      date = new Date(vote.timestamp);
-    }
-    // Try to get date from voteDate field
-    else if (vote.voteDate) {
-      date = new Date(vote.voteDate);
+    // Try to get date from created field
+    if (vote.created) {
+      date = new Date(vote.created);
     }
     // Fallback to current date
     else {
@@ -141,7 +146,7 @@ const VotesListPage = () => {
     
     // Check if date is valid
     if (isNaN(date.getTime())) {
-      // If all dates are invalid, use current date
+      // If date is invalid, use current date
       date = new Date();
     }
     
@@ -177,15 +182,29 @@ const VotesListPage = () => {
 
   const handleExport = () => {
     try {
-      const csvData = filteredVotes.map((vote, index) => ({
-        'Vote ID': formatVoteId(vote, index),
-        'Voter Name': vote.voterName || 'N/A',
-        'Voter Email': vote.voterEmail || 'N/A',
-        'Male Candidate': vote.maleCandidateId ? getCandidateName(vote.maleCandidateId) : 'N/A',
-        'Female Candidate': vote.femaleCandidateId ? getCandidateName(vote.femaleCandidateId) : 'N/A',
-        'Vote Date': formatDate(vote.timestamp),
-        'IP Address': vote.ipAddress || 'N/A'
-      }));
+      const csvData = filteredVotes.map((vote, index) => {
+        if (vote.vote_type === 'dual_selection') {
+          return {
+            'Vote ID': formatVoteId(vote, index),
+            'Voter Name': vote.voter_name || 'N/A',
+            'Voter Email': vote.voter_email || 'N/A',
+            'Male Candidate': vote.male_candidate_name || getCandidateName(vote.male_candidate_id) || 'N/A',
+            'Female Candidate': vote.female_candidate_name || getCandidateName(vote.female_candidate_id) || 'N/A',
+            'Vote Date': formatDate(vote.created),
+            'IP Address': vote.ip_address || 'N/A'
+          };
+        } else {
+          return {
+            'Vote ID': formatVoteId(vote, index),
+            'Voter Name': vote.voter_name || 'N/A',
+            'Voter Email': vote.voter_email || 'N/A',
+            'Candidate': vote.candidate_id ? getCandidateName(vote.candidate_id) : 'N/A',
+            'Category': vote.category || 'N/A',
+            'Vote Date': formatDate(vote.created),
+            'IP Address': vote.ip_address || 'N/A'
+          };
+        }
+      });
 
       const csvContent = [
         Object.keys(csvData[0] || {}).join(','),
@@ -228,24 +247,41 @@ const VotesListPage = () => {
   };
 
   // CSV Export function
-  const exportAsCSV = () => {
+  const exportAsCSV = async () => {
     const votesToExport = filteredVotes.filter(vote => selectedVotes.has(vote.id));
     
-    // Create CSV headers
-    const headers = ['Vote ID', 'Voter Name', 'Voter Email', 'Male Candidate', 'Female Candidate', 'Vote Date', 'IP Address'];
+    // Create CSV headers based on vote type
+    const hasDualVotes = votesToExport.some(vote => vote.vote_type === 'dual_selection');
+    const headers = hasDualVotes ? 
+      ['Vote ID', 'Voter Name', 'Voter Email', 'Male Candidate', 'Female Candidate', 'Vote Date', 'IP Address'] :
+      ['Vote ID', 'Voter Name', 'Voter Email', 'Candidate', 'Category', 'Vote Date', 'IP Address'];
     
     // Create CSV rows
     const csvRows = [
       headers.join(','),
-      ...votesToExport.map((vote, index) => [
-        `"${formatVoteId(vote, index)}"`,
-        `"${vote.voterName || 'Anonymous'}"`,
-        `"${vote.voterEmail || 'N/A'}"`,
-        `"${vote.maleCandidateId ? getCandidateName(vote.maleCandidateId) : 'N/A'}"`,
-        `"${vote.femaleCandidateId ? getCandidateName(vote.femaleCandidateId) : 'N/A'}"`,
-        `"${formatDate(vote.timestamp)}"`,
-        `"${vote.ipAddress || 'N/A'}"`
-      ].join(','))
+      ...votesToExport.map((vote, index) => {
+        if (vote.vote_type === 'dual_selection') {
+          return [
+            `"${formatVoteId(vote, index)}"`,
+            `"${vote.voter_name || 'Anonymous'}"`,
+            `"${vote.voter_email || 'N/A'}"`,
+            `"${vote.male_candidate_name || getCandidateName(vote.male_candidate_id) || 'N/A'}"`,
+            `"${vote.female_candidate_name || getCandidateName(vote.female_candidate_id) || 'N/A'}"`,
+            `"${formatDate(vote.created)}"`,
+            `"${vote.ip_address || 'N/A'}"`
+          ].join(',');
+        } else {
+          return [
+            `"${formatVoteId(vote, index)}"`,
+            `"${vote.voter_name || 'Anonymous'}"`,
+            `"${vote.voter_email || 'N/A'}"`,
+            `"${vote.candidate_id ? getCandidateName(vote.candidate_id) : 'N/A'}"`,
+            `"${vote.category || 'N/A'}"`,
+            `"${formatDate(vote.created)}"`,
+            `"${vote.ip_address || 'N/A'}"`
+          ].join(',');
+        }
+      })
     ];
     
     const csvContent = csvRows.join('\n');
@@ -257,11 +293,26 @@ const VotesListPage = () => {
     link.click();
     URL.revokeObjectURL(url);
     setShowExportModal(false);
+    
+    // Log export action
+    await auditLogger.log({
+      action: 'export_data',
+      entity_type: 'vote',
+      entity_name: 'Votes List',
+      details: {
+        export_type: 'CSV',
+        record_count: votesToExport.length,
+        selected_votes: Array.from(selectedVotes)
+      },
+      category: 'export_import',
+      severity: 'info'
+    });
+    
     toast.success(`${votesToExport.length} vote(s) exported as CSV successfully`);
   };
 
   // PDF Export function
-  const exportAsPDF = () => {
+  const exportAsPDF = async () => {
     const votesToExport = filteredVotes.filter(vote => selectedVotes.has(vote.id));
     
     // Close the export modal first
@@ -311,23 +362,43 @@ const VotesListPage = () => {
               <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Vote ID</th>
               <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Voter Name</th>
               <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Voter Email</th>
-              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Male Candidate</th>
-              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Female Candidate</th>
+              ${votesToExport.some(vote => vote.vote_type === 'dual_selection') ? 
+                '<th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Male Candidate</th>' +
+                '<th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Female Candidate</th>' :
+                '<th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Candidate</th>' +
+                '<th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Category</th>'
+              }
               <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151;">Vote Date</th>
             </tr>
           </thead>
           <tbody>
-            ${votesToExport.map((vote, index) => `
-              <tr style="background-color: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0;">
-                <td style="padding: 12px; border-right: 1px solid #e2e8f0; font-weight: 500; color: #6b7280;">${index + 1}</td>
-                <td style="padding: 12px; border-right: 1px solid #e2e8f0; font-family: monospace; font-size: 12px; color: #374151;">${formatVoteId(vote, index)}</td>
-                <td style="padding: 12px; border-right: 1px solid #e2e8f0; color: #374151;">${vote.voterName || 'Anonymous'}</td>
-                <td style="padding: 12px; border-right: 1px solid #e2e8f0; color: #6b7280;">${vote.voterEmail || 'N/A'}</td>
-                <td style="padding: 12px; border-right: 1px solid #e2e8f0; color: #374151;">${vote.maleCandidateId ? getCandidateName(vote.maleCandidateId) : 'N/A'}</td>
-                <td style="padding: 12px; border-right: 1px solid #e2e8f0; color: #374151;">${vote.femaleCandidateId ? getCandidateName(vote.femaleCandidateId) : 'N/A'}</td>
-                <td style="padding: 12px; color: #6b7280; font-size: 12px;">${formatDate(vote.timestamp)}</td>
-              </tr>
-            `).join('')}
+            ${votesToExport.map((vote, index) => {
+              if (vote.vote_type === 'dual_selection') {
+                return `
+                  <tr style="background-color: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 12px; border-right: 1px solid #e2e8f0; font-weight: 500; color: #6b7280;">${index + 1}</td>
+                    <td style="padding: 12px; border-right: 1px solid #e2e8f0; font-family: monospace; font-size: 12px; color: #374151;">${formatVoteId(vote, index)}</td>
+                    <td style="padding: 12px; border-right: 1px solid #e2e8f0; color: #374151;">${vote.voter_name || 'Anonymous'}</td>
+                    <td style="padding: 12px; border-right: 1px solid #e2e8f0; color: #6b7280;">${vote.voter_email || 'N/A'}</td>
+                    <td style="padding: 12px; border-right: 1px solid #e2e8f0; color: #374151;">${vote.male_candidate_name || getCandidateName(vote.male_candidate_id) || 'N/A'}</td>
+                    <td style="padding: 12px; border-right: 1px solid #e2e8f0; color: #374151;">${vote.female_candidate_name || getCandidateName(vote.female_candidate_id) || 'N/A'}</td>
+                    <td style="padding: 12px; color: #6b7280; font-size: 12px;">${formatDate(vote.created)}</td>
+                  </tr>
+                `;
+              } else {
+                return `
+                  <tr style="background-color: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 12px; border-right: 1px solid #e2e8f0; font-weight: 500; color: #6b7280;">${index + 1}</td>
+                    <td style="padding: 12px; border-right: 1px solid #e2e8f0; font-family: monospace; font-size: 12px; color: #374151;">${formatVoteId(vote, index)}</td>
+                    <td style="padding: 12px; border-right: 1px solid #e2e8f0; color: #374151;">${vote.voter_name || 'Anonymous'}</td>
+                    <td style="padding: 12px; border-right: 1px solid #e2e8f0; color: #6b7280;">${vote.voter_email || 'N/A'}</td>
+                    <td style="padding: 12px; border-right: 1px solid #e2e8f0; color: #374151;">${vote.candidate_id ? getCandidateName(vote.candidate_id) : 'N/A'}</td>
+                    <td style="padding: 12px; border-right: 1px solid #e2e8f0; color: #374151;">${vote.category || 'N/A'}</td>
+                    <td style="padding: 12px; color: #6b7280; font-size: 12px;">${formatDate(vote.created)}</td>
+                  </tr>
+                `;
+              }
+            }).join('')}
           </tbody>
         </table>
         
@@ -346,6 +417,20 @@ const VotesListPage = () => {
       document.body.removeChild(printElement);
       document.head.removeChild(printStyles);
     }, 100);
+    
+    // Log export action
+    await auditLogger.log({
+      action: 'export_data',
+      entity_type: 'vote',
+      entity_name: 'Votes List',
+      details: {
+        export_type: 'PDF',
+        record_count: votesToExport.length,
+        selected_votes: Array.from(selectedVotes)
+      },
+      category: 'export_import',
+      severity: 'info'
+    });
     
     toast.success(`${votesToExport.length} vote(s) exported as PDF successfully`);
   };
@@ -367,7 +452,7 @@ const VotesListPage = () => {
       }
     },
     {
-      key: 'voterName',
+      key: 'voter_name',
       label: 'Voter Name',
       render: (value) => (
         <span className="font-medium text-gray-900">
@@ -376,7 +461,7 @@ const VotesListPage = () => {
       )
     },
     {
-      key: 'voterEmail',
+      key: 'voter_email',
       label: 'Email',
       render: (value) => (
         <span className="text-sm text-gray-600">
@@ -385,7 +470,7 @@ const VotesListPage = () => {
       )
     },
     {
-      key: 'timestamp',
+      key: 'created',
       label: 'Vote Date',
       render: (value) => (
         <span className="text-sm text-gray-600">
@@ -400,25 +485,42 @@ const VotesListPage = () => {
       <div>
         <h4 className="text-sm font-medium text-gray-700 mb-3">Voted For</h4>
         <div className="space-y-3">
-          {vote.maleCandidateId && (
-            <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                Male
-              </span>
-              <span className="text-sm font-medium text-gray-900">
-                {getCandidateName(vote.maleCandidateId)}
-              </span>
-            </div>
-          )}
-          {vote.femaleCandidateId && (
-            <div className="flex items-center space-x-3 p-3 bg-pink-50 rounded-lg">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
-                Female
-              </span>
-              <span className="text-sm font-medium text-gray-900">
-                {getCandidateName(vote.femaleCandidateId)}
-              </span>
-            </div>
+          {vote.vote_type === 'dual_selection' ? (
+            // Dual selection vote - show both candidates
+            <>
+              <div className="flex items-center space-x-3 p-3 rounded-lg bg-blue-50">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Male
+                </span>
+                <span className="text-sm font-medium text-gray-900">
+                  {vote.male_candidate_name || getCandidateName(vote.male_candidate_id)}
+                </span>
+              </div>
+              <div className="flex items-center space-x-3 p-3 rounded-lg bg-pink-50">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                  Female
+                </span>
+                <span className="text-sm font-medium text-gray-900">
+                  {vote.female_candidate_name || getCandidateName(vote.female_candidate_id)}
+                </span>
+              </div>
+            </>
+          ) : (
+            // Legacy single selection vote
+            vote.candidate_id && (
+              <div className={`flex items-center space-x-3 p-3 rounded-lg ${
+                vote.category === 'male' ? 'bg-blue-50' : 'bg-pink-50'
+              }`}>
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                  vote.category === 'male' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'
+                }`}>
+                  {vote.category === 'male' ? 'Male' : 'Female'}
+                </span>
+                <span className="text-sm font-medium text-gray-900">
+                  {getCandidateName(vote.candidate_id)}
+                </span>
+              </div>
+            )
           )}
         </div>
       </div>

@@ -6,6 +6,7 @@ import SelectInput from './SelectInput';
 import FormModal from './FormModal';
 import ConfirmationModal from './ConfirmationModal';
 import { toast } from 'react-hot-toast';
+import apiClient from '../usecases/api';
 
 const AdminPanel = () => {
   const [candidates, setCandidates] = useState([]);
@@ -13,6 +14,7 @@ const AdminPanel = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -20,6 +22,7 @@ const AdminPanel = () => {
     description: '',
     image: null
   });
+  const [pendingFormData, setPendingFormData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const categoryOptions = [
@@ -31,18 +34,18 @@ const AdminPanel = () => {
     loadData();
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     try {
-      const storedCandidates = localStorage.getItem('candidates');
-      const storedVotes = localStorage.getItem('votes');
-
-      if (storedCandidates) {
-        setCandidates(JSON.parse(storedCandidates));
-      }
-
-      if (storedVotes) {
-        setVotes(JSON.parse(storedVotes));
-      }
+      setLoading(true);
+      
+      // Fetch candidates and votes from database
+      const [candidatesData, votesData] = await Promise.all([
+        apiClient.findObjects('candidates', {}),
+        apiClient.findObjects('votes', {})
+      ]);
+      
+      setCandidates(candidatesData);
+      setVotes(votesData);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
@@ -78,35 +81,27 @@ const AdminPanel = () => {
     setShowDeleteModal(true);
   };
 
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    
+  const handleFormSubmit = async (formData) => {
+    setPendingFormData(formData);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSave = async () => {
     try {
       if (selectedCandidate) {
         // Edit existing candidate
-        const updatedCandidates = candidates.map(candidate =>
-          candidate.id === selectedCandidate.id
-            ? { ...candidate, ...formData }
-            : candidate
-        );
-        setCandidates(updatedCandidates);
-        localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
+        await apiClient.updateObject('candidates', selectedCandidate.id, pendingFormData);
         toast.success('Candidate updated successfully');
         setShowEditModal(false);
       } else {
         // Add new candidate
-        const newCandidate = {
-          id: Date.now().toString(),
-          ...formData,
-          votes: 0,
-          createdAt: new Date().toISOString()
-        };
-        const updatedCandidates = [...candidates, newCandidate];
-        setCandidates(updatedCandidates);
-        localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
+        await apiClient.createObject('candidates', pendingFormData);
         toast.success('Candidate added successfully');
         setShowAddModal(false);
       }
+      
+      // Reload data to get updated candidates
+      await loadData();
       
       setFormData({
         name: '',
@@ -115,22 +110,30 @@ const AdminPanel = () => {
         image: null
       });
       setSelectedCandidate(null);
+      setShowConfirmModal(false);
+      setPendingFormData(null);
     } catch (error) {
       console.error('Error saving candidate:', error);
       toast.error('Failed to save candidate');
+      setShowConfirmModal(false);
+      setPendingFormData(null);
     }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleCancelSave = () => {
+    setShowConfirmModal(false);
+    setPendingFormData(null);
+  };
+
+  const handleDeleteConfirm = async () => {
     try {
-      const updatedCandidates = candidates.filter(
-        candidate => candidate.id !== selectedCandidate.id
-      );
-      setCandidates(updatedCandidates);
-      localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
+      await apiClient.deleteObject('candidates', selectedCandidate.id);
       toast.success('Candidate deleted successfully');
       setShowDeleteModal(false);
       setSelectedCandidate(null);
+      
+      // Reload data to get updated candidates
+      await loadData();
     } catch (error) {
       console.error('Error deleting candidate:', error);
       toast.error('Failed to delete candidate');
@@ -412,6 +415,18 @@ const AdminPanel = () => {
         confirmButtonText="Delete"
         cancelButtonText="Cancel"
         confirmButtonVariant="danger"
+      />
+
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={handleCancelSave}
+        onConfirm={handleConfirmSave}
+        title="Confirm Save"
+        message={`Are you sure you want to ${selectedCandidate ? 'update' : 'create'} this candidate?`}
+        confirmLabel={selectedCandidate ? "Update Candidate" : "Create Candidate"}
+        cancelLabel="Cancel"
+        variant="info"
+        icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
     </div>
   );

@@ -11,6 +11,8 @@ import SearchFilter from '../components/SearchFilter';
 import CollapsibleTable from '../components/CollapsibleTable';
 import { toast } from 'react-hot-toast';
 import useApp from '../hooks/useApp';
+import apiClient from '../usecases/api';
+import auditLogger from '../utils/auditLogger.js';
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -19,10 +21,16 @@ const UsersPage = () => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [showBulkStatusModal, setShowBulkStatusModal] = useState(false);
+  const [showStatusToggleModal, setShowStatusToggleModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
+  const [statusToggleUser, setStatusToggleUser] = useState(null);
+  const [newStatus, setNewStatus] = useState('');
   const [formData, setFormData] = useState({});
+  const [pendingFormData, setPendingFormData] = useState(null);
   const [errors, setErrors] = useState({});
   const [searchValue, setSearchValue] = useState('');
   const [filters, setFilters] = useState({
@@ -34,12 +42,12 @@ const UsersPage = () => {
   // Hooks
   const { user: currentUser } = useApp();
 
-  // Role options
-  const roleOptions = [
+  // Role options - will be loaded from database
+  const [roleOptions, setRoleOptions] = useState([
     { value: 'admin', label: 'Admin' },
     { value: 'user', label: 'User' },
     { value: 'moderator', label: 'Moderator' }
-  ];
+  ]);
 
   // Status options - Only active and inactive
   const statusOptions = [
@@ -105,9 +113,10 @@ const UsersPage = () => {
     }
   ];
 
-  // Load users on component mount
+  // Load users and roles on component mount
   useEffect(() => {
     loadUsers();
+    loadRoles();
   }, []);
 
   // Filter users when search or filters change
@@ -118,33 +127,57 @@ const UsersPage = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      // For now, load from localStorage since we're using mock data
-      // In production, this would use the API
-      const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
       
-      // If no users in localStorage, create a default admin user
-      if (storedUsers.length === 0) {
-        const defaultUser = {
-          id: 'user-1',
-          email: 'admin@example.com',
-          username: 'admin',
-          firstName: 'Admin',
-          lastName: 'User',
-          role: 'admin',
-          status: 'active',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        localStorage.setItem('users', JSON.stringify([defaultUser]));
-        setUsers([defaultUser]);
-      } else {
-        setUsers(storedUsers);
-      }
+      // Load users and roles separately, then merge the data
+      const [usersData, rolesData] = await Promise.all([
+        apiClient.findObjects('users', {}),
+        apiClient.findObjects('roles', {})
+      ]);
+      
+      // Create a map of role IDs to role objects for quick lookup
+      const rolesMap = {};
+      rolesData.forEach(role => {
+        rolesMap[role.id] = role;
+      });
+      
+      // Merge role data into users
+      const usersWithRoles = usersData.map(user => {
+        if (user.roles && Array.isArray(user.roles)) {
+          user.roles = user.roles.map(roleRef => {
+            const fullRole = rolesMap[roleRef.id];
+            return {
+              ...roleRef,
+              name: fullRole?.name || 'Unknown Role',
+              description: fullRole?.description || '',
+              permissions: fullRole?.permissions || []
+            };
+          });
+        }
+        return user;
+      });
+      
+      setUsers(usersWithRoles);
     } catch (error) {
       console.error('Error loading users:', error);
       toast.error('Failed to load users');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadRoles = async () => {
+    try {
+      // Load roles from database
+      const rolesData = await apiClient.findObjects('roles', {});
+      // Convert roles to options format
+      const options = rolesData.map(role => ({
+        value: role.name,
+        label: role.name.charAt(0).toUpperCase() + role.name.slice(1)
+      }));
+      setRoleOptions(options);
+    } catch (error) {
+      console.error('Error loading roles:', error);
+      // Keep default role options if loading fails
     }
   };
 
@@ -166,9 +199,17 @@ const UsersPage = () => {
       filtered = filtered.filter(user => user.status === filters.status);
     }
 
-    // Role filter
+    // Role filter - handle Relation objects
     if (filters.role) {
-      filtered = filtered.filter(user => user.role === filters.role);
+      filtered = filtered.filter(user => {
+        if (Array.isArray(user.roles) && user.roles.length > 0) {
+          return user.roles[0].name === filters.role;
+        }
+        if (typeof user.role === 'string') {
+          return user.role === filters.role; // fallback for string roles
+        }
+        return false; // No role assigned
+      });
     }
 
     setFilteredUsers(filtered);
@@ -194,12 +235,20 @@ const UsersPage = () => {
 
   const handleEditUser = (user) => {
     setEditingUser(user);
+    // Extract role name from Relation object
+    let roleName = '';
+    if (Array.isArray(user.roles) && user.roles.length > 0) {
+      roleName = user.roles[0].name || '';
+    } else if (typeof user.role === 'string') {
+      roleName = user.role;
+    }
+    
     setFormData({
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
       username: user.username,
-      role: user.role,
+      role: roleName,
       status: user.status
     });
     setErrors({});
@@ -213,50 +262,92 @@ const UsersPage = () => {
 
   const handleFormSubmit = async (formData) => {
     setErrors({});
+    setPendingFormData(formData);
+    setShowConfirmModal(true);
+  };
 
+  const handleConfirmSave = async () => {
     try {
+      // Convert role name to Relation object
+      const roleName = pendingFormData.role;
+      let roleRelation = null;
+      
+      if (roleName) {
+        // Find the role object by name
+        const rolesData = await apiClient.findObjects('roles', { name: roleName });
+        if (rolesData && rolesData.length > 0) {
+          roleRelation = [{ id: rolesData[0].id }];
+        }
+      }
+      
+      // Prepare user data with Relation object
+      const userData = {
+        ...pendingFormData,
+        roles: roleRelation
+      };
+      
+      // Remove the role field since we're using roles Relation
+      delete userData.role;
+      
       if (editingUser) {
         // Update existing user
-        const updatedUsers = users.map(user => 
-          user.id === editingUser.id 
-            ? { ...user, ...formData, updatedAt: new Date().toISOString() }
-            : user
-        );
-        localStorage.setItem('users', JSON.stringify(updatedUsers));
-        setUsers(updatedUsers);
+        await apiClient.updateObject('users', editingUser.id, userData);
+        await auditLogger.logUpdate('user', editingUser.id, userData.username, {
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          status: userData.status
+        });
         toast.success('User updated successfully');
       } else {
         // Create new user
-        const newUser = {
-          id: `user-${Date.now()}`,
-          ...formData,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        const updatedUsers = [...users, newUser];
-        localStorage.setItem('users', JSON.stringify(updatedUsers));
-        setUsers(updatedUsers);
+        const newUser = await apiClient.createObject('users', userData);
+        await auditLogger.logCreate('user', newUser.id, userData.username, {
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          status: userData.status
+        });
         toast.success('User created successfully');
       }
+      
+      // Reload users from database
+      await loadUsers();
       
       setShowFormModal(false);
       setFormData({});
       setEditingUser(null);
+      setShowConfirmModal(false);
+      setPendingFormData(null);
     } catch (error) {
       console.error('Error saving user:', error);
       toast.error(error.message || 'Failed to save user');
+      setShowConfirmModal(false);
+      setPendingFormData(null);
     }
+  };
+
+  const handleCancelSave = () => {
+    setShowConfirmModal(false);
+    setPendingFormData(null);
   };
 
   const handleDeleteConfirm = async () => {
     if (!deletingUser) return;
 
     try {
-      // Delete user from localStorage
-      const updatedUsers = users.filter(user => user.id !== deletingUser.id);
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-      setUsers(updatedUsers);
+      // Delete user from database
+      await apiClient.deleteObject('users', deletingUser.id);
+      await auditLogger.logDelete('user', deletingUser.id, deletingUser.username, {
+        email: deletingUser.email,
+        firstName: deletingUser.firstName,
+        lastName: deletingUser.lastName
+      });
       toast.success('User deleted successfully');
+      
+      // Reload users from database
+      await loadUsers();
+      
       setShowDeleteModal(false);
       setDeletingUser(null);
     } catch (error) {
@@ -273,8 +364,23 @@ const UsersPage = () => {
   };
 
   const getRoleDisplayName = (role) => {
-    const roleOption = roleOptions.find(option => option.value === role);
-    return roleOption ? roleOption.label : role;
+    // Handle undefined or null roles
+    if (!role) {
+      return 'No Role';
+    }
+    
+    // Handle Relation objects (array of role objects with id and name)
+    if (Array.isArray(role) && role.length > 0) {
+      return role[0].name || 'Unknown Role';
+    }
+    
+    // Handle simple string role (fallback)
+    if (typeof role === 'string') {
+      const roleOption = roleOptions.find(option => option.value === role);
+      return roleOption ? roleOption.label : role;
+    }
+    
+    return 'No Role';
   };
 
   const getStatusDisplayName = (status) => {
@@ -294,7 +400,20 @@ const UsersPage = () => {
   };
 
   const getRoleBadgeColor = (role) => {
-    switch (role) {
+    // Handle undefined or null roles
+    if (!role) {
+      return 'bg-gray-100 text-gray-800';
+    }
+    
+    // Handle Relation objects (array of role objects with id and name)
+    let roleName = '';
+    if (Array.isArray(role) && role.length > 0) {
+      roleName = role[0].name || '';
+    } else if (typeof role === 'string') {
+      roleName = role;
+    }
+    
+    switch (roleName) {
       case 'admin':
         return 'bg-purple-100 text-purple-800';
       case 'moderator':
@@ -343,20 +462,36 @@ const UsersPage = () => {
     setShowBulkDeleteModal(true);
   };
 
-  const confirmBulkDelete = () => {
+  const confirmBulkDelete = async () => {
     const selectedUsers = filteredUsers.filter((user, index) => selectedRows.has(user.id || index));
     if (selectedUsers.length === 0) return;
 
     try {
-      // Delete selected users from localStorage
-      const updatedUsers = users.filter(user => 
-        !selectedUsers.some(selected => selected.id === user.id)
+      // Delete selected users from database
+      await Promise.all(
+        selectedUsers.map(user => apiClient.deleteObject('users', user.id))
       );
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-      setUsers(updatedUsers);
+      
+      // Log bulk delete operation
+      await auditLogger.log({
+        action: 'delete',
+        entity_type: 'user',
+        entity_name: `${selectedUsers.length} users`,
+        details: {
+          count: selectedUsers.length,
+          user_ids: selectedUsers.map(u => u.id),
+          usernames: selectedUsers.map(u => u.username)
+        },
+        category: 'data_management',
+        severity: 'warning'
+      });
+      
       setSelectedRows(new Set());
       setShowBulkDeleteModal(false);
       toast.success(`Deleted ${selectedUsers.length} users successfully`);
+      
+      // Reload users from database
+      await loadUsers();
     } catch (error) {
       console.error('Error deleting users:', error);
       toast.error('Failed to delete users');
@@ -372,20 +507,48 @@ const UsersPage = () => {
     
     // Determine new status based on first selected user
     const firstUser = selectedUsers[0];
-    const newStatus = firstUser.status === 'active' ? 'inactive' : 'active';
+    const newStatusValue = firstUser.status === 'active' ? 'inactive' : 'active';
+    setNewStatus(newStatusValue);
+    setShowBulkStatusModal(true);
+  };
+
+  const confirmBulkStatusToggle = async () => {
+    const selectedUsers = filteredUsers.filter((user, index) => selectedRows.has(user.id || index));
+    if (selectedUsers.length === 0) return;
     
-    // Update all selected users
-    const updatedUsers = users.map(user => {
-      if (selectedUsers.some(selected => selected.id === user.id)) {
-        return { ...user, status: newStatus, updatedAt: new Date().toISOString() };
-      }
-      return user;
-    });
-    
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    setUsers(updatedUsers);
-    setSelectedRows(new Set());
-    toast.success(`Updated ${selectedUsers.length} users to ${newStatus}`);
+    try {
+      // Update all selected users in database
+      await Promise.all(
+        selectedUsers.map(user => 
+          apiClient.updateObject('users', user.id, { status: newStatus })
+        )
+      );
+      
+      // Log bulk status update operation
+      await auditLogger.log({
+        action: 'update',
+        entity_type: 'user',
+        entity_name: `${selectedUsers.length} users`,
+        details: {
+          count: selectedUsers.length,
+          new_status: newStatus,
+          user_ids: selectedUsers.map(u => u.id),
+          usernames: selectedUsers.map(u => u.username)
+        },
+        category: 'data_management',
+        severity: 'info'
+      });
+      
+      setSelectedRows(new Set());
+      setShowBulkStatusModal(false);
+      toast.success(`Updated ${selectedUsers.length} users to ${newStatus}`);
+      
+      // Reload users from database
+      await loadUsers();
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      toast.error('Failed to update user status');
+    }
   };
 
   // Export functions
@@ -403,7 +566,7 @@ const UsersPage = () => {
           `"${getUserDisplayName(user)}"`,
           `"${user.username}"`,
           `"${user.email}"`,
-          `"${getRoleDisplayName(user.role)}"`,
+          `"${getRoleDisplayName(user.roles)}"`,
           `"${getStatusDisplayName(user.status)}"`,
           `"${new Date(user.createdAt).toLocaleDateString()}"`
         ].join(','))
@@ -492,7 +655,7 @@ const UsersPage = () => {
                 <td style="padding: 12px; color: #374151; font-weight: 500; border-right: 1px solid #e2e8f0;">${getUserDisplayName(user)}</td>
                 <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${user.username}</td>
                 <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${user.email}</td>
-                <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${getRoleDisplayName(user.role)}</td>
+                <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${getRoleDisplayName(user.roles)}</td>
                 <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${getStatusDisplayName(user.status)}</td>
                 <td style="padding: 12px; color: #6b7280;">${new Date(user.createdAt).toLocaleDateString()}</td>
               </tr>
@@ -516,15 +679,28 @@ const UsersPage = () => {
 
   // Individual user status toggle
   const handleUserStatusToggle = (user) => {
-    const newStatus = user.status === 'active' ? 'inactive' : 'active';
-    const updatedUsers = users.map(u => 
-      u.id === user.id 
-        ? { ...u, status: newStatus, updatedAt: new Date().toISOString() }
-        : u
-    );
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    setUsers(updatedUsers);
-    toast.success(`User status updated to ${newStatus}`);
+    const newStatusValue = user.status === 'active' ? 'inactive' : 'active';
+    setStatusToggleUser(user);
+    setNewStatus(newStatusValue);
+    setShowStatusToggleModal(true);
+  };
+
+  const confirmUserStatusToggle = async () => {
+    if (!statusToggleUser) return;
+    
+    try {
+      await apiClient.updateObject('users', statusToggleUser.id, { status: newStatus });
+      toast.success(`User status updated to ${newStatus}`);
+      
+      // Reload users from database
+      await loadUsers();
+      
+      setShowStatusToggleModal(false);
+      setStatusToggleUser(null);
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      toast.error('Failed to update user status');
+    }
   };
 
   // Table columns configuration
@@ -554,8 +730,8 @@ const UsersPage = () => {
       key: 'role',
       label: 'Role',
       render: (value, user) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
-          {getRoleDisplayName(user.role)}
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.roles)}`}>
+          {getRoleDisplayName(user.roles)}
         </span>
       )
     },
@@ -632,7 +808,7 @@ const UsersPage = () => {
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Role:</span>
-                  <p className="text-sm text-gray-900">{getRoleDisplayName(user.role)}</p>
+                  <p className="text-sm text-gray-900">{getRoleDisplayName(user.roles)}</p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Status:</span>
@@ -666,6 +842,18 @@ const UsersPage = () => {
         isUpdate={!!editingUser}
       />
 
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={handleCancelSave}
+        onConfirm={handleConfirmSave}
+        title="Confirm Save"
+        message={`Are you sure you want to ${editingUser ? 'update' : 'create'} this user?`}
+        confirmLabel={editingUser ? "Update User" : "Create User"}
+        cancelLabel="Cancel"
+        variant="info"
+        icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={showDeleteModal}
@@ -690,6 +878,32 @@ const UsersPage = () => {
         cancelLabel="Cancel"
         icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
         variant="danger"
+      />
+
+      {/* Bulk Status Toggle Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showBulkStatusModal}
+        onClose={() => setShowBulkStatusModal(false)}
+        onConfirm={confirmBulkStatusToggle}
+        title="Update User Status"
+        message={`Are you sure you want to set ${selectedRows.size} selected users to ${newStatus}?`}
+        confirmLabel={`Set to ${newStatus}`}
+        cancelLabel="Cancel"
+        icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        variant="warning"
+      />
+
+      {/* Individual Status Toggle Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showStatusToggleModal}
+        onClose={() => setShowStatusToggleModal(false)}
+        onConfirm={confirmUserStatusToggle}
+        title="Update User Status"
+        message={`Are you sure you want to set ${statusToggleUser ? getUserDisplayName(statusToggleUser) : 'this user'} to ${newStatus}?`}
+        confirmLabel={`Set to ${newStatus}`}
+        cancelLabel="Cancel"
+        icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        variant="warning"
       />
 
       {/* Floating Action Button */}

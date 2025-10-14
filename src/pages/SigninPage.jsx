@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon, ArrowPathIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button';
 import InputFactory from '../components/InputFactory';
 import { useSignIn } from '../usecases/user/useSignIn';
@@ -13,9 +13,10 @@ const SignInPage = () => {
     password: ''
   });
   const [error, setError] = useState(null);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const navigate = useNavigate();
-  const { login: _login, loading } = useSignIn();
-  const { setUser } = useApp();
+  const { signIn, loading } = useSignIn();
+  const { login } = useApp();
 
   const handleChange = (field, value) => {
     setFormData(prev => ({
@@ -31,31 +32,17 @@ const SignInPage = () => {
     setError(null);
 
     try {
-      // For demo purposes, we'll use a simple mock authentication
-      // In a real app, this would use the useSignIn hook
-      if (formData.email === 'admin@voting.com' && formData.password === 'admin123') {
-        // Store mock user data
-        const mockUser = {
-          id: '1',
-          email: 'admin@voting.com',
-          firstName: 'Admin',
-          lastName: 'User',
-          role: 'admin'
-        };
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        // Update AppContext with user data
-        setUser(mockUser);
+      // Use real authentication with the useSignIn hook
+      const response = await signIn({ email: formData.email, password: formData.password });
+      
+      if (response && response.user) {
+        // Use the login function from AppProvider to set the user in context
+        login(response.user);
         toast.success('Welcome back!');
         navigate('/dashboard');
-      } else if (formData.email === 'admin@voting.com') {
-        // Email is correct but password is wrong
-        toast.error('Incorrect password. Please try again.');
-      } else if (formData.email && formData.password) {
-        // Email doesn't exist
-        toast.error('Account does not exist. Please check your email address.');
       } else {
-        // Missing fields
-        toast.error('Please enter both email and password.');
+        // Authentication failed
+        toast.error('Invalid email or password. Please try again.');
       }
     } catch (err) {
       toast.error(err.message || 'Sign in failed. Please try again.');
@@ -110,22 +97,31 @@ const SignInPage = () => {
               error={error}
             />
 
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                  Remember me
-                </label>
-              </div>
-              <a href="#" className="text-sm font-medium text-primary-600 hover:text-primary-500">
-                Forgot password?
-              </a>
+            {/* Remember Me */}
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                Remember me
+              </label>
+            </div>
+
+            {/* Terms and Conditions */}
+            <div className="text-center">
+              <p className="text-xs text-gray-600">
+                By signing in, you agree to our{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="text-primary-600 hover:text-primary-500 underline font-medium"
+                >
+                  Terms and Conditions
+                </button>
+              </p>
             </div>
 
             {/* Sign In Button */}
@@ -141,23 +137,6 @@ const SignInPage = () => {
             </Button>
           </form>
 
-          {/* Social Sign In */}
-          <div className="mt-4">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
-              </div>
-            </div>
-            <div className="mt-4">
-              <Button variant="secondaryOutline" size="md" className="w-full">
-                <GlobeAltIcon className="h-4 w-4 mr-2" />
-                Google
-              </Button>
-            </div>
-          </div>
         </div>
 
         {/* Back to Home Button */}
@@ -168,6 +147,200 @@ const SignInPage = () => {
           </Link>
         </div>
       </div>
+
+      {/* Terms and Conditions Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={() => setShowTermsModal(false)}></div>
+            
+            {/* Modal Content */}
+            <div className="relative z-50 w-full max-w-4xl max-h-[85vh] overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between px-8 py-6 border-b border-gray-200">
+                <h3 className="text-xl font-semibold text-gray-900">Terms and Conditions</h3>
+                <button
+                  onClick={() => setShowTermsModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+              
+              {/* Content */}
+              <div className="px-8 py-6 overflow-y-auto flex-1">
+                <div className="prose prose-sm max-w-none">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Voting System Terms and Conditions</h4>
+                  
+                  <p className="text-sm text-gray-700 mb-4">
+                    <strong>Last Updated:</strong> {new Date().toLocaleDateString()}
+                  </p>
+
+                  <div className="space-y-6">
+                    <section>
+                      <h5 className="text-base font-semibold text-gray-900 mb-2">1. Single Event Purpose</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        This voting system is designed and provided for a single, specific event only. The system owner provides this platform as a service for this particular voting event and is not responsible for any outcomes, results, or consequences that may arise from the voting process or the information obtained by participants.
+                      </p>
+                    </section>
+
+                    <section>
+                      <h5 className="text-base font-semibold text-gray-900 mb-2">2. No Liability Disclaimer</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        The system owner hereby disclaims all liability and responsibility for:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-gray-700 mt-2 space-y-1">
+                        <li>Any information, data, or results obtained by participants through this system</li>
+                        <li>How participants use, interpret, or act upon any information from the voting process</li>
+                        <li>Any decisions made by participants based on voting results or system data</li>
+                        <li>Any consequences arising from the voting process or its outcomes</li>
+                        <li>Any disputes, conflicts, or issues between participants</li>
+                        <li>Any external use of voting results or participant information</li>
+                      </ul>
+                    </section>
+
+                    <section>
+                      <h5 className="text-base font-semibold text-gray-900 mb-2">3. System Owner Protection</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        By using this system, you acknowledge and agree that:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-gray-700 mt-2 space-y-1">
+                        <li>The system owner is providing this platform as a neutral service provider only</li>
+                        <li>The system owner has no control over how participants use the information obtained</li>
+                        <li>The system owner is not responsible for any actions taken by participants</li>
+                        <li>The system owner cannot be held liable for any damages, losses, or consequences</li>
+                        <li>You will not hold the system owner responsible for any outcomes of this voting event</li>
+                        <li>The system owner reserves the right to terminate access at any time without notice</li>
+                      </ul>
+                    </section>
+
+                    <section>
+                      <h5 className="text-base font-semibold text-gray-900 mb-2">4. Participant Responsibilities</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        As a participant, you are solely responsible for:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-gray-700 mt-2 space-y-1">
+                        <li>Your own actions and decisions based on any information from this system</li>
+                        <li>How you use, share, or distribute any information obtained through voting</li>
+                        <li>Any consequences that result from your participation in this voting event</li>
+                        <li>Ensuring your use of the system complies with all applicable laws</li>
+                        <li>Maintaining the confidentiality of your login credentials</li>
+                        <li>Using the system only for its intended single-event purpose</li>
+                      </ul>
+                    </section>
+
+                    <section>
+                      <h5 className="text-base font-semibold text-gray-900 mb-2">5. Information and Data Usage</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        You understand and agree that:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-gray-700 mt-2 space-y-1">
+                        <li>Any information you obtain through this system is for your own use only</li>
+                        <li>The system owner is not responsible for the accuracy or completeness of any data</li>
+                        <li>You may not use system information to harm, harass, or target other participants</li>
+                        <li>The system owner does not endorse or support any particular outcome or result</li>
+                        <li>All voting data and results are provided "as is" without any guarantees</li>
+                        <li>You assume all risks associated with using any information from this system</li>
+                      </ul>
+                    </section>
+
+                    <section>
+                      <h5 className="text-base font-semibold text-gray-900 mb-2">6. Prohibited Activities</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        The following activities are strictly prohibited:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-gray-700 mt-2 space-y-1">
+                        <li>Attempting to hack, disrupt, or compromise the system</li>
+                        <li>Creating multiple accounts or voting multiple times</li>
+                        <li>Using the system for any purpose other than this single event</li>
+                        <li>Sharing login credentials with others</li>
+                        <li>Using system information to harass, threaten, or harm others</li>
+                        <li>Attempting to manipulate voting results or system data</li>
+                        <li>Violating any applicable laws or regulations</li>
+                      </ul>
+                    </section>
+
+                    <section>
+                      <h5 className="text-base font-semibold text-gray-900 mb-2">7. System Availability</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        The system owner makes no guarantees regarding:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-gray-700 mt-2 space-y-1">
+                        <li>Continuous system availability or uptime</li>
+                        <li>System performance or response times</li>
+                        <li>Data accuracy or completeness</li>
+                        <li>Protection against technical failures or security breaches</li>
+                        <li>Compatibility with all devices or browsers</li>
+                        <li>Timely delivery of results or information</li>
+                      </ul>
+                    </section>
+
+                    <section>
+                      <h5 className="text-base font-semibold text-gray-900 mb-2">8. Limitation of Liability</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        To the maximum extent permitted by law, the system owner shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages, including but not limited to:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-gray-700 mt-2 space-y-1">
+                        <li>Loss of profits, data, or business opportunities</li>
+                        <li>Personal injury or property damage</li>
+                        <li>Emotional distress or psychological harm</li>
+                        <li>Reputation damage or defamation</li>
+                        <li>Any damages resulting from system downtime or technical issues</li>
+                        <li>Any consequences arising from the use of voting information</li>
+                      </ul>
+                    </section>
+
+                    <section>
+                      <h5 className="text-base font-semibold text-gray-900 mb-2">9. Indemnification</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        You agree to indemnify, defend, and hold harmless the system owner from any claims, damages, losses, costs, or expenses (including reasonable attorney fees) arising from:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-gray-700 mt-2 space-y-1">
+                        <li>Your use of the system or any information obtained through it</li>
+                        <li>Your violation of these terms and conditions</li>
+                        <li>Your violation of any applicable laws or regulations</li>
+                        <li>Any actions you take based on voting results or system data</li>
+                        <li>Any harm caused to other participants or third parties</li>
+                      </ul>
+                    </section>
+
+                    <section>
+                      <h5 className="text-base font-semibold text-gray-900 mb-2">10. Termination</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        The system owner reserves the right to terminate your access to this system immediately and without notice if you violate these terms or engage in any prohibited activities. Upon termination, you must cease all use of the system and any information obtained through it.
+                      </p>
+                    </section>
+
+                    <section>
+                      <h5 className="text-base font-semibold text-gray-900 mb-2">11. Governing Law</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        These terms and conditions shall be governed by and construed in accordance with applicable laws. Any disputes arising from the use of this system shall be resolved through appropriate legal channels, and the system owner's liability shall be limited to the maximum extent permitted by law.
+                      </p>
+                    </section>
+
+                    <section>
+                      <h5 className="text-base font-semibold text-gray-900 mb-2">12. Acknowledgment</h5>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        By using this system, you acknowledge that you have read, understood, and agree to be bound by these terms and conditions. You understand that the system owner provides this platform as a neutral service for this single event only and assumes no responsibility for any outcomes or consequences that may arise from your participation or use of any information obtained through this system.
+                      </p>
+                    </section>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Footer */}
+              <div className="px-8 py-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+                <div className="text-center">
+                  <p className="text-sm font-medium text-gray-800 leading-relaxed">
+                    By closing this modal, you acknowledge that you have read and understood these terms and conditions.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

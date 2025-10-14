@@ -3,6 +3,7 @@ import { PhotoIcon, UserIcon } from '@heroicons/react/24/outline';
 import Button from './Button';
 import VotingModal from './VotingModal';
 import { toast } from 'react-hot-toast';
+import apiClient from '../usecases/api';
 
 const VotingInterface = () => {
   const [candidates, setCandidates] = useState([]);
@@ -18,18 +19,38 @@ const VotingInterface = () => {
     loadData();
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     try {
-      const storedCandidates = localStorage.getItem('candidates');
-      const storedVotes = localStorage.getItem('votes');
-
-      if (storedCandidates) {
-        setCandidates(JSON.parse(storedCandidates));
-      }
-
-      if (storedVotes) {
-        setVotes(JSON.parse(storedVotes));
-      }
+      setLoading(true);
+      
+      // Fetch candidates and votes from database
+      const [candidatesData, votesData] = await Promise.all([
+        apiClient.findObjects('candidates', {}),
+        apiClient.findObjects('votes', {})
+      ]);
+      
+      // Calculate vote counts for each candidate
+      const candidatesWithVotes = candidatesData.map(candidate => {
+        let voteCount = 0;
+        
+        // Count votes from the new single vote structure
+        votesData.forEach(vote => {
+          if (vote.vote_type === 'dual_selection') {
+            // Check if this candidate is selected as male or female
+            if (vote.male_candidate_id === candidate.id || vote.female_candidate_id === candidate.id) {
+              voteCount++;
+            }
+          } else if (vote.candidate_id === candidate.id) {
+            // Handle legacy votes (if any exist)
+            voteCount++;
+          }
+        });
+        
+        return { ...candidate, votes: voteCount };
+      });
+      
+      setCandidates(candidatesWithVotes);
+      setVotes(votesData);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load voting data');
@@ -54,43 +75,41 @@ const VotingInterface = () => {
     setShowVotingModal(true);
   };
 
-  const handleVoteSubmit = (voterInfo) => {
+  const handleVoteSubmit = async (voterInfo) => {
     try {
       // Check if email has already voted
-      const existingVote = votes.find(vote => vote.email === voterInfo.email);
-      if (existingVote) {
+      const existingVotes = await apiClient.findObjects('votes', {
+        where: { voter_email: voterInfo.email }
+      });
+      
+      if (existingVotes.length > 0) {
         toast.error('This email has already voted');
         return;
       }
 
-      // Create new vote
-      const newVote = {
-        id: Date.now().toString(),
-        voterName: voterInfo.name,
-        email: voterInfo.email,
-        maleCandidate: selectedCandidates.male.id,
-        femaleCandidate: selectedCandidates.female.id,
-        timestamp: new Date().toISOString()
+      // Create a single vote entry with both male and female candidates
+      const vote = {
+        male_candidate_id: selectedCandidates.male.id,
+        male_candidate_name: selectedCandidates.male.name,
+        female_candidate_id: selectedCandidates.female.id,
+        female_candidate_name: selectedCandidates.female.name,
+        voter_email: voterInfo.email,
+        voter_name: voterInfo.name,
+        vote_type: 'dual_selection' // Indicates this is a vote for both categories
       };
 
-      // Update votes
-      const updatedVotes = [...votes, newVote];
-      setVotes(updatedVotes);
-      localStorage.setItem('votes', JSON.stringify(updatedVotes));
+      // Create single vote in the database
+      await apiClient.createObject('votes', vote);
 
-      // Update candidate vote counts
-      const updatedCandidates = candidates.map(candidate => {
-        if (candidate.id === selectedCandidates.male.id || candidate.id === selectedCandidates.female.id) {
-          return { ...candidate, votes: candidate.votes + 1 };
-        }
-        return candidate;
-      });
-      setCandidates(updatedCandidates);
-      localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
+      // Reload data to get updated vote counts
+      await loadData();
 
       toast.success('Vote submitted successfully!');
       setShowVotingModal(false);
       setSelectedCandidates({ male: null, female: null });
+      
+      // Trigger vote update event for real-time updates
+      window.dispatchEvent(new CustomEvent('votesUpdated'));
     } catch (error) {
       console.error('Error submitting vote:', error);
       toast.error('Failed to submit vote');

@@ -6,6 +6,8 @@ import SearchFilter from './SearchFilter';
 import Pagination from './Pagination';
 import ConfirmationModal from './ConfirmationModal';
 import { toast } from 'react-hot-toast';
+import apiClient from '../usecases/api';
+import auditLogger from '../utils/auditLogger.js';
 
 // Custom Image Carousel Component for Voting Modal
 const CandidateImageCarousel = ({ images, candidateId, candidateName, onImageClick }) => {
@@ -114,18 +116,67 @@ const VotingModal = ({ isOpen, onClose }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(4); // 2 per category
 
-  const loadCandidates = () => {
-    const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-    // Load vote counts for each candidate
-    const votes = JSON.parse(localStorage.getItem('votes') || '[]');
-    const candidatesWithVotes = storedCandidates.map(candidate => {
-      const candidateVotes = votes.filter(vote => 
-        vote.maleCandidateId === candidate.id || vote.femaleCandidateId === candidate.id
-      ).length;
-      return { ...candidate, votes: candidateVotes };
+  // Image carousel helpers
+  const getCandidateImages = (candidate) => {
+    // Support both 'image' (single) and 'images' (array) for backward compatibility
+    let images = [];
+    
+    if (candidate.images && Array.isArray(candidate.images)) {
+      images = candidate.images;
+    } else if (candidate.image) {
+      images = [candidate.image];
+    }
+    
+    // Convert image objects to URLs for display
+    return images.map(img => {
+      if (typeof img === 'string') {
+        // Simple string path
+        return img;
+      } else if (img && img.dataUrl) {
+        // Object with dataUrl property (base64)
+        return img.dataUrl;
+      } else if (img && img.url) {
+        // Object with url property
+        return img.url;
+      }
+      return img; // Fallback
     });
-    setCandidates(candidatesWithVotes);
-    setFilteredCandidates(candidatesWithVotes);
+  };
+
+  const loadCandidates = async () => {
+    try {
+      // Fetch candidates and votes from database
+      const [candidatesData, votesData] = await Promise.all([
+        apiClient.findObjects('candidates', {}),
+        apiClient.findObjects('votes', {})
+      ]);
+      
+      // Calculate vote counts for each candidate
+      const candidatesWithVotes = candidatesData.map(candidate => {
+        let candidateVotes = 0;
+        
+        // Count votes from the new single vote structure
+        votesData.forEach(vote => {
+          if (vote.vote_type === 'dual_selection') {
+            // Check if this candidate is selected as male or female
+            if (vote.male_candidate_id === candidate.id || vote.female_candidate_id === candidate.id) {
+              candidateVotes++;
+            }
+          } else if (vote.candidate_id === candidate.id) {
+            // Handle legacy votes (if any exist)
+            candidateVotes++;
+          }
+        });
+        
+        return { ...candidate, votes: candidateVotes };
+      });
+      
+      setCandidates(candidatesWithVotes);
+      setFilteredCandidates(candidatesWithVotes);
+    } catch (error) {
+      console.error('Error loading candidates:', error);
+      toast.error('Failed to load candidates');
+    }
   };
 
   // Filter candidates based on search and filters
@@ -210,33 +261,57 @@ const VotingModal = ({ isOpen, onClose }) => {
     setShowConfirmationModal(true);
   };
 
-  const handleConfirmVote = () => {
-    // Save vote
-    const existingVotes = JSON.parse(localStorage.getItem('votes') || '[]');
-    const newVote = {
-      id: Date.now().toString(),
-      voterEmail: voterInfo.email,
-      voterName: voterInfo.name,
-      maleCandidateId: selectedCandidates.male.id,
-      femaleCandidateId: selectedCandidates.female.id,
-      timestamp: new Date().toISOString()
-    };
+  const handleConfirmVote = async () => {
+    try {
+      // Create a single vote entry with both male and female candidates
+      const vote = {
+        male_candidate_id: selectedCandidates.male.id,
+        male_candidate_name: selectedCandidates.male.name,
+        female_candidate_id: selectedCandidates.female.id,
+        female_candidate_name: selectedCandidates.female.name,
+        voter_email: voterInfo.email,
+        voter_name: voterInfo.name,
+        vote_type: 'dual_selection' // Indicates this is a vote for both categories
+      };
 
-    const updatedVotes = [...existingVotes, newVote];
-    localStorage.setItem('votes', JSON.stringify(updatedVotes));
-    // Don't store voterEmail in localStorage to allow multiple voting sessions
+      // Save single vote to database
+      const voteResult = await apiClient.createObject('votes', vote);
 
-    // Reload candidates with updated vote counts
-    loadCandidates();
-    
-    // Dispatch custom event to notify other pages of vote update
-    window.dispatchEvent(new CustomEvent('votesUpdated'));
+      // Log vote casting for the single vote entry
+      await auditLogger.log({
+        action: 'vote_cast',
+        entity_type: 'vote',
+        entity_id: voteResult.id,
+        entity_name: `${selectedCandidates.male.name} & ${selectedCandidates.female.name}`,
+        details: {
+          male_candidate_id: selectedCandidates.male.id,
+          male_candidate_name: selectedCandidates.male.name,
+          female_candidate_id: selectedCandidates.female.id,
+          female_candidate_name: selectedCandidates.female.name,
+          voter_email: voterInfo.email,
+          voter_name: voterInfo.name,
+          vote_type: 'dual_selection'
+        },
+        category: 'voting',
+        severity: 'info'
+      });
 
-    setShowConfirmationModal(false);
-    setShowSuccessModal(true);
-    
-    // Show success toast
-    toast.success('Your vote has been submitted successfully!');
+      // Reload candidates with updated vote counts
+      await loadCandidates();
+      
+      // Dispatch custom event to notify other pages of vote update
+      window.dispatchEvent(new CustomEvent('votesUpdated'));
+
+      setShowConfirmationModal(false);
+      setShowSuccessModal(true);
+      
+      // Show success toast
+      toast.success('Your vote has been submitted successfully!');
+    } catch (error) {
+      console.error('Error submitting vote:', error);
+      toast.error('Failed to submit vote. Please try again.');
+      setShowConfirmationModal(false);
+    }
   };
 
   const handleSuccessConfirm = () => {
@@ -339,10 +414,20 @@ const VotingModal = ({ isOpen, onClose }) => {
                 <div className="space-y-6">
                   {/* Page Header */}
                   <div>
-                  
-                    <p className="text-gray-600">
-                      Select one candidate from each category to cast your vote.
-                    </p>
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-gray-600">
+                        Select one candidate from each category to cast your vote.
+                      </p>
+                      {/* Pagination */}
+                      {totalPages > 1 && (
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          onPageChange={setCurrentPage}
+                          totalItems={filteredCandidates.length}
+                        />
+                      )}
+                    </div>
                     {hasVoted && (
                       <div className="mt-4 inline-flex items-center px-3 py-1 bg-green-100 rounded-full">
                         <CheckCircleIcon className="h-4 w-4 text-green-600 mr-2" />
@@ -400,7 +485,7 @@ const VotingModal = ({ isOpen, onClose }) => {
 
                             {/* Candidate Image */}
                             <CandidateImageCarousel 
-                              images={candidate.images} 
+                              images={getCandidateImages(candidate)} 
                               candidateId={candidate.id}
                               candidateName={candidate.name}
                               onImageClick={handleImageClick}
@@ -455,7 +540,7 @@ const VotingModal = ({ isOpen, onClose }) => {
 
                             {/* Candidate Image */}
                             <CandidateImageCarousel 
-                              images={candidate.images} 
+                              images={getCandidateImages(candidate)} 
                               candidateId={candidate.id}
                               candidateName={candidate.name}
                               onImageClick={handleImageClick}
@@ -488,17 +573,6 @@ const VotingModal = ({ isOpen, onClose }) => {
                     </div>
                   )}
 
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex justify-center">
-                      <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                        totalItems={filteredCandidates.length}
-                      />
-                    </div>
-                  )}
                 </div>
               )}
             </div>

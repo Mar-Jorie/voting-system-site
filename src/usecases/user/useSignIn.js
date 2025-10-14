@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { signIn } from "../api.js";
+import auditLogger from "../../utils/auditLogger.js";
 
 export function useSignIn() {
   const [user, setUser] = useState(null);
@@ -22,6 +23,10 @@ export function useSignIn() {
         ...options,
       });
       setUser(response.user);
+      
+      // Log successful login
+      await auditLogger.logLogin(credentials.email);
+      
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
