@@ -2,23 +2,45 @@ import React, { useState, useEffect } from "react";
 import { AppContext } from "./AppContext";
 import { toast } from "react-hot-toast";
 import auditLogger from "./utils/auditLogger.js";
+import { getCurrentUser } from "./usecases/api";
 
 function AppProvider({ children }) {
   const [user, setUser] = useState(null);
   const [schemas, setSchemas] = useState([]);
   
-  // Load user from localStorage on app start
+  // Load user from database on app start (real-time data)
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const loadUserFromDatabase = async () => {
       try {
-        const userData = JSON.parse(storedUser);
-        setUser(userData);
+        // First check if we have a stored user token/session
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            // If we have stored user data, fetch fresh data from database
+            const freshUserData = await getCurrentUser();
+            console.log('Fresh user data from database:', freshUserData);
+            
+            // Update user state with fresh database data
+            setUser(freshUserData);
+            
+            // Update localStorage with fresh data
+            localStorage.setItem('user', JSON.stringify(freshUserData));
+            
+          } catch (error) {
+            console.error('Error fetching fresh user data:', error);
+            // If database fetch fails, use stored data as fallback
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+          }
+        }
       } catch (error) {
-        console.error('Error parsing stored user data:', error);
+        console.error('Error loading user data:', error);
         localStorage.removeItem('user');
       }
-    }
+    };
+
+    loadUserFromDatabase();
   }, []);
 
   // Session validation - check if user is still valid on page focus/visibility change
@@ -94,6 +116,20 @@ function AppProvider({ children }) {
     localStorage.setItem('user', JSON.stringify(userData));
   };
   
+  // Function to refresh user data from database
+  const refreshUser = async () => {
+    try {
+      const freshUserData = await getCurrentUser();
+      console.log('Refreshing user data from database:', freshUserData);
+      setUser(freshUserData);
+      localStorage.setItem('user', JSON.stringify(freshUserData));
+      return freshUserData;
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     setUser,
@@ -101,6 +137,7 @@ function AppProvider({ children }) {
     setSchemas,
     logout,
     login,
+    refreshUser,
   };
   
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -20,11 +20,11 @@ import ConfirmationModal from '../ConfirmationModal';
 import FormModal from '../FormModal';
 import useApp from '../../hooks/useApp';
 import { toast } from 'react-hot-toast';
-import { updateObject, getCurrentUser } from '../../usecases/api';
+import { updateObject } from '../../usecases/api';
 
 const Header = () => {
   const { show, setShow, isMobile: _isMobile, isDesktop: _isDesktop } = useContext(MainLayout.Context);
-  const { user, logout, setUser } = useApp();
+  const { user, logout, refreshUser } = useApp();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -100,14 +100,7 @@ const Header = () => {
       console.log('Profile updated successfully:', updatedUser);
       
       // Refresh user data from database to get the latest information
-      const refreshedUser = await getCurrentUser();
-      console.log('Refreshed user data:', refreshedUser);
-      
-      // Update the user state with the refreshed data
-      setUser(refreshedUser);
-      
-      // Also update localStorage to keep it in sync
-      localStorage.setItem('user', JSON.stringify(refreshedUser));
+      await refreshUser();
       
       // Close modals and reset state
       setShowProfileUpdateConfirm(false);
