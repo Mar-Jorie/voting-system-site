@@ -590,114 +590,137 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* Election Control Panel */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Election Controls</h3>
-            <div className="flex items-center space-x-6">
-              {/* Voting Status */}
-              {votingStatus && (
-                <div className="flex items-center space-x-2">
-                  <div className={`w-2 h-2 rounded-full ${votingStatus.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className="text-sm text-gray-600">
-                    {votingStatus.isActive ? 'Voting Active' : 'Voting Stopped'}
+        {/* Election Control Panel - 2 Card Design */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900">Election Controls</h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Voting Status Card */}
+            {votingStatus && (
+              <div className={`rounded-lg p-6 border-2 transition-all duration-200 ${
+                votingStatus.isActive 
+                  ? 'bg-primary-50 border-primary-200 hover:border-primary-300' 
+                  : 'bg-red-50 border-red-200 hover:border-red-300'
+              }`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-4 h-4 rounded-full ${votingStatus.isActive ? 'bg-primary-500' : 'bg-red-500'}`}></div>
+                    <span className="text-lg font-semibold text-gray-900">Voting Status</span>
+                  </div>
+                  <span className={`text-sm font-medium px-3 py-1 rounded-full ${
+                    votingStatus.isActive 
+                      ? 'bg-primary-100 text-primary-700' 
+                      : 'bg-red-100 text-red-700'
+                  }`}>
+                    {votingStatus.isActive ? 'Active' : 'Stopped'}
                   </span>
                 </div>
-              )}
-              
-              {/* Results Visibility Status */}
-              <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'bg-green-500' : 'bg-orange-500'}`}></div>
-                <span className="text-sm text-gray-600">
-                  {resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'Results Public' : 'Results Hidden'}
+                
+                <div className="space-y-3">
+                  {votingStatus.isActive ? (
+                    <Button
+                      onClick={handleStopVoting}
+                      variant="danger"
+                      size="md"
+                      className="w-full"
+                    >
+                      <StopIcon className="h-5 w-5 mr-2" />
+                      Stop Voting
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleStartVoting}
+                      variant="success"
+                      size="md"
+                      className="w-full"
+                    >
+                      <PlayIcon className="h-5 w-5 mr-2" />
+                      Start Voting
+                    </Button>
+                  )}
+                  
+                  {/* Auto Stop Button */}
+                  <Button
+                    onClick={() => setShowVoteControlModal(true)}
+                    variant="primaryOutline"
+                    size="md"
+                    className="w-full"
+                  >
+                    <ClockIcon className="h-5 w-5 mr-2" />
+                    Auto Stop
+                  </Button>
+                  
+                  {/* Auto Stop Info */}
+                  {votingStatus.autoStopDate && (
+                    <div className="p-3 bg-white rounded-lg border border-primary-100">
+                      <p className="text-xs text-gray-600 mb-1">
+                        Scheduled: {votingStatus.autoStopDate.toLocaleString()}
+                      </p>
+                      {votingStatus.timeUntilStop > 0 && (
+                        <p className="text-xs font-medium text-primary-600">
+                          {formatTimeRemaining(votingStatus.timeUntilStop)} remaining
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Results Visibility Card */}
+            <div className={`rounded-lg p-6 border-2 transition-all duration-200 ${
+              resultsVisibility === RESULTS_VISIBILITY.PUBLIC 
+                ? 'bg-primary-50 border-primary-200 hover:border-primary-300' 
+                : 'bg-orange-50 border-orange-200 hover:border-orange-300'
+            }`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-4 h-4 rounded-full ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'bg-primary-500' : 'bg-orange-500'}`}></div>
+                  <span className="text-lg font-semibold text-gray-900">Results Visibility</span>
+                </div>
+                <span className={`text-sm font-medium px-3 py-1 rounded-full ${
+                  resultsVisibility === RESULTS_VISIBILITY.PUBLIC 
+                    ? 'bg-primary-100 text-primary-700' 
+                    : 'bg-orange-100 text-orange-700'
+                }`}>
+                  {resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'Public' : 'Hidden'}
                 </span>
               </div>
-            </div>
-          </div>
-          
-          {/* Control Buttons */}
-          <div className="flex flex-wrap gap-3">
-            {/* Vote Control */}
-            {votingStatus && (
-              <>
-                {votingStatus.isActive ? (
+              
+              <div className="space-y-3">
+                {resultsVisibility === RESULTS_VISIBILITY.HIDDEN ? (
                   <Button
-                    onClick={handleStopVoting}
-                    variant="danger"
+                    onClick={handleShowResults}
+                    variant="success"
                     size="md"
-                    className="flex items-center"
+                    className="w-full"
                   >
-                    <StopIcon className="h-4 w-4 mr-2" />
-                    Stop Voting
+                    <CheckCircleIcon className="h-5 w-5 mr-2" />
+                    Make Results Public
                   </Button>
                 ) : (
                   <Button
-                    onClick={handleStartVoting}
-                    variant="success"
+                    onClick={handleHideResults}
+                    variant="warning"
                     size="md"
-                    className="flex items-center"
+                    className="w-full"
                   >
-                    <PlayIcon className="h-4 w-4 mr-2" />
-                    Start Voting
+                    <XMarkIcon className="h-5 w-5 mr-2" />
+                    Hide Results
                   </Button>
                 )}
-              </>
-            )}
-
-            {/* Auto Stop */}
-            {votingStatus && (
-              <Button
-                onClick={() => setShowVoteControlModal(true)}
-                variant="primaryOutline"
-                size="md"
-                className="flex items-center"
-              >
-                <ClockIcon className="h-4 w-4 mr-2" />
-                Auto Stop
-              </Button>
-            )}
-
-            {/* Results Visibility */}
-            {resultsVisibility === RESULTS_VISIBILITY.HIDDEN ? (
-              <Button
-                onClick={handleShowResults}
-                variant="success"
-                size="md"
-                className="flex items-center"
-              >
-                <CheckCircleIcon className="h-4 w-4 mr-2" />
-                Show Results
-              </Button>
-            ) : (
-              <Button
-                onClick={handleHideResults}
-                variant="warning"
-                size="md"
-                className="flex items-center"
-              >
-                <XMarkIcon className="h-4 w-4 mr-2" />
-                Hide Results
-              </Button>
-            )}
-          </div>
-
-          {/* Auto Stop Info (only show if scheduled) */}
-          {votingStatus && votingStatus.autoStopDate && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <ClockIcon className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-900">Auto-stop scheduled</span>
+                
+                <div className="p-3 bg-white rounded-lg border border-gray-100">
+                  <p className="text-xs text-gray-600">
+                    {resultsVisibility === RESULTS_VISIBILITY.HIDDEN 
+                      ? "Candidate names are blurred on the landing page"
+                      : "Candidate names are visible on the landing page"
+                    }
+                  </p>
                 </div>
-                <span className="text-sm text-blue-700">
-                  {votingStatus.timeUntilStop > 0 
-                    ? formatTimeRemaining(votingStatus.timeUntilStop)
-                    : 'Expired'
-                  }
-                </span>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Winners */}
