@@ -307,21 +307,24 @@ const UsersPage = () => {
   };
 
   const getUserDisplayName = (user) => {
+    if (!user) return 'Unknown User';
     return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Unknown User';
   };
 
   const getUserInitials = (user) => {
+    if (!user) return 'U';
     const firstName = user.firstName || '';
     const lastName = user.lastName || '';
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'U';
+    const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    return initials || 'U';
   };
 
   // Table columns configuration
   const columns = [
     {
-      key: 'user',
+      key: 'firstName',
       label: 'User',
-      render: (user) => (
+      render: (value, user) => (
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
             <span className="text-sm font-medium text-primary-700">
@@ -342,14 +345,14 @@ const UsersPage = () => {
     {
       key: 'username',
       label: 'Username',
-      render: (user) => (
+      render: (value, user) => (
         <span className="text-sm text-gray-900">{user.username}</span>
       )
     },
     {
       key: 'role',
       label: 'Role',
-      render: (user) => (
+      render: (value, user) => (
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
           {getRoleDisplayName(user.role)}
         </span>
@@ -358,7 +361,7 @@ const UsersPage = () => {
     {
       key: 'status',
       label: 'Status',
-      render: (user) => (
+      render: (value, user) => (
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(user.status)}`}>
           {getStatusDisplayName(user.status)}
         </span>
