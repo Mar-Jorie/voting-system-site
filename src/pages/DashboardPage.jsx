@@ -670,33 +670,22 @@ const DashboardPage = () => {
                     )}
                   </div>
                   
-                  {/* Auto Stop Info - Only show when voting is active and auto-stop is scheduled */}
-                  {votingStatus.isActive && votingStatus.autoStopDate && (
-                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-xs text-gray-600 mb-1">
-                        Scheduled: {votingStatus.autoStopDate.toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'short', 
-                          day: '2-digit' 
-                        })} at {votingStatus.autoStopDate.toLocaleTimeString('en-US', { 
-                          hour: 'numeric', 
-                          minute: '2-digit',
-                          hour12: true 
-                        })}
-                      </p>
-                      {votingStatus.timeUntilStop > 0 && (
-                        <p className="text-xs font-medium text-primary-600">
-                          {formatTimeRemaining(votingStatus.timeUntilStop)} remaining
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  
                   {/* Note Section - Always show to maintain consistent card height */}
                   <div className="p-3 bg-white rounded-lg border border-gray-100">
                     <p className="text-xs text-gray-600">
                       {votingStatus.isActive 
-                        ? "Voting is currently active and accepting votes from users"
+                        ? (votingStatus.autoStopDate 
+                            ? `Auto-stop scheduled: ${votingStatus.autoStopDate.toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: '2-digit' 
+                              })} at ${votingStatus.autoStopDate.toLocaleTimeString('en-US', { 
+                                hour: 'numeric', 
+                                minute: '2-digit',
+                                hour12: true 
+                              })}${votingStatus.timeUntilStop > 0 ? ` (${formatTimeRemaining(votingStatus.timeUntilStop)} remaining)` : ''}`
+                            : "Voting is currently active and accepting votes from users"
+                          )
                         : "Voting is currently stopped and not accepting new votes"
                       }
                     </p>
