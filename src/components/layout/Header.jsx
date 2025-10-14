@@ -11,7 +11,8 @@ import {
   EnvelopeIcon,
   PhoneIcon,
   CalendarIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 import MainLayout from './MainLayout';
 import Button from '../Button';
@@ -27,6 +28,7 @@ const Header = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   
   const profileRef = useRef(null);
   const notificationRef = useRef(null);
@@ -283,59 +285,205 @@ const Header = () => {
       />
 
       {/* View Profile Modal */}
-      <FormModal
-        isOpen={showProfileModal}
-        onClose={() => setShowProfileModal(false)}
-        onSubmit={() => setShowProfileModal(false)}
-        title="User Profile"
-        fields={[
-          {
-            name: 'firstName',
-            label: 'First Name',
-            type: 'String',
-            required: true,
-            disabled: true
-          },
-          {
-            name: 'lastName',
-            label: 'Last Name',
-            type: 'String',
-            required: true,
-            disabled: true
-          },
-          {
-            name: 'email',
-            label: 'Email Address',
-            type: 'String',
-            format: 'email',
-            required: true,
-            disabled: true
-          },
-          {
-            name: 'username',
-            label: 'Username',
-            type: 'String',
-            required: true,
-            disabled: true
-          },
-          {
-            name: 'role',
-            label: 'Role',
-            type: 'String',
-            required: true,
-            disabled: true
-          }
-        ]}
-        initialData={{
-          firstName: user?.firstName || '',
-          lastName: user?.lastName || '',
-          email: user?.email || '',
-          username: user?.username || '',
-          role: user?.role?.name || 'User'
-        }}
-        submitButtonText="Close"
-        isUpdate={false}
-      />
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={() => {
+              setShowProfileModal(false);
+              setIsEditingProfile(false);
+            }}></div>
+            
+            {/* Modal Content */}
+            <div className="relative z-50 w-full max-w-lg sm:max-w-xl overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl flex flex-col max-h-[90vh]">
+              {/* Fixed Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                    <UserIcon className="h-6 w-6 text-primary-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">User Profile</h3>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {!isEditingProfile && (
+                    <button
+                      onClick={() => setIsEditingProfile(true)}
+                      className="p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                      title="Edit Profile"
+                    >
+                      <PencilIcon className="h-5 w-5" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowProfileModal(false);
+                      setIsEditingProfile(false);
+                    }}
+                    className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto scrollbar-hide p-6">
+                {isEditingProfile ? (
+                  /* Edit Mode - Use FormModal */
+                  <FormModal
+                    isOpen={true}
+                    onClose={() => setIsEditingProfile(false)}
+                    onSubmit={(formData) => {
+                      // Handle profile update here
+                      console.log('Profile updated:', formData);
+                      setIsEditingProfile(false);
+                    }}
+                    title=""
+                    fields={[
+                      {
+                        name: 'firstName',
+                        label: 'First Name',
+                        type: 'String',
+                        required: true,
+                        disabled: false
+                      },
+                      {
+                        name: 'lastName',
+                        label: 'Last Name',
+                        type: 'String',
+                        required: true,
+                        disabled: false
+                      },
+                      {
+                        name: 'email',
+                        label: 'Email Address',
+                        type: 'String',
+                        format: 'email',
+                        required: true,
+                        disabled: false
+                      },
+                      {
+                        name: 'username',
+                        label: 'Username',
+                        type: 'String',
+                        required: true,
+                        disabled: false
+                      }
+                    ]}
+                    initialData={{
+                      firstName: user?.firstName || '',
+                      lastName: user?.lastName || '',
+                      email: user?.email || '',
+                      username: user?.username || ''
+                    }}
+                    submitButtonText="Save Changes"
+                    isUpdate={true}
+                  />
+                ) : (
+                  /* Display Mode */
+                  <div className="space-y-6">
+                    {/* Profile Avatar */}
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="w-20 h-20 bg-primary-600 rounded-full flex items-center justify-center text-white text-2xl font-semibold shadow-lg">
+                        {getInitials(getUserDisplayName(user))}
+                      </div>
+                      <div className="text-center">
+                        <h4 className="text-xl font-semibold text-gray-900">
+                          {getUserDisplayName(user)}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {getUserRoleName(user)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Profile Information */}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-center space-x-3">
+                            <UserIcon className="h-5 w-5 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Full Name</p>
+                              <p className="text-sm text-gray-600">
+                                {user?.firstName && user?.lastName 
+                                  ? `${user.firstName} ${user.lastName}` 
+                                  : 'Not provided'
+                                }
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-center space-x-3">
+                            <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Email Address</p>
+                              <p className="text-sm text-gray-600">{user?.email || 'Not provided'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-center space-x-3">
+                            <UserIcon className="h-5 w-5 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Username</p>
+                              <p className="text-sm text-gray-600">{user?.username || 'Not provided'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-center space-x-3">
+                            <ShieldCheckIcon className="h-5 w-5 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Role</p>
+                              <p className="text-sm text-gray-600">{getUserRoleName(user)}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-center space-x-3">
+                            <CalendarIcon className="h-5 w-5 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Member Since</p>
+                              <p className="text-sm text-gray-600">
+                                {user?.createdAt 
+                                  ? new Date(user.createdAt).toLocaleDateString()
+                                  : 'Not available'
+                                }
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Fixed Footer - Only show in display mode */}
+              {!isEditingProfile && (
+                <div className="flex justify-end p-6 border-t border-gray-200 flex-shrink-0">
+                  <Button
+                    variant="primary"
+                    size="md"
+                    onClick={() => {
+                      setShowProfileModal(false);
+                      setIsEditingProfile(false);
+                    }}
+                  >
+                    Close
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Help & Support Modal */}
       {showHelpModal && (
@@ -345,9 +493,9 @@ const Header = () => {
             <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={() => setShowHelpModal(false)}></div>
             
             {/* Modal Content */}
-            <div className="relative z-50 w-full max-w-2xl overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
-              {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="relative z-50 w-full max-w-2xl overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl flex flex-col max-h-[90vh]">
+              {/* Fixed Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                     <QuestionMarkCircleIcon className="h-6 w-6 text-blue-600" />
@@ -362,8 +510,8 @@ const Header = () => {
                 </button>
               </div>
 
-              {/* Content */}
-              <div className="p-6 space-y-6">
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-6">
                 <div>
                   <h4 className="text-md font-semibold text-gray-900 mb-3">Frequently Asked Questions</h4>
                   <div className="space-y-4">
@@ -378,6 +526,18 @@ const Header = () => {
                     <div className="border border-gray-200 rounded-lg p-4">
                       <h5 className="font-medium text-gray-900 mb-2">How do I view election results?</h5>
                       <p className="text-sm text-gray-600">Results are available after the election period ends. Check the results section for updates.</p>
+                    </div>
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h5 className="font-medium text-gray-900 mb-2">What if I forget my password?</h5>
+                      <p className="text-sm text-gray-600">Contact the system administrator to reset your password. You can reach them through the contact information below.</p>
+                    </div>
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h5 className="font-medium text-gray-900 mb-2">How secure is the voting system?</h5>
+                      <p className="text-sm text-gray-600">Our voting system uses industry-standard encryption and security measures to ensure your vote is protected and anonymous.</p>
+                    </div>
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h5 className="font-medium text-gray-900 mb-2">Can I vote from my mobile device?</h5>
+                      <p className="text-sm text-gray-600">Yes, the voting system is fully responsive and works on all devices including smartphones and tablets.</p>
                     </div>
                   </div>
                 </div>
@@ -419,8 +579,8 @@ const Header = () => {
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="flex justify-end p-6 border-t border-gray-200">
+              {/* Fixed Footer */}
+              <div className="flex justify-end p-6 border-t border-gray-200 flex-shrink-0">
                 <Button
                   variant="primary"
                   size="md"
