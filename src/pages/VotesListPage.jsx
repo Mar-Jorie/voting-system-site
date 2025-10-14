@@ -186,34 +186,6 @@ const VotesListPage = () => {
       )
     },
     {
-      key: 'candidates',
-      label: 'Voted For',
-      render: (_, vote) => (
-        <div className="space-y-1">
-          {vote.maleCandidateId && (
-            <div className="flex items-center space-x-2">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                Male
-              </span>
-              <span className="text-sm text-gray-900">
-                {getCandidateName(vote.maleCandidateId)}
-              </span>
-            </div>
-          )}
-          {vote.femaleCandidateId && (
-            <div className="flex items-center space-x-2">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
-                Female
-              </span>
-              <span className="text-sm text-gray-900">
-                {getCandidateName(vote.femaleCandidateId)}
-              </span>
-            </div>
-          )}
-        </div>
-      )
-    },
-    {
       key: 'timestamp',
       label: 'Vote Date',
       render: (value) => (

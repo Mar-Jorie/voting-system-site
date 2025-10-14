@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import SignInPage from "./pages/SigninPage";
-import VotingPage from "./pages/VotingPage";
+import FAQPage from "./pages/FAQPage";
 import VotesListPage from "./pages/VotesListPage";
 import DashboardPage from "./pages/DashboardPage";
 import CandidatesPage from "./pages/CandidatesPage";
@@ -35,13 +35,13 @@ function App() {
             </MainLayout>
           </ProtectedRoute>
         } />
-        <Route path="/voting" element={
-          <ProtectedRoute>
-            <MainLayout>
-              <VotingPage />
-            </MainLayout>
-          </ProtectedRoute>
-        } />
+                <Route path="/faq" element={
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <FAQPage />
+                    </MainLayout>
+                  </ProtectedRoute>
+                } />
                 <Route path="/votes" element={
                   <ProtectedRoute>
                     <MainLayout>

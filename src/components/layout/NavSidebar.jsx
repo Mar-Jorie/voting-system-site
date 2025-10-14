@@ -9,6 +9,7 @@ import {
   CogIcon, 
   UserIcon, 
   ListBulletIcon,
+  QuestionMarkCircleIcon,
   ArrowRightOnRectangleIcon 
 } from '@heroicons/react/24/outline';
 import MainLayout from './MainLayout';
@@ -72,10 +73,10 @@ const NavSidebar = () => {
       current: location.pathname === '/candidates'
     },
     {
-      name: 'Voting',
-      href: '/voting',
-      icon: DocumentTextIcon,
-      current: location.pathname === '/voting'
+      name: 'FAQ',
+      href: '/faq',
+      icon: QuestionMarkCircleIcon,
+      current: location.pathname === '/faq'
     },
         {
           name: 'Votes List',
