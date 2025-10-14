@@ -56,13 +56,13 @@ const LandingPage = () => {
     };
   }, []);
 
-  // Helper function to display candidate names with shaded effect when results are not public
+  // Helper function to get display name and blur class for candidate names
   const getDisplayName = (candidate) => {
-    if (resultsVisibility === RESULTS_VISIBILITY.PUBLIC) {
-      return candidate.name;
-    } else {
-      return '███████'; // Shaded effect instead of asterisks
-    }
+    return candidate.name;
+  };
+
+  const getBlurClass = () => {
+    return resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? '' : 'blur-sm';
   };
 
   // Voting data functions (reactive to refreshTrigger)
@@ -478,7 +478,7 @@ const LandingPage = () => {
                       />
                     )}
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{getDisplayName(candidate)}</p>
+                      <p className={`font-medium text-gray-900 ${getBlurClass()}`}>{getDisplayName(candidate)}</p>
                       <div className="flex items-center space-x-2 mt-1">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div 
@@ -522,7 +522,7 @@ const LandingPage = () => {
                       />
                     )}
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{getDisplayName(candidate)}</p>
+                      <p className={`font-medium text-gray-900 ${getBlurClass()}`}>{getDisplayName(candidate)}</p>
                       <div className="flex items-center space-x-2 mt-1">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div 

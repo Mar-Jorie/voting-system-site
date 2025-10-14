@@ -86,13 +86,13 @@ const DashboardPage = () => {
     });
   };
 
-  // Helper function to display candidate names with shaded effect when results are not public
+  // Helper function to get display name and blur class for candidate names
   const getDisplayName = (candidate) => {
-    if (resultsVisibility === RESULTS_VISIBILITY.PUBLIC) {
-      return candidate.name;
-    } else {
-      return '███████'; // Shaded effect instead of asterisks
-    }
+    return candidate.name;
+  };
+
+  const getBlurClass = () => {
+    return resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? '' : 'blur-sm';
   };
 
   const getCandidateVotes = (candidateId, category) => {
@@ -722,7 +722,7 @@ const DashboardPage = () => {
             
             <div className="text-xs text-gray-500">
               {resultsVisibility === RESULTS_VISIBILITY.HIDDEN 
-                ? "Candidate names will show as shaded blocks (███████) on the landing page"
+                ? "Candidate names will be blurred on the landing page and dashboard"
                 : "Candidate names are fully visible on the landing page"
               }
             </div>
@@ -748,7 +748,7 @@ const DashboardPage = () => {
                     className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
                   />
                 )}
-                <h4 className="text-xl font-semibold text-gray-900 mb-2">{getDisplayName(maleWinner)}</h4>
+                <h4 className={`text-xl font-semibold text-gray-900 mb-2 ${getBlurClass()}`}>{getDisplayName(maleWinner)}</h4>
                 <p className="text-2xl font-bold text-primary-600 mb-2">{maleWinner.voteCount} votes</p>
                 <p className="text-sm text-gray-600">
                   {getTotalVotes() > 0 ? ((maleWinner.voteCount / getTotalVotes()) * 100).toFixed(1) : 0}% of total votes
@@ -781,7 +781,7 @@ const DashboardPage = () => {
                     className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
                   />
                 )}
-                <h4 className="text-xl font-semibold text-gray-900 mb-2">{getDisplayName(femaleWinner)}</h4>
+                <h4 className={`text-xl font-semibold text-gray-900 mb-2 ${getBlurClass()}`}>{getDisplayName(femaleWinner)}</h4>
                 <p className="text-2xl font-bold text-primary-600 mb-2">{femaleWinner.voteCount} votes</p>
                 <p className="text-sm text-gray-600">
                   {getTotalVotes() > 0 ? ((femaleWinner.voteCount / getTotalVotes()) * 100).toFixed(1) : 0}% of total votes
