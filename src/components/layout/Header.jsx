@@ -86,18 +86,13 @@ const Header = () => {
 
   const confirmProfileUpdate = async () => {
     try {
-      console.log('Updating profile with data:', pendingProfileData);
-      
       // Update user profile in database
-      const updatedUser = await updateObject('users', {
-        id: user.id,
+      const updatedUser = await updateObject('users', user.id, {
         firstName: pendingProfileData.firstName,
         lastName: pendingProfileData.lastName,
         email: pendingProfileData.email,
         username: pendingProfileData.username
       });
-      
-      console.log('Profile updated successfully:', updatedUser);
       
       // Refresh user data from database to get the latest information
       await refreshUser();
