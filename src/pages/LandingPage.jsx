@@ -56,12 +56,12 @@ const LandingPage = () => {
     };
   }, []);
 
-  // Helper function to display candidate names with asterisks when results are not public
+  // Helper function to display candidate names with shaded effect when results are not public
   const getDisplayName = (candidate) => {
     if (resultsVisibility === RESULTS_VISIBILITY.PUBLIC) {
       return candidate.name;
     } else {
-      return '*****';
+      return '███████'; // Shaded effect instead of asterisks
     }
   };
 
