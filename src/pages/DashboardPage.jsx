@@ -675,7 +675,7 @@ const DashboardPage = () => {
                     <p className="text-xs text-gray-600">
                       {votingStatus.isActive 
                         ? (votingStatus.autoStopDate 
-                            ? `Auto-stop scheduled: ${votingStatus.autoStopDate.toLocaleDateString('en-US', { 
+                            ? `Auto-stop: ${votingStatus.autoStopDate.toLocaleDateString('en-US', { 
                                 year: 'numeric', 
                                 month: 'short', 
                                 day: '2-digit' 
