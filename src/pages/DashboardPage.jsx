@@ -1,9 +1,10 @@
 // Dashboard Page - MANDATORY PATTERN
 import React, { useState, useEffect } from 'react';
-import { CalendarDaysIcon, UserGroupIcon, TrophyIcon, CheckCircleIcon, PlusIcon, ArrowDownTrayIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, UserGroupIcon, TrophyIcon, CheckCircleIcon, PlusIcon, ArrowDownTrayIcon, XMarkIcon, ClockIcon, StopIcon, PlayIcon } from '@heroicons/react/24/outline';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import Button from '../components/Button';
 import { toast } from 'react-hot-toast';
+import { getVotingStatusInfo, stopVoting, startVoting, setAutoStopDate, formatTimeRemaining, VOTE_STATUS } from '../utils/voteControl';
 
 const DashboardPage = () => {
   const [metrics, setMetrics] = useState({
@@ -28,6 +29,21 @@ const DashboardPage = () => {
     return () => {
       window.removeEventListener('votesUpdated', handleVotesUpdated);
     };
+  }, []);
+
+  // Load voting status
+  useEffect(() => {
+    const loadVotingStatus = () => {
+      const status = getVotingStatusInfo();
+      setVotingStatus(status);
+    };
+
+    loadVotingStatus();
+    
+    // Update voting status every minute to check for auto-stop
+    const interval = setInterval(loadVotingStatus, 60000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadData = () => {
@@ -95,9 +111,55 @@ const DashboardPage = () => {
   };
 
   const [showExportModal, setShowExportModal] = useState(false);
+  const [votingStatus, setVotingStatus] = useState(null);
+  const [showVoteControlModal, setShowVoteControlModal] = useState(false);
+  const [autoStopDate, setAutoStopDate] = useState('');
+  const [autoStopTime, setAutoStopTime] = useState('');
 
   const handleExportData = () => {
     setShowExportModal(true);
+  };
+
+  // Vote Control Functions
+  const handleStopVoting = () => {
+    if (stopVoting('admin', 'Manually stopped by administrator')) {
+      setVotingStatus(getVotingStatusInfo());
+      toast.success('Voting has been stopped');
+    } else {
+      toast.error('Failed to stop voting');
+    }
+  };
+
+  const handleStartVoting = () => {
+    if (startVoting()) {
+      setVotingStatus(getVotingStatusInfo());
+      toast.success('Voting has been resumed');
+    } else {
+      toast.error('Failed to start voting');
+    }
+  };
+
+  const handleSetAutoStop = () => {
+    if (!autoStopDate || !autoStopTime) {
+      toast.error('Please select both date and time');
+      return;
+    }
+
+    const stopDateTime = new Date(`${autoStopDate}T${autoStopTime}`);
+    if (stopDateTime <= new Date()) {
+      toast.error('Auto-stop date must be in the future');
+      return;
+    }
+
+    if (setAutoStopDate(stopDateTime)) {
+      setVotingStatus(getVotingStatusInfo());
+      setShowVoteControlModal(false);
+      setAutoStopDate('');
+      setAutoStopTime('');
+      toast.success(`Auto-stop set for ${stopDateTime.toLocaleString()}`);
+    } else {
+      toast.error('Failed to set auto-stop date');
+    }
   };
 
   // Export functions
@@ -140,8 +202,8 @@ const DashboardPage = () => {
         // Winners
         'WINNERS',
         'Category,Name,Party,Gender,Votes,Percentage',
-        `"Male Winner","${maleWinner.name}","${maleWinner.party || 'Independent'}","${maleWinner.gender}","${maleWinner.votes}","${((maleWinner.votes / votes.length) * 100).toFixed(1)}%"`,
-        `"Female Winner","${femaleWinner.name}","${femaleWinner.party || 'Independent'}","${femaleWinner.gender}","${femaleWinner.votes}","${((femaleWinner.votes / votes.length) * 100).toFixed(1)}%"`,
+        `"Male Winner","${maleWinner.name}","${maleWinner.party || 'Independent'}","${maleWinner.gender}","${maleWinner.votes}","${currentVotes.length > 0 ? ((maleWinner.votes / currentVotes.length) * 100).toFixed(1) : 0}%"`,
+        `"Female Winner","${femaleWinner.name}","${femaleWinner.party || 'Independent'}","${femaleWinner.gender}","${femaleWinner.votes}","${currentVotes.length > 0 ? ((femaleWinner.votes / currentVotes.length) * 100).toFixed(1) : 0}%"`,
         '',
         
         // Male Results (Ranked)
@@ -152,7 +214,7 @@ const DashboardPage = () => {
           `"${candidate.name}"`,
           `"${candidate.party || 'Independent'}"`,
           candidate.votes,
-          `"${((candidate.votes / votes.length) * 100).toFixed(1)}%"`
+          `"${currentVotes.length > 0 ? ((candidate.votes / currentVotes.length) * 100).toFixed(1) : 0}%"`
         ].join(',')),
         '',
         
@@ -164,7 +226,7 @@ const DashboardPage = () => {
           `"${candidate.name}"`,
           `"${candidate.party || 'Independent'}"`,
           candidate.votes,
-          `"${((candidate.votes / votes.length) * 100).toFixed(1)}%"`
+          `"${currentVotes.length > 0 ? ((candidate.votes / currentVotes.length) * 100).toFixed(1) : 0}%"`
         ].join(',')),
         ''
       ].join('\n');
@@ -191,24 +253,25 @@ const DashboardPage = () => {
   const exportAsPDF = () => {
     try {
       console.log('PDF Export button clicked');
-      const votes = JSON.parse(localStorage.getItem('votes') || '[]');
-      const candidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+      // Use real-time data from component state instead of localStorage
+      const currentVotes = votes || [];
+      const currentCandidates = candidates || [];
       
-      console.log('PDF Export - Votes:', votes.length, 'Candidates:', candidates.length);
+      console.log('PDF Export - Votes:', currentVotes.length, 'Candidates:', currentCandidates.length);
       
-      if (candidates.length === 0) {
+      if (currentCandidates.length === 0) {
         toast.error('No candidates found to export');
         return;
       }
       
       // Calculate results
       const candidateVotes = {};
-      votes.forEach(vote => {
+      currentVotes.forEach(vote => {
         candidateVotes[vote.candidateId] = (candidateVotes[vote.candidateId] || 0) + 1;
       });
     
     // Create results summary
-    const results = candidates.map(candidate => ({
+    const results = currentCandidates.map(candidate => ({
       ...candidate,
       votes: candidateVotes[candidate.id] || 0
     })).sort((a, b) => b.votes - a.votes);
@@ -258,7 +321,7 @@ const DashboardPage = () => {
         <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #2563eb; padding-bottom: 20px;">
           <h1 style="color: #2563eb; margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">ELECTION RESULTS SUMMARY</h1>
           <p style="color: #666; margin: 5px 0; font-size: 14px;">Generated: ${new Date().toLocaleDateString()}</p>
-          <p style="color: #666; margin: 5px 0; font-size: 14px;">Total Votes: ${votes.length} | Total Candidates: ${candidates.length}</p>
+          <p style="color: #666; margin: 5px 0; font-size: 14px;">Total Votes: ${currentVotes.length} | Total Candidates: ${currentCandidates.length}</p>
         </div>
         
         <!-- Winners -->
@@ -270,14 +333,14 @@ const DashboardPage = () => {
               <h3 style="color: #1e40af; margin: 0 0 10px 0; font-size: 16px; font-weight: bold;">Male Winner</h3>
               <h4 style="color: #2563eb; margin: 0 0 5px 0; font-size: 20px; font-weight: bold;">${maleWinner.name}</h4>
               <p style="color: #666; margin: 0 0 5px 0; font-size: 14px;">${maleWinner.party || 'Independent'}</p>
-              <p style="color: #2563eb; margin: 0; font-size: 18px; font-weight: bold;">${maleWinner.votes} votes (${((maleWinner.votes / votes.length) * 100).toFixed(1)}%)</p>
+              <p style="color: #2563eb; margin: 0; font-size: 18px; font-weight: bold;">${maleWinner.votes} votes (${currentVotes.length > 0 ? ((maleWinner.votes / currentVotes.length) * 100).toFixed(1) : 0}%)</p>
             </div>
             <!-- Female Winner -->
             <div style="padding: 15px; background-color: white; border-radius: 6px; border: 1px solid #e2e8f0;">
               <h3 style="color: #1e40af; margin: 0 0 10px 0; font-size: 16px; font-weight: bold;">Female Winner</h3>
               <h4 style="color: #2563eb; margin: 0 0 5px 0; font-size: 20px; font-weight: bold;">${femaleWinner.name}</h4>
               <p style="color: #666; margin: 0 0 5px 0; font-size: 14px;">${femaleWinner.party || 'Independent'}</p>
-              <p style="color: #2563eb; margin: 0; font-size: 18px; font-weight: bold;">${femaleWinner.votes} votes (${((femaleWinner.votes / votes.length) * 100).toFixed(1)}%)</p>
+              <p style="color: #2563eb; margin: 0; font-size: 18px; font-weight: bold;">${femaleWinner.votes} votes (${currentVotes.length > 0 ? ((femaleWinner.votes / currentVotes.length) * 100).toFixed(1) : 0}%)</p>
             </div>
           </div>
         </div>
@@ -302,7 +365,7 @@ const DashboardPage = () => {
                   <td style="padding: 12px; color: #374151; font-weight: 500; border-right: 1px solid #e2e8f0;">${candidate.name}</td>
                   <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${candidate.party || 'Independent'}</td>
                   <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0; text-align: center; font-weight: bold;">${candidate.votes}</td>
-                  <td style="padding: 12px; color: #6b7280; text-align: center;">${((candidate.votes / votes.length) * 100).toFixed(1)}%</td>
+                  <td style="padding: 12px; color: #6b7280; text-align: center;">${currentVotes.length > 0 ? ((candidate.votes / currentVotes.length) * 100).toFixed(1) : 0}%</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -329,7 +392,7 @@ const DashboardPage = () => {
                   <td style="padding: 12px; color: #374151; font-weight: 500; border-right: 1px solid #e2e8f0;">${candidate.name}</td>
                   <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${candidate.party || 'Independent'}</td>
                   <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0; text-align: center; font-weight: bold;">${candidate.votes}</td>
-                  <td style="padding: 12px; color: #6b7280; text-align: center;">${((candidate.votes / votes.length) * 100).toFixed(1)}%</td>
+                  <td style="padding: 12px; color: #6b7280; text-align: center;">${currentVotes.length > 0 ? ((candidate.votes / currentVotes.length) * 100).toFixed(1) : 0}%</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -464,6 +527,94 @@ const DashboardPage = () => {
           </div>
         </div>
 
+        {/* Vote Control Section */}
+        {votingStatus && (
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Vote Control</h3>
+              <div className="flex items-center space-x-2">
+                <div className={`w-3 h-3 rounded-full ${votingStatus.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className={`text-sm font-medium ${votingStatus.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                  {votingStatus.isActive ? 'Voting Active' : 'Voting Stopped'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Manual Control */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-700">Manual Control</h4>
+                <div className="flex space-x-2">
+                  {votingStatus.isActive ? (
+                    <Button
+                      onClick={handleStopVoting}
+                      variant="danger"
+                      size="sm"
+                      className="flex items-center"
+                    >
+                      <StopIcon className="h-4 w-4 mr-2" />
+                      Stop Voting
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleStartVoting}
+                      variant="success"
+                      size="sm"
+                      className="flex items-center"
+                    >
+                      <PlayIcon className="h-4 w-4 mr-2" />
+                      Start Voting
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Auto Stop */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-700">Auto Stop</h4>
+                <div className="space-y-2">
+                  {votingStatus.autoStopDate ? (
+                    <div className="text-sm text-gray-600">
+                      <p>Auto-stop: {votingStatus.autoStopDate.toLocaleString()}</p>
+                      {votingStatus.timeUntilStop > 0 && (
+                        <p className="text-orange-600">
+                          {formatTimeRemaining(votingStatus.timeUntilStop)} remaining
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No auto-stop scheduled</p>
+                  )}
+                  <Button
+                    onClick={() => setShowVoteControlModal(true)}
+                    variant="primaryOutline"
+                    size="sm"
+                    className="flex items-center"
+                  >
+                    <ClockIcon className="h-4 w-4 mr-2" />
+                    Set Auto-Stop
+                  </Button>
+                </div>
+              </div>
+
+              {/* Status Info */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-700">Status Info</h4>
+                <div className="text-sm text-gray-600 space-y-1">
+                  {votingStatus.stoppedAt && (
+                    <p>Stopped: {votingStatus.stoppedAt.toLocaleString()}</p>
+                  )}
+                  {votingStatus.stoppedBy && (
+                    <p>By: {votingStatus.stoppedBy}</p>
+                  )}
+                  {votingStatus.reason && (
+                    <p>Reason: {votingStatus.reason}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Winners */}
         <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-3 gap-6">
@@ -714,6 +865,75 @@ const DashboardPage = () => {
                 >
                   Export as PDF
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vote Control Modal */}
+      {showVoteControlModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={() => setShowVoteControlModal(false)}></div>
+            
+            {/* Modal Content */}
+            <div className="relative z-50 w-full max-w-md p-6 overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Set Auto-Stop Date
+                </h3>
+                <button
+                  onClick={() => setShowVoteControlModal(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={autoStopDate}
+                    onChange={(e) => setAutoStopDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Time
+                  </label>
+                  <input
+                    type="time"
+                    value={autoStopTime}
+                    onChange={(e) => setAutoStopTime(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div className="flex space-x-3 pt-4">
+                  <Button
+                    onClick={() => setShowVoteControlModal(false)}
+                    variant="secondaryOutline"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSetAutoStop}
+                    variant="primary"
+                    className="flex-1"
+                  >
+                    Set Auto-Stop
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

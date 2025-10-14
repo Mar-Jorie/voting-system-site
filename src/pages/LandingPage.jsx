@@ -4,17 +4,27 @@ import { Bars3Icon, UserIcon, ChartBarIcon, ShieldCheckIcon, ClockIcon, TrophyIc
 import Button from '../components/Button';
 import FloatingChatbot from '../components/FloatingChatbot';
 import VotingModal from '../components/VotingModal';
+import { isVotingActive, getVotingStatusInfo } from '../utils/voteControl';
 
 const LandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showVotingModal, setShowVotingModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [votingStatus, setVotingStatus] = useState(null);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   useEffect(() => {
+    // Check voting status
+    const checkVotingStatus = () => {
+      const status = getVotingStatusInfo();
+      setVotingStatus(status);
+    };
+
+    checkVotingStatus();
+    
     // Listen for vote updates
     const handleVotesUpdated = () => {
       setRefreshTrigger(prev => prev + 1);
@@ -22,8 +32,12 @@ const LandingPage = () => {
     
     window.addEventListener('votesUpdated', handleVotesUpdated);
     
+    // Check voting status every minute
+    const interval = setInterval(checkVotingStatus, 60000);
+    
     return () => {
       window.removeEventListener('votesUpdated', handleVotesUpdated);
+      clearInterval(interval);
     };
   }, []);
 
@@ -108,9 +122,16 @@ const LandingPage = () => {
               <Button 
                 variant="primaryOutline" 
                 size="md"
-                onClick={() => setShowVotingModal(true)}
+                onClick={() => {
+                  if (votingStatus && !votingStatus.isActive) {
+                    alert('Voting is currently disabled. Please contact the administrator.');
+                    return;
+                  }
+                  setShowVotingModal(true);
+                }}
+                disabled={votingStatus && !votingStatus.isActive}
               >
-                Start Voting
+                {votingStatus && !votingStatus.isActive ? 'Voting Disabled' : 'Start Voting'}
               </Button>
             </div>
           </div>
@@ -133,11 +154,17 @@ const LandingPage = () => {
                     size="md" 
                     className="w-full"
                     onClick={() => {
+                      if (votingStatus && !votingStatus.isActive) {
+                        alert('Voting is currently disabled. Please contact the administrator.');
+                        setIsMobileMenuOpen(false);
+                        return;
+                      }
                       setShowVotingModal(true);
                       setIsMobileMenuOpen(false);
                     }}
+                    disabled={votingStatus && !votingStatus.isActive}
                   >
-                    Start Voting
+                    {votingStatus && !votingStatus.isActive ? 'Voting Disabled' : 'Start Voting'}
                   </Button>
                 </div>
               </div>
@@ -165,9 +192,16 @@ const LandingPage = () => {
                   variant="primary" 
                   size="lg" 
                   className="!w-auto min-w-[160px]"
-                  onClick={() => setShowVotingModal(true)}
+                  onClick={() => {
+                    if (votingStatus && !votingStatus.isActive) {
+                      alert('Voting is currently disabled. Please contact the administrator.');
+                      return;
+                    }
+                    setShowVotingModal(true);
+                  }}
+                  disabled={votingStatus && !votingStatus.isActive}
                 >
-                  Cast Vote
+                  {votingStatus && !votingStatus.isActive ? 'Voting Disabled' : 'Cast Vote'}
                 </Button>
                 <a href="#how-it-works">
                   <Button variant="primaryOutline" size="lg" className="!w-auto min-w-[160px]">
@@ -504,9 +538,16 @@ const LandingPage = () => {
               variant="light" 
               size="lg" 
               className="!w-auto min-w-[160px]"
-              onClick={() => setShowVotingModal(true)}
+              onClick={() => {
+                if (votingStatus && !votingStatus.isActive) {
+                  alert('Voting is currently disabled. Please contact the administrator.');
+                  return;
+                }
+                setShowVotingModal(true);
+              }}
+              disabled={votingStatus && !votingStatus.isActive}
             >
-              Votethe  Now
+              {votingStatus && !votingStatus.isActive ? 'Voting Disabled' : 'Vote Now'}
             </Button>
           </div>
         </div>
