@@ -172,7 +172,14 @@ const DashboardPage = () => {
       // Calculate results
       const candidateVotes = {};
       votes.forEach(vote => {
-        candidateVotes[vote.candidateId] = (candidateVotes[vote.candidateId] || 0) + 1;
+        // Count male candidate votes
+        if (vote.maleCandidateId) {
+          candidateVotes[vote.maleCandidateId] = (candidateVotes[vote.maleCandidateId] || 0) + 1;
+        }
+        // Count female candidate votes
+        if (vote.femaleCandidateId) {
+          candidateVotes[vote.femaleCandidateId] = (candidateVotes[vote.femaleCandidateId] || 0) + 1;
+        }
       });
       
       // Create results summary
@@ -181,14 +188,14 @@ const DashboardPage = () => {
         votes: candidateVotes[candidate.id] || 0
       })).sort((a, b) => b.votes - a.votes);
       
-      // Separate male and female results
-      const maleResults = results.filter(c => c.gender === 'male').sort((a, b) => b.votes - a.votes);
-      const femaleResults = results.filter(c => c.gender === 'female').sort((a, b) => b.votes - a.votes);
+    // Separate male and female results
+    const maleResults = results.filter(c => c.category === 'male').sort((a, b) => b.votes - a.votes);
+    const femaleResults = results.filter(c => c.category === 'female').sort((a, b) => b.votes - a.votes);
       
       // Find winners
       const overallWinner = results[0];
-      const maleWinner = maleResults[0];
-      const femaleWinner = femaleResults[0];
+      const maleWinner = maleResults[0] || { name: 'No male candidates', party: 'N/A', category: 'male', votes: 0 };
+      const femaleWinner = femaleResults[0] || { name: 'No female candidates', party: 'N/A', category: 'female', votes: 0 };
       
       // Create CSV content with results summary
       const csvContent = [
@@ -202,8 +209,8 @@ const DashboardPage = () => {
         // Winners
         'WINNERS',
         'Category,Name,Party,Gender,Votes,Percentage',
-        `"Male Winner","${maleWinner.name}","${maleWinner.party || 'Independent'}","${maleWinner.gender}","${maleWinner.votes}","${currentVotes.length > 0 ? ((maleWinner.votes / currentVotes.length) * 100).toFixed(1) : 0}%"`,
-        `"Female Winner","${femaleWinner.name}","${femaleWinner.party || 'Independent'}","${femaleWinner.gender}","${femaleWinner.votes}","${currentVotes.length > 0 ? ((femaleWinner.votes / currentVotes.length) * 100).toFixed(1) : 0}%"`,
+        `"Male Winner","${maleWinner.name}","${maleWinner.party || 'Independent'}","${maleWinner.category}","${maleWinner.votes}","${votes.length > 0 ? ((maleWinner.votes / votes.length) * 100).toFixed(1) : 0}%"`,
+        `"Female Winner","${femaleWinner.name}","${femaleWinner.party || 'Independent'}","${femaleWinner.category}","${femaleWinner.votes}","${votes.length > 0 ? ((femaleWinner.votes / votes.length) * 100).toFixed(1) : 0}%"`,
         '',
         
         // Male Results (Ranked)
@@ -253,9 +260,9 @@ const DashboardPage = () => {
   const exportAsPDF = () => {
     try {
       console.log('PDF Export button clicked');
-      // Use real-time data from component state instead of localStorage
-      const currentVotes = votes || [];
-      const currentCandidates = candidates || [];
+      // Get fresh data from localStorage to ensure we have the latest
+      const currentVotes = JSON.parse(localStorage.getItem('votes') || '[]');
+      const currentCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
       
       console.log('PDF Export - Votes:', currentVotes.length, 'Candidates:', currentCandidates.length);
       
@@ -267,7 +274,14 @@ const DashboardPage = () => {
       // Calculate results
       const candidateVotes = {};
       currentVotes.forEach(vote => {
-        candidateVotes[vote.candidateId] = (candidateVotes[vote.candidateId] || 0) + 1;
+        // Count male candidate votes
+        if (vote.maleCandidateId) {
+          candidateVotes[vote.maleCandidateId] = (candidateVotes[vote.maleCandidateId] || 0) + 1;
+        }
+        // Count female candidate votes
+        if (vote.femaleCandidateId) {
+          candidateVotes[vote.femaleCandidateId] = (candidateVotes[vote.femaleCandidateId] || 0) + 1;
+        }
       });
     
     // Create results summary
@@ -277,13 +291,13 @@ const DashboardPage = () => {
     })).sort((a, b) => b.votes - a.votes);
     
     // Separate male and female results
-    const maleResults = results.filter(c => c.gender === 'male').sort((a, b) => b.votes - a.votes);
-    const femaleResults = results.filter(c => c.gender === 'female').sort((a, b) => b.votes - a.votes);
+    const maleResults = results.filter(c => c.category === 'male').sort((a, b) => b.votes - a.votes);
+    const femaleResults = results.filter(c => c.category === 'female').sort((a, b) => b.votes - a.votes);
     
     // Find winners
     const overallWinner = results[0];
-    const maleWinner = maleResults[0] || { name: 'No male candidates', party: 'N/A', gender: 'male', votes: 0 };
-    const femaleWinner = femaleResults[0] || { name: 'No female candidates', party: 'N/A', gender: 'female', votes: 0 };
+    const maleWinner = maleResults[0] || { name: 'No male candidates', party: 'N/A', category: 'male', votes: 0 };
+    const femaleWinner = femaleResults[0] || { name: 'No female candidates', party: 'N/A', category: 'female', votes: 0 };
     
     // Close the export modal first
     setShowExportModal(false);
