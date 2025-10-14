@@ -433,64 +433,85 @@ const UsersPage = () => {
       ? filteredUsers.filter((user, index) => selectedRows.has(user.id || index))
       : filteredUsers;
     
-    try {
-      // Create a simple HTML table for PDF conversion
-      const tableHTML = `
-        <html>
-          <head>
-            <title>Users Export</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              table { width: 100%; border-collapse: collapse; }
-              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              th { background-color: #f2f2f2; }
-              h1 { color: #333; }
-            </style>
-          </head>
-          <body>
-            <h1>Users Export - ${new Date().toLocaleDateString()}</h1>
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Username</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Created At</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${usersToExport.map(user => `
-                  <tr>
-                    <td>${getUserDisplayName(user)}</td>
-                    <td>${user.username}</td>
-                    <td>${user.email}</td>
-                    <td>${getRoleDisplayName(user.role)}</td>
-                    <td>${getStatusDisplayName(user.status)}</td>
-                    <td>${new Date(user.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </body>
-        </html>
-      `;
-
-      // Create a new window and print
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(tableHTML);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
-      
-      setShowExportModal(false);
-      toast.success(`Exported ${usersToExport.length} users as PDF successfully`);
-    } catch (error) {
-      console.error('Error exporting users as PDF:', error);
-      toast.error('Failed to export users as PDF');
-    }
+    // Close the export modal first
+    setShowExportModal(false);
+    
+    // Create a print-specific stylesheet
+    const printStyles = document.createElement('style');
+    printStyles.textContent = `
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .print-content, .print-content * {
+          visibility: visible;
+        }
+        .print-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        @page {
+          margin: 0.5in;
+          size: A4;
+        }
+      }
+    `;
+    document.head.appendChild(printStyles);
+    
+    // Create print content with table design
+    const printElement = document.createElement('div');
+    printElement.className = 'print-content';
+    printElement.innerHTML = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; background: white;">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #2563eb; padding-bottom: 20px;">
+          <h1 style="color: #2563eb; margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Users Export Report</h1>
+          <p style="color: #666; margin: 5px 0; font-size: 14px;">Generated: ${new Date().toLocaleDateString()}</p>
+          <p style="color: #666; margin: 5px 0; font-size: 14px;">Total Users: ${usersToExport.length}</p>
+        </div>
+        
+        <!-- Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <thead>
+            <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">#</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Name</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Username</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Email</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Role</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151; border-right: 1px solid #e2e8f0;">Status</th>
+              <th style="padding: 12px; text-align: left; font-weight: bold; color: #374151;">Created At</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${usersToExport.map((user, index) => `
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${index + 1}</td>
+                <td style="padding: 12px; color: #374151; font-weight: 500; border-right: 1px solid #e2e8f0;">${getUserDisplayName(user)}</td>
+                <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${user.username}</td>
+                <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${user.email}</td>
+                <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${getRoleDisplayName(user.role)}</td>
+                <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0;">${getStatusDisplayName(user.status)}</td>
+                <td style="padding: 12px; color: #6b7280;">${new Date(user.createdAt).toLocaleDateString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+    document.body.appendChild(printElement);
+    
+    // Trigger print
+    setTimeout(() => {
+      window.print();
+      document.body.removeChild(printElement);
+      document.head.removeChild(printStyles);
+    }, 100);
+    
+    toast.success(`${usersToExport.length} user(s) exported as PDF successfully`);
   };
 
   // Individual user status toggle
