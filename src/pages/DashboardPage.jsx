@@ -698,13 +698,13 @@ const DashboardPage = () => {
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 transition-all duration-200 hover:shadow-md">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  <div className={`w-4 h-4 rounded-full ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'bg-primary-500' : 'bg-orange-500'}`}></div>
+                  <div className={`w-4 h-4 rounded-full ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'bg-primary-500' : 'bg-red-500'}`}></div>
                   <span className="text-lg font-semibold text-gray-900">Results Visibility</span>
                 </div>
                 <span className={`text-sm font-medium px-3 py-1 rounded-full ${
                   resultsVisibility === RESULTS_VISIBILITY.PUBLIC 
                     ? 'bg-primary-100 text-primary-700' 
-                    : 'bg-orange-100 text-orange-700'
+                    : 'bg-red-100 text-red-700'
                 }`}>
                   {resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'Public' : 'Hidden'}
                 </span>
@@ -724,7 +724,7 @@ const DashboardPage = () => {
                 ) : (
                   <Button
                     onClick={handleHideResults}
-                    variant="warning"
+                    variant="danger"
                     size="md"
                     className="w-full"
                   >
