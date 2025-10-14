@@ -144,6 +144,7 @@ const DashboardPage = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [votingStatus, setVotingStatus] = useState(null);
   const [showVoteControlModal, setShowVoteControlModal] = useState(false);
+  const [showStopConfirmationModal, setShowStopConfirmationModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
 
@@ -153,9 +154,19 @@ const DashboardPage = () => {
 
   // Vote Control Functions
   const handleStopVoting = () => {
-    if (stopVoting('admin', 'Manually stopped by administrator')) {
+    // Check if auto-stop is scheduled
+    if (votingStatus && votingStatus.autoStopDate) {
+      setShowStopConfirmationModal(true);
+    } else {
+      confirmStopVoting();
+    }
+  };
+
+  const confirmStopVoting = () => {
+    if (stopVoting('admin', 'Manually stopped by administrator', true)) {
       setVotingStatus(getVotingStatusInfo());
-      toast.success('Voting has been stopped');
+      setShowStopConfirmationModal(false);
+      toast.success('Voting has been stopped and auto-stop schedule cleared');
     } else {
       toast.error('Failed to stop voting');
     }
@@ -649,20 +660,22 @@ const DashboardPage = () => {
                       </Button>
                     )}
                     
-                    {/* Auto Stop Button */}
-                    <Button
-                      onClick={() => setShowVoteControlModal(true)}
-                      variant="primaryOutline"
-                      size="md"
-                      className="flex-1"
-                    >
-                      <ClockIcon className="h-5 w-5 mr-2" />
-                      Auto Stop
-                    </Button>
+                    {/* Auto Stop Button - Only show when voting is active */}
+                    {votingStatus.isActive && (
+                      <Button
+                        onClick={() => setShowVoteControlModal(true)}
+                        variant="primaryOutline"
+                        size="md"
+                        className="flex-1"
+                      >
+                        <ClockIcon className="h-5 w-5 mr-2" />
+                        Auto Stop
+                      </Button>
+                    )}
                   </div>
                   
-                  {/* Auto Stop Info */}
-                  {votingStatus.autoStopDate && (
+                  {/* Auto Stop Info - Only show when voting is active and auto-stop is scheduled */}
+                  {votingStatus.isActive && votingStatus.autoStopDate && (
                     <div className="p-3 bg-white rounded-lg border border-primary-100">
                       <p className="text-xs text-gray-600 mb-1">
                         Scheduled: {votingStatus.autoStopDate.toLocaleDateString('en-US', { 
@@ -1058,6 +1071,75 @@ const DashboardPage = () => {
                     className="flex-1"
                   >
                     Set Auto-Stop
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stop Confirmation Modal */}
+      {showStopConfirmationModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={() => setShowStopConfirmationModal(false)}></div>
+            
+            {/* Modal Content */}
+            <div className="relative z-50 w-full max-w-md p-6 overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Confirm Manual Stop
+                </h3>
+                <button
+                  onClick={() => setShowStopConfirmationModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <ClockIcon className="h-5 w-5 text-orange-600" />
+                    <span className="text-sm font-medium text-orange-800">Auto-Stop Scheduled</span>
+                  </div>
+                  <p className="text-sm text-orange-700">
+                    You have an auto-stop scheduled for{' '}
+                    {votingStatus.autoStopDate.toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: '2-digit' 
+                    })} at{' '}
+                    {votingStatus.autoStopDate.toLocaleTimeString('en-US', { 
+                      hour: 'numeric', 
+                      minute: '2-digit',
+                      hour12: true 
+                    })}
+                  </p>
+                </div>
+                
+                <p className="text-sm text-gray-600">
+                  If you continue, the auto-stop schedule will be cleared and voting will be stopped immediately.
+                </p>
+                
+                <div className="flex space-x-3 pt-4">
+                  <Button
+                    onClick={() => setShowStopConfirmationModal(false)}
+                    variant="secondaryOutline"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={confirmStopVoting}
+                    variant="danger"
+                    className="flex-1"
+                  >
+                    <StopIcon className="h-4 w-4 mr-2" />
+                    Stop Voting
                   </Button>
                 </div>
               </div>

@@ -77,14 +77,15 @@ export const isVotingActive = () => {
 };
 
 // Manually stop voting
-export const stopVoting = (stoppedBy = 'admin', reason = 'Manually stopped by administrator') => {
+export const stopVoting = (stoppedBy = 'admin', reason = 'Manually stopped by administrator', clearAutoStop = false) => {
   const control = getVoteControl();
   return setVoteControl({
     ...control,
     status: VOTE_STATUS.STOPPED,
     stoppedAt: new Date(),
     stoppedBy,
-    reason
+    reason,
+    autoStopDate: clearAutoStop ? null : control.autoStopDate
   });
 };
 
