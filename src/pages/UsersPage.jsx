@@ -10,9 +10,7 @@ import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import SearchFilter from '../components/SearchFilter';
 import CollapsibleTable from '../components/CollapsibleTable';
 import { toast } from 'react-hot-toast';
-import { useFindObjects } from '../usecases/object/useFindObjects';
-import { useSignUp } from '../usecases/user/useSignUp';
-import { useDeleteObject } from '../usecases/object/useDeleteObject';
+import useApp from '../hooks/useApp';
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -31,9 +29,7 @@ const UsersPage = () => {
   });
 
   // Hooks
-  const { find: findUsers, loading: findLoading } = useFindObjects();
-  const { signUp: createUser, loading: createLoading } = useSignUp();
-  const { deleteObject: deleteUser, loading: deleteLoading } = useDeleteObject();
+  const { user: currentUser } = useApp();
 
   // Role options
   const roleOptions = [
@@ -120,8 +116,28 @@ const UsersPage = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await findUsers('users', {}, { limit: 100 });
-      setUsers(response || []);
+      // For now, load from localStorage since we're using mock data
+      // In production, this would use the API
+      const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
+      
+      // If no users in localStorage, create a default admin user
+      if (storedUsers.length === 0) {
+        const defaultUser = {
+          id: 'user-1',
+          email: 'admin@example.com',
+          username: 'admin',
+          firstName: 'Admin',
+          lastName: 'User',
+          role: 'admin',
+          status: 'active',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem('users', JSON.stringify([defaultUser]));
+        setUsers([defaultUser]);
+      } else {
+        setUsers(storedUsers);
+      }
     } catch (error) {
       console.error('Error loading users:', error);
       toast.error('Failed to load users');
@@ -193,23 +209,37 @@ const UsersPage = () => {
     setShowDeleteModal(true);
   };
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
+  const handleFormSubmit = async (formData) => {
     setErrors({});
 
     try {
       if (editingUser) {
-        // Update existing user (implement update logic here)
+        // Update existing user
+        const updatedUsers = users.map(user => 
+          user.id === editingUser.id 
+            ? { ...user, ...formData, updatedAt: new Date().toISOString() }
+            : user
+        );
+        localStorage.setItem('users', JSON.stringify(updatedUsers));
+        setUsers(updatedUsers);
         toast.success('User updated successfully');
       } else {
         // Create new user
-        await createUser(formData);
+        const newUser = {
+          id: `user-${Date.now()}`,
+          ...formData,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        const updatedUsers = [...users, newUser];
+        localStorage.setItem('users', JSON.stringify(updatedUsers));
+        setUsers(updatedUsers);
         toast.success('User created successfully');
-        await loadUsers(); // Reload users list
       }
       
       setShowFormModal(false);
       setFormData({});
+      setEditingUser(null);
     } catch (error) {
       console.error('Error saving user:', error);
       toast.error(error.message || 'Failed to save user');
@@ -220,9 +250,11 @@ const UsersPage = () => {
     if (!deletingUser) return;
 
     try {
-      await deleteUser('users', deletingUser.id);
+      // Delete user from localStorage
+      const updatedUsers = users.filter(user => user.id !== deletingUser.id);
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      setUsers(updatedUsers);
       toast.success('User deleted successfully');
-      await loadUsers(); // Reload users list
       setShowDeleteModal(false);
       setDeletingUser(null);
     } catch (error) {
@@ -418,7 +450,7 @@ const UsersPage = () => {
         title={editingUser ? 'Edit User' : 'Create New User'}
         fields={fields}
         initialData={formData}
-        loading={createLoading}
+        loading={false}
         isUpdate={!!editingUser}
       />
 
