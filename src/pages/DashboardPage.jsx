@@ -616,11 +616,7 @@ const DashboardPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Voting Status Card */}
             {votingStatus && (
-              <div className={`rounded-lg p-6 border-2 transition-all duration-200 ${
-                votingStatus.isActive 
-                  ? 'bg-primary-50 border-primary-200 hover:border-primary-300' 
-                  : 'bg-red-50 border-red-200 hover:border-red-300'
-              }`}>
+              <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 transition-all duration-200 hover:shadow-md">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className={`w-4 h-4 rounded-full ${votingStatus.isActive ? 'bg-primary-500' : 'bg-red-500'}`}></div>
@@ -676,7 +672,7 @@ const DashboardPage = () => {
                   
                   {/* Auto Stop Info - Only show when voting is active and auto-stop is scheduled */}
                   {votingStatus.isActive && votingStatus.autoStopDate && (
-                    <div className="p-3 bg-white rounded-lg border border-primary-100">
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                       <p className="text-xs text-gray-600 mb-1">
                         Scheduled: {votingStatus.autoStopDate.toLocaleDateString('en-US', { 
                           year: 'numeric', 
@@ -695,16 +691,22 @@ const DashboardPage = () => {
                       )}
                     </div>
                   )}
+                  
+                  {/* Note Section - Always show to maintain consistent card height */}
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-xs text-gray-600">
+                      {votingStatus.isActive 
+                        ? "Voting is currently active and accepting votes from users"
+                        : "Voting is currently stopped and not accepting new votes"
+                      }
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Results Visibility Card */}
-            <div className={`rounded-lg p-6 border-2 transition-all duration-200 ${
-              resultsVisibility === RESULTS_VISIBILITY.PUBLIC 
-                ? 'bg-primary-50 border-primary-200 hover:border-primary-300' 
-                : 'bg-orange-50 border-orange-200 hover:border-orange-300'
-            }`}>
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 transition-all duration-200 hover:shadow-md">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <div className={`w-4 h-4 rounded-full ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'bg-primary-500' : 'bg-orange-500'}`}></div>
