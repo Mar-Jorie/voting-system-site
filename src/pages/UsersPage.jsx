@@ -407,7 +407,7 @@ const UsersPage = () => {
           columns={columns}
           onEdit={handleEditUser}
           onDelete={handleDeleteUser}
-          loading={loading || findLoading}
+          loading={loading}
           sortable={true}
           searchable={true}
           pagination={true}
