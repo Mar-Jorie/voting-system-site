@@ -590,30 +590,47 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* Vote Control Section */}
-        {votingStatus && (
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Vote Control</h3>
+        {/* Election Control Panel */}
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Election Control Panel</h3>
+            <div className="flex items-center space-x-4">
+              {/* Voting Status */}
+              {votingStatus && (
+                <div className="flex items-center space-x-2">
+                  <div className={`w-3 h-3 rounded-full ${votingStatus.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className={`text-sm font-medium ${votingStatus.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                    {votingStatus.isActive ? 'Voting Active' : 'Voting Stopped'}
+                  </span>
+                </div>
+              )}
+              
+              {/* Results Visibility Status */}
               <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${votingStatus.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <span className={`text-sm font-medium ${votingStatus.isActive ? 'text-green-600' : 'text-red-600'}`}>
-                  {votingStatus.isActive ? 'Voting Active' : 'Voting Stopped'}
+                <div className={`w-3 h-3 rounded-full ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                <span className={`text-sm font-medium ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'text-green-600' : 'text-orange-600'}`}>
+                  {resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'Results Public' : 'Results Hidden'}
                 </span>
               </div>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Manual Control */}
+          </div>
+          
+          {/* Control Buttons Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Vote Control */}
+            {votingStatus && (
               <div className="space-y-3">
-                <h4 className="text-sm font-medium text-gray-700">Manual Control</h4>
-                <div className="flex space-x-2">
+                <h4 className="text-sm font-medium text-gray-700 flex items-center">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+                  Vote Control
+                </h4>
+                <div className="space-y-2">
                   {votingStatus.isActive ? (
                     <Button
                       onClick={handleStopVoting}
                       variant="danger"
                       size="sm"
-                      className="flex items-center"
+                      className="w-full flex items-center justify-center"
                     >
                       <StopIcon className="h-4 w-4 mr-2" />
                       Stop Voting
@@ -623,7 +640,7 @@ const DashboardPage = () => {
                       onClick={handleStartVoting}
                       variant="success"
                       size="sm"
-                      className="flex items-center"
+                      className="w-full flex items-center justify-center"
                     >
                       <PlayIcon className="h-4 w-4 mr-2" />
                       Start Voting
@@ -631,101 +648,102 @@ const DashboardPage = () => {
                   )}
                 </div>
               </div>
+            )}
 
-              {/* Auto Stop */}
+            {/* Auto Stop */}
+            {votingStatus && (
               <div className="space-y-3">
-                <h4 className="text-sm font-medium text-gray-700">Auto Stop</h4>
+                <h4 className="text-sm font-medium text-gray-700 flex items-center">
+                  <div className="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>
+                  Auto Stop
+                </h4>
                 <div className="space-y-2">
                   {votingStatus.autoStopDate ? (
-                    <div className="text-sm text-gray-600">
-                      <p>Auto-stop: {votingStatus.autoStopDate.toLocaleString()}</p>
+                    <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                      <p className="font-medium">Scheduled:</p>
+                      <p>{votingStatus.autoStopDate.toLocaleString()}</p>
                       {votingStatus.timeUntilStop > 0 && (
-                        <p className="text-orange-600">
-                          {formatTimeRemaining(votingStatus.timeUntilStop)} remaining
+                        <p className="text-orange-600 font-medium">
+                          {formatTimeRemaining(votingStatus.timeUntilStop)} left
                         </p>
                       )}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">No auto-stop scheduled</p>
+                    <p className="text-xs text-gray-500">No auto-stop scheduled</p>
                   )}
                   <Button
                     onClick={() => setShowVoteControlModal(true)}
                     variant="primaryOutline"
                     size="sm"
-                    className="flex items-center"
+                    className="w-full flex items-center justify-center"
                   >
                     <ClockIcon className="h-4 w-4 mr-2" />
                     Set Auto-Stop
                   </Button>
                 </div>
               </div>
+            )}
 
-              {/* Status Info */}
+            {/* Results Visibility */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-gray-700 flex items-center">
+                <div className="w-2 h-2 rounded-full bg-orange-500 mr-2"></div>
+                Results Visibility
+              </h4>
+              <div className="space-y-2">
+                {resultsVisibility === RESULTS_VISIBILITY.HIDDEN ? (
+                  <Button
+                    onClick={handleShowResults}
+                    variant="success"
+                    size="sm"
+                    className="w-full flex items-center justify-center"
+                  >
+                    <CheckCircleIcon className="h-4 w-4 mr-2" />
+                    Make Public
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleHideResults}
+                    variant="warning"
+                    size="sm"
+                    className="w-full flex items-center justify-center"
+                  >
+                    <XMarkIcon className="h-4 w-4 mr-2" />
+                    Hide Results
+                  </Button>
+                )}
+                <p className="text-xs text-gray-500 text-center">
+                  {resultsVisibility === RESULTS_VISIBILITY.HIDDEN 
+                    ? "Names blurred on landing page"
+                    : "Names visible on landing page"
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* Status Info */}
+            {votingStatus && (
               <div className="space-y-3">
-                <h4 className="text-sm font-medium text-gray-700">Status Info</h4>
-                <div className="text-sm text-gray-600 space-y-1">
+                <h4 className="text-sm font-medium text-gray-700 flex items-center">
+                  <div className="w-2 h-2 rounded-full bg-gray-500 mr-2"></div>
+                  Status Info
+                </h4>
+                <div className="text-xs text-gray-600 space-y-1 bg-gray-50 p-2 rounded">
                   {votingStatus.stoppedAt && (
-                    <p>Stopped: {votingStatus.stoppedAt.toLocaleString()}</p>
+                    <p><span className="font-medium">Stopped:</span> {votingStatus.stoppedAt.toLocaleString()}</p>
                   )}
                   {votingStatus.stoppedBy && (
-                    <p>By: {votingStatus.stoppedBy}</p>
+                    <p><span className="font-medium">By:</span> {votingStatus.stoppedBy}</p>
                   )}
                   {votingStatus.reason && (
-                    <p>Reason: {votingStatus.reason}</p>
+                    <p><span className="font-medium">Reason:</span> {votingStatus.reason}</p>
+                  )}
+                  {!votingStatus.stoppedAt && (
+                    <p className="text-green-600 font-medium">Voting is active</p>
                   )}
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Results Visibility Control Section */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Results Visibility</h3>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'bg-green-500' : 'bg-orange-500'}`}></div>
-              <span className={`text-sm font-medium ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'text-green-600' : 'text-orange-600'}`}>
-                {resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'Results Public' : 'Results Hidden'}
-              </span>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Control whether candidate names are visible to the public on the landing page results section.
-            </p>
-            
-            <div className="flex space-x-3">
-              {resultsVisibility === RESULTS_VISIBILITY.HIDDEN ? (
-                <Button
-                  onClick={handleShowResults}
-                  variant="success"
-                  size="sm"
-                  className="flex items-center"
-                >
-                  <CheckCircleIcon className="h-4 w-4 mr-2" />
-                  Make Results Public
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleHideResults}
-                  variant="warning"
-                  size="sm"
-                  className="flex items-center"
-                >
-                  <XMarkIcon className="h-4 w-4 mr-2" />
-                  Hide Results
-                </Button>
-              )}
-            </div>
-            
-            <div className="text-xs text-gray-500">
-              {resultsVisibility === RESULTS_VISIBILITY.HIDDEN 
-                ? "Candidate names will be blurred on the landing page"
-                : "Candidate names are fully visible on the landing page"
-              }
-            </div>
+            )}
           </div>
         </div>
 
