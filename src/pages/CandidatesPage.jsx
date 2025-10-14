@@ -8,14 +8,24 @@ import InputFactory from '../components/InputFactory';
 import SelectInput from '../components/SelectInput';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import SearchFilter from '../components/SearchFilter';
+import { ProgressiveLoader } from '../components/SkeletonLoader';
+import LazyImage from '../components/LazyImage';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { useOptimizedCandidatesData } from '../hooks/useOptimizedData';
 import { toast } from 'react-hot-toast';
 import apiClient from '../usecases/api';
 import auditLogger from '../utils/auditLogger.js';
 
 const CandidatesPage = () => {
-  const [candidates, setCandidates] = useState([]);
+  // Use optimized data loading
+  const {
+    candidates,
+    loading,
+    error,
+    refresh
+  } = useOptimizedCandidatesData();
+  
   const [filteredCandidates, setFilteredCandidates] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
@@ -40,11 +50,9 @@ const CandidatesPage = () => {
   const [selectedCandidates, setSelectedCandidates] = useState(new Set());
 
   useEffect(() => {
-    loadCandidates();
-    
     // Listen for vote updates
     const handleVotesUpdated = () => {
-      loadCandidates();
+      refresh(); // Use refresh from optimized hook
     };
     
     window.addEventListener('votesUpdated', handleVotesUpdated);
@@ -52,7 +60,7 @@ const CandidatesPage = () => {
     return () => {
       window.removeEventListener('votesUpdated', handleVotesUpdated);
     };
-  }, []);
+  }, [refresh]);
 
   // Filter candidates based on search and filters
   useEffect(() => {
@@ -74,48 +82,7 @@ const CandidatesPage = () => {
     setFilteredCandidates(filtered);
   }, [candidates, searchValue, filters]);
 
-  const loadCandidates = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch candidates from database
-      const candidatesData = await apiClient.findObjects('candidates', {});
-      
-      // Fetch votes from database
-      const votesData = await apiClient.findObjects('votes', {});
-      
-      // Calculate vote counts for each candidate
-      const candidatesWithVotes = candidatesData.map(candidate => {
-        let voteCount = 0;
-        
-        // Count votes from the new single vote structure
-        votesData.forEach(vote => {
-          if (vote.vote_type === 'dual_selection') {
-            // Check if this candidate is selected as male or female
-            if (vote.male_candidate_id === candidate.id || vote.female_candidate_id === candidate.id) {
-              voteCount++;
-            }
-          } else if (vote.candidate_id === candidate.id) {
-            // Handle legacy votes (if any exist)
-            voteCount++;
-          }
-        });
-        
-        return {
-          ...candidate,
-          votes: voteCount
-        };
-      });
-      
-      setCandidates(candidatesWithVotes);
-      setFilteredCandidates(candidatesWithVotes);
-    } catch (error) {
-      console.error('Error loading candidates:', error);
-      toast.error('Failed to load candidates');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Note: loadCandidates function removed - now handled by useOptimizedCandidatesData hook
 
   const handleAddCandidate = () => {
     setEditingCandidate(null);
@@ -180,7 +147,7 @@ const CandidatesPage = () => {
       }
 
       // Reload candidates from database
-      await loadCandidates();
+      await refresh();
       setShowFormModal(false);
       setEditingCandidate(null);
       setShowConfirmModal(false);
@@ -207,7 +174,7 @@ const CandidatesPage = () => {
       toast.success('Candidate deleted successfully');
       
       // Reload candidates from database
-      await loadCandidates();
+      await refresh();
       setShowDeleteModal(false);
       setDeletingCandidate(null);
     } catch (error) {
@@ -337,7 +304,7 @@ const CandidatesPage = () => {
       toast.success(`${candidatesToDelete.length} candidate(s) deleted successfully`);
       
       // Reload candidates from database
-      await loadCandidates();
+      await refresh();
       setSelectedCandidates(new Set());
       setShowBulkDeleteModal(false);
     } catch (error) {
@@ -499,8 +466,15 @@ const CandidatesPage = () => {
         />
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <LoadingSpinner size="lg" text="Loading candidates..." />
+        </div>
+      )}
+
       {/* Selection Header */}
-      {filteredCandidates.length > 0 && (
+      {!loading && filteredCandidates.length > 0 && (
         <div className="mb-4 p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -523,8 +497,14 @@ const CandidatesPage = () => {
         </div>
       )}
 
-      {/* Male Candidates */}
-      {getCandidatesByCategory('male').length > 0 && (
+      {/* Progressive Loading with Skeleton */}
+      <ProgressiveLoader
+        loading={loading}
+        error={error}
+        onRetry={refresh}
+      >
+        {/* Male Candidates */}
+        {getCandidatesByCategory('male').length > 0 && (
         <div className="p-4">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Male Candidates</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -558,7 +538,7 @@ const CandidatesPage = () => {
                     {hasImages ? (
                       <>
                         {/* Main Image */}
-                        <img
+                        <LazyImage
                           src={images[currentIndex]}
                           alt={candidate.name}
                           className="w-full h-full object-cover"
@@ -654,7 +634,7 @@ const CandidatesPage = () => {
       )}
 
       {/* Female Candidates */}
-      {getCandidatesByCategory('female').length > 0 && (
+      {!loading && getCandidatesByCategory('female').length > 0 && (
         <div className="p-4">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Female Candidates</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -688,7 +668,7 @@ const CandidatesPage = () => {
                     {hasImages ? (
                       <>
                         {/* Main Image */}
-                        <img
+                        <LazyImage
                           src={images[currentIndex]}
                           alt={candidate.name}
                           className="w-full h-full object-cover"
@@ -784,7 +764,7 @@ const CandidatesPage = () => {
       )}
 
       {/* No candidates found */}
-      {filteredCandidates.length === 0 && (
+      {!loading && filteredCandidates.length === 0 && (
         <div className="p-6 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <UserIcon className="h-8 w-8 text-gray-400" />
@@ -944,7 +924,8 @@ const CandidatesPage = () => {
             </div>
           </div>
         </div>
-      )}
+        )}
+      </ProgressiveLoader>
 
       {/* Floating Action Button */}
       <SmartFloatingActionButton 
