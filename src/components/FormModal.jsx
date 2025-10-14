@@ -1,5 +1,5 @@
 // FormModal Component - MANDATORY PATTERN
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import Button from './Button';
@@ -17,20 +17,23 @@ const FormModal = ({
   isUpdate = false,
   submitButtonText = null
 }) => {
-  const [formData, setFormData] = useState(initialData);
+  // Memoize initialData to prevent infinite re-renders
+  const memoizedInitialData = useMemo(() => initialData, [JSON.stringify(initialData)]);
+  
+  const [formData, setFormData] = useState(memoizedInitialData);
   const [errors, setErrors] = useState({});
 
   // Update form data when initialData changes
   useEffect(() => {
-    setFormData(initialData);
-  }, [initialData]);
+    setFormData(memoizedInitialData);
+  }, [memoizedInitialData]);
 
   // Check if form has changes (for edit forms)
   const hasChanges = () => {
     if (!isUpdate) return true; // Create forms always have changes
     return fields.some(field => {
       const currentValue = formData[field.name];
-      const initialValue = initialData[field.name];
+      const initialValue = memoizedInitialData[field.name];
       return currentValue !== initialValue;
     });
   };
@@ -82,9 +85,12 @@ const FormModal = ({
   };
 
   const handleFieldChange = (fieldName, value) => {
+    // For select fields, extract the value from the option object
+    const fieldValue = (typeof value === 'object' && value?.value !== undefined) ? value.value : value;
+    
     setFormData(prev => ({
       ...prev,
-      [fieldName]: value
+      [fieldName]: fieldValue
     }));
     
     // Clear general error when user starts typing
@@ -145,7 +151,7 @@ const FormModal = ({
   };
 
   const handleClose = () => {
-    setFormData(initialData);
+    setFormData(memoizedInitialData);
     setErrors({});
     onClose();
   };
@@ -159,9 +165,9 @@ const FormModal = ({
         <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={handleClose}></div>
         
         {/* Modal Content */}
-        <div className="relative z-50 w-full max-w-lg sm:max-w-xl overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="relative z-50 w-full max-w-lg sm:max-w-xl overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl flex flex-col max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
             <h3 className="text-lg font-semibold text-gray-900">
               {title}
             </h3>
@@ -174,15 +180,27 @@ const FormModal = ({
           </div>
 
           {/* Form Content - Scrollable */}
-          <form onSubmit={handleSubmit} className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+            <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-4">
               {fields.map((field) => (
                 <div key={field.name}>
                   {field.type === 'select' ? (
                     <SelectInput
                       label={field.label}
                       options={field.options || []}
-                      value={formData[field.name]}
+                      value={(() => {
+                        const currentValue = formData[field.name];
+                        if (!currentValue) return null;
+                        
+                        // If it's already an object, return as is
+                        if (typeof currentValue === 'object' && currentValue.value) {
+                          return currentValue;
+                        }
+                        
+                        // If it's a string, find the matching option
+                        const matchingOption = field.options?.find(option => option.value === currentValue);
+                        return matchingOption || null;
+                      })()}
                       onChange={(value) => handleFieldChange(field.name, value)}
                       placeholder={field.placeholder}
                       required={field.required}
@@ -198,7 +216,15 @@ const FormModal = ({
                         placeholder: field.placeholder,
                         required: field.required,
                         format: field.format,
-                        showPasswordToggle: field.showPasswordToggle
+                        showPasswordToggle: field.showPasswordToggle,
+                        // File upload specific properties
+                        multiple: field.multiple,
+                        maxFiles: field.maxFiles,
+                        maxSize: field.maxSize,
+                        accept: field.accept,
+                        showPreview: field.showPreview,
+                        previewSize: field.previewSize,
+                        disabled: field.disabled
                       }}
                       value={formData[field.name]}
                       onChange={(value) => handleFieldChange(field.name, value)}
@@ -218,14 +244,14 @@ const FormModal = ({
 
             {/* Error Message */}
             {errors.general && (
-              <div className="px-6">
+              <div className="px-6 flex-shrink-0">
                 <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
                   {errors.general}
                 </div>
               </div>
             )}
 
-            {/* Footer */}
+            {/* Fixed Footer */}
             <div className="flex-shrink-0 p-6 border-t border-gray-200">
               <div className="flex gap-3">
                 <Button

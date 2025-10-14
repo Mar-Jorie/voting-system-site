@@ -8,7 +8,6 @@ import InputFactory from '../components/InputFactory';
 import ImageCarousel from '../components/ImageCarousel';
 import SearchFilter from '../components/SearchFilter';
 import Pagination from '../components/Pagination';
-import FloatingChatbot from '../components/FloatingChatbot';
 
 const VotingPage = () => {
   const [candidates, setCandidates] = useState([]);
@@ -195,26 +194,7 @@ const VotingPage = () => {
 
   if (votingComplete) {
     return (
-      <div className="min-h-screen bg-white overflow-y-auto">
-        {/* Navigation Header */}
-        <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
-          <div className="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16 sm:h-20">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
-                  <img src="/logo.png" alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
-                </div>
-                <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Voting System by Mrj</span>
-              </div>
-              <div className="hidden md:flex items-center space-x-4">
-                <Link to="/signin">
-                  <Button variant="ghost" size="md" className="!w-auto">Admin Login</Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </nav>
-
+      <div>
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
           <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-100 max-w-md w-full text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -234,75 +214,13 @@ const VotingPage = () => {
             </div>
           </div>
         </div>
-        <FloatingChatbot />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white overflow-y-auto">
-      {/* Navigation Header - Same as Landing Page */}
-      <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
-        <div className="w-full max-w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
-                <img src="/logo.png" alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
-              </div>
-              <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Voting System</span>
-            </div>
-            
-            {/* Navigation Links - Hidden on Mobile */}
-            <div className="hidden md:flex items-center space-x-10">
-              <Link to="/" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Home</Link>
-              <Link to="/results" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Results</Link>
-            </div>
-            
-            {/* Mobile Hamburger Menu - Right Corner */}
-            <div className="md:hidden">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px]"
-                aria-label="Toggle menu"
-              >
-                <Bars3Icon className="h-6 w-6" />
-              </button>
-            </div>
-            
-            {/* Desktop CTA Buttons - Hidden on Mobile */}
-            <div className="hidden md:flex items-center space-x-4">
-              <Link to="/signin">
-                <Button variant="ghost" size="md" className="!w-auto">Admin Login</Button>
-              </Link>
-            </div>
-          </div>
-          
-          {/* Mobile Menu Dropdown */}
-          {isMobileMenuOpen && (
-            <div className="md:hidden border-t border-gray-100 bg-white">
-              <div className="px-4 py-4 space-y-4">
-                {/* Mobile Navigation Links */}
-                <div className="space-y-3">
-                  <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Home</Link>
-                  <Link to="/results" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Results</Link>
-                </div>
-                
-                {/* Mobile CTA Buttons */}
-                <div className="flex flex-col space-y-3 pt-4 border-t border-gray-100">
-                  <Link to="/signin" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" size="md" className="w-full">Admin Login</Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <div className="min-h-screen bg-gray-50 p-6">
-        {/* Page Header */}
+    <div>
+      {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
             Cast Your Vote
@@ -502,7 +420,6 @@ const VotingPage = () => {
             </Button>
           </div>
         </div>
-      </div>
 
       {/* Vote Modal */}
       <FormModal
@@ -516,8 +433,6 @@ const VotingPage = () => {
         isUpdate={false}
       />
 
-      {/* Floating Elements */}
-      <FloatingChatbot />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 // InputFactory Component - MANDATORY PATTERN
 import { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import FileUpload from './FileUpload';
 
 export default function InputFactory({ fieldName, config, value, onChange, className = '' }) {
   const {
@@ -23,6 +24,9 @@ export default function InputFactory({ fieldName, config, value, onChange, class
       if (isNaN(newValue)) return;
     } else if (type === 'Boolean') {
       newValue = e.target.checked;
+    } else if (type === 'file') {
+      // File handling is now done by the FileUpload component
+      return;
     }
     // CRITICAL: Never create objects for password fields - causes [object] [object] display
     // DO NOT: newValue = { ...value, value: newValue };
@@ -34,7 +38,7 @@ export default function InputFactory({ fieldName, config, value, onChange, class
   const commonProps = {
     id: inputId,
     name: fieldName,
-    value: value || '',
+    ...(type !== 'file' && { value: value || '' }),
     onChange: handleChange,
     className: `w-full h-10 px-3 border border-gray-300 rounded-md text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${className}`,
     placeholder: placeholder || `Enter ${label || fieldName}`,
@@ -117,6 +121,26 @@ export default function InputFactory({ fieldName, config, value, onChange, class
           </div>
         );
       
+      case 'file':
+        return (
+          <FileUpload
+            label={label}
+            placeholder={placeholder || `Upload ${label || fieldName}`}
+            accept={config.accept || 'image/*'}
+            multiple={config.multiple || false}
+            maxFiles={config.maxFiles || 10}
+            maxSize={config.maxSize || 5 * 1024 * 1024}
+            value={value}
+            onChange={onChange}
+            onError={(error) => console.error('File upload error:', error)}
+            required={required}
+            disabled={config.disabled || false}
+            showPreview={config.showPreview !== false}
+            previewSize={config.previewSize || 'w-20 h-20'}
+            showLabel={false} // InputFactory handles the label
+          />
+        );
+      
       default:
         return <input {...commonProps} type="text" />;
     }
@@ -129,6 +153,7 @@ export default function InputFactory({ fieldName, config, value, onChange, class
 
   return (
     <div>
+      {/* Show label for all inputs including file inputs */}
       <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
         {label || fieldName}
         {required && <span className="text-red-500 ml-1">*</span>}

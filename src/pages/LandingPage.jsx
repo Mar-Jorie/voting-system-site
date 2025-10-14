@@ -491,7 +491,7 @@ const LandingPage = () => {
               className="!w-auto min-w-[160px]"
               onClick={() => setShowVotingModal(true)}
             >
-              Select Now
+              Votethe  Now
             </Button>
           </div>
         </div>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useApp from '../hooks/useApp';
-import MainLayout from '../components/layout/MainLayout';
 import VotingInterface from '../components/VotingInterface';
 import AdminPanel from '../components/AdminPanel';
 // import { toast } from 'react-hot-toast';
@@ -39,8 +38,7 @@ const MainPage = () => {
   }
 
   return (
-    <MainLayout>
-      <div className="min-h-screen bg-gray-50">
+    <div>
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
@@ -90,8 +88,7 @@ const MainPage = () => {
             <AdminPanel />
           )}
         </div>
-      </div>
-    </MainLayout>
+    </div>
   );
 };
 

@@ -7,6 +7,8 @@ import {
   DocumentTextIcon, 
   ChartBarIcon, 
   CogIcon, 
+  UserIcon, 
+  ListBulletIcon,
   ArrowRightOnRectangleIcon 
 } from '@heroicons/react/24/outline';
 import MainLayout from './MainLayout';
@@ -75,11 +77,17 @@ const NavSidebar = () => {
       icon: DocumentTextIcon,
       current: location.pathname === '/voting'
     },
+        {
+          name: 'Votes List',
+          href: '/votes',
+          icon: ListBulletIcon,
+          current: location.pathname === '/votes'
+        },
     {
-      name: 'Results',
-      href: '/results',
-      icon: ChartBarIcon,
-      current: location.pathname === '/results'
+      name: 'Users',
+      href: '/users',
+      icon: UserIcon,
+      current: location.pathname === '/users'
     }
   ];
 

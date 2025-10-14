@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import InputFactory from '../components/InputFactory';
 import { useSignIn } from '../usecases/user/useSignIn';
 import { toast } from 'react-hot-toast';
+import useApp from '../hooks/useApp';
 
 const SignInPage = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,7 @@ const SignInPage = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { login: _login, loading } = useSignIn();
+  const { setUser } = useApp();
 
   const handleChange = (field, value) => {
     setFormData(prev => ({
@@ -41,26 +43,27 @@ const SignInPage = () => {
           role: 'admin'
         };
         localStorage.setItem('user', JSON.stringify(mockUser));
+        // Update AppContext with user data
+        setUser(mockUser);
         toast.success('Welcome back!');
         navigate('/dashboard');
+      } else if (formData.email === 'admin@voting.com') {
+        // Email is correct but password is wrong
+        toast.error('Incorrect password. Please try again.');
+      } else if (formData.email && formData.password) {
+        // Email doesn't exist
+        toast.error('Account does not exist. Please check your email address.');
       } else {
-        toast.error('Invalid email or password');
+        // Missing fields
+        toast.error('Please enter both email and password.');
       }
     } catch (err) {
-      toast.error(err.message || 'Sign in failed');
+      toast.error(err.message || 'Sign in failed. Please try again.');
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8 overflow-y-auto">
-      {/* Back to Home Button */}
-      <div className="absolute top-6 left-6">
-        <Link to="/" className="inline-flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200">
-          <ArrowLeftIcon className="h-4 w-4 mr-2" />
-          Back to Home
-        </Link>
-      </div>
-
       <div className="max-w-sm w-full space-y-6">
         {/* Sign In Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -157,14 +160,12 @@ const SignInPage = () => {
           </div>
         </div>
 
-        {/* Sign Up Link */}
+        {/* Back to Home Button */}
         <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/signup" className="font-medium text-primary-600 hover:text-primary-500">
-              Sign up for free
-            </Link>
-          </p>
+          <Link to="/" className="inline-flex items-center px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200">
+            <ArrowLeftIcon className="h-4 w-4 mr-2" />
+            Back to Home
+          </Link>
         </div>
       </div>
     </div>
