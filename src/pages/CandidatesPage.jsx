@@ -1,6 +1,6 @@
 // Candidates Page - MANDATORY PATTERN
 import React, { useState, useEffect } from 'react';
-import { PencilIcon, TrashIcon, EyeIcon, PlusIcon, UserIcon, EllipsisVerticalIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, EyeIcon, PlusIcon, UserIcon, EllipsisVerticalIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button';
 import FormModal from '../components/FormModal';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -8,7 +8,7 @@ import InputFactory from '../components/InputFactory';
 import SelectInput from '../components/SelectInput';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import SearchFilter from '../components/SearchFilter';
-import { ProgressiveLoader } from '../components/SkeletonLoader';
+import { ProgressiveLoader, CandidatesPageSkeleton } from '../components/SkeletonLoader';
 import LazyImage from '../components/LazyImage';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useOptimizedCandidatesData } from '../hooks/useOptimizedData';
@@ -466,12 +466,7 @@ const CandidatesPage = () => {
         />
       </div>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="flex justify-center items-center py-12">
-          <LoadingSpinner size="lg" text="Loading candidates..." />
-        </div>
-      )}
+      {/* Loading State - Handled by ProgressiveLoader below */}
 
       {/* Selection Header */}
       {!loading && filteredCandidates.length > 0 && (
@@ -502,6 +497,7 @@ const CandidatesPage = () => {
         loading={loading}
         error={error}
         onRetry={refresh}
+        skeleton={CandidatesPageSkeleton}
       >
         {/* Male Candidates */}
         {getCandidatesByCategory('male').length > 0 && (
@@ -771,12 +767,23 @@ const CandidatesPage = () => {
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No candidates found</h3>
           <p className="text-gray-600 mb-4">
-            {searchValue || Object.keys(filters).length > 0 
-              ? 'Try adjusting your search or filter criteria.' 
-              : 'Add your first candidate to get started.'
+            {error 
+              ? 'Unable to load candidates. Please check your connection and try again.'
+              : searchValue || Object.keys(filters).length > 0 
+                ? 'Try adjusting your search or filter criteria.' 
+                : 'Add your first candidate to get started.'
             }
           </p>
-          {(!searchValue && Object.keys(filters).length === 0) && (
+          {error ? (
+            <Button
+              variant="primary"
+              onClick={refresh}
+              className="flex items-center mx-auto"
+            >
+              <ArrowPathIcon className="h-5 w-5 mr-2" />
+              Retry
+            </Button>
+          ) : (!searchValue && Object.keys(filters).length === 0) && (
             <Button
               variant="primary"
               onClick={handleAddCandidate}
