@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import FloatingChatbot from '../components/FloatingChatbot';
 import VotingModal from '../components/VotingModal';
 import { isVotingActive, getVotingStatusInfo, getResultsVisibility, RESULTS_VISIBILITY } from '../utils/voteControl';
+import { ProgressiveLoader, LandingPageSkeleton } from '../components/SkeletonLoader';
 import apiClient from '../usecases/api';
 
 const LandingPage = () => {
@@ -15,6 +16,8 @@ const LandingPage = () => {
   const [resultsVisibility, setResultsVisibility] = useState(RESULTS_VISIBILITY.HIDDEN);
   const [candidates, setCandidates] = useState([]);
   const [votes, setVotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -65,6 +68,9 @@ const LandingPage = () => {
 
   const loadData = async () => {
     try {
+      setLoading(true);
+      setError(null);
+      
       const [candidatesData, votesData] = await Promise.all([
         apiClient.findObjects('candidates', {}),
         apiClient.findObjects('votes', {})
@@ -94,7 +100,14 @@ const LandingPage = () => {
       setVotes(votesData);
     } catch (error) {
       console.error('Error loading data:', error);
+      setError(error.message || 'Failed to load voting data');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const refresh = () => {
+    loadData();
   };
 
   // Helper function to get display name and blur class for candidate names
@@ -406,6 +419,13 @@ const LandingPage = () => {
       {/* Results Section */}
       <section id="results" className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 bg-white">
         <div className="w-full">
+          {/* Progressive Loading with Skeleton */}
+          <ProgressiveLoader
+            loading={loading}
+            error={error}
+            onRetry={refresh}
+            skeleton={LandingPageSkeleton}
+          >
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight">
               Current Voting Results
@@ -668,6 +688,7 @@ const LandingPage = () => {
           {/* View All Results Button */}
           <div className="text-center">
           </div>
+          </ProgressiveLoader>
         </div>
       </section>
 
