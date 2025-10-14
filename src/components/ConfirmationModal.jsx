@@ -13,7 +13,8 @@ const ConfirmationModal = ({
   cancelLabel = 'Cancel',
   icon,
   variant = 'danger',
-  showCancelButton = true
+  showCancelButton = true,
+  loading = false
 }) => {
   if (!isOpen) return null;
 
@@ -58,7 +59,7 @@ const ConfirmationModal = ({
         <div className="fixed inset-0 z-40 transition-opacity bg-black/50" onClick={onClose}></div>
         
         {/* Modal Content */}
-        <div className="relative z-50 w-full max-w-md p-6 overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
+        <div className="relative z-50 w-full max-w-lg p-6 overflow-hidden text-left transition-all transform bg-white shadow-xl rounded-xl">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
@@ -101,13 +102,14 @@ const ConfirmationModal = ({
           </div>
 
           {/* Actions */}
-          <div className={`flex ${showCancelButton ? 'flex-col sm:flex-row gap-3' : 'justify-center'}`}>
+          <div className={`flex ${showCancelButton ? 'flex-row gap-3' : 'justify-center'}`}>
             {showCancelButton && (
               <Button
                 variant={cancelVariant}
                 size="md"
                 onClick={onClose}
-                className="w-full sm:w-auto"
+                disabled={loading}
+                className="flex-1"
               >
                 {cancelLabel}
               </Button>
@@ -116,7 +118,9 @@ const ConfirmationModal = ({
               variant={confirmVariant}
               size="md"
               onClick={onConfirm}
-              className={showCancelButton ? "w-full sm:w-auto" : "w-full sm:w-auto min-w-[120px]"}
+              loading={loading}
+              disabled={loading}
+              className={showCancelButton ? "flex-1" : "w-full min-w-[120px]"}
             >
               {confirmLabel}
             </Button>

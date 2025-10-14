@@ -28,6 +28,7 @@ const Header = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -73,9 +74,17 @@ const Header = () => {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    setShowLogoutConfirm(false);
+  const handleLogout = async () => {
+    setLogoutLoading(true);
+    try {
+      await logout();
+      setShowLogoutConfirm(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to sign out. Please try again.');
+    } finally {
+      setLogoutLoading(false);
+    }
   };
 
   const handleProfileUpdate = (formData) => {
@@ -328,6 +337,7 @@ const Header = () => {
         message="Are you sure you want to sign out?"
         confirmLabel="Sign out"
         cancelLabel="Cancel"
+        loading={logoutLoading}
         icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
         iconColor="text-red-600"
         iconBgColor="bg-red-100"
