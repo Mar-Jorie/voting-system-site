@@ -400,7 +400,7 @@ const LandingPage = () => {
                       className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
                     />
                   )}
-                  <h4 className="text-xl font-semibold text-gray-900 mb-2">{getMaleWinner().name}</h4>
+                  <h4 className={`text-xl font-semibold text-gray-900 mb-2 ${getBlurClass()}`}>{getMaleWinner().name}</h4>
                   <p className="text-2xl font-bold text-primary-600 mb-2">{getMaleWinner().votes || 0} votes</p>
                   <p className="text-sm text-gray-600">
                     {getTotalVotes() > 0 ? (((getMaleWinner().votes || 0) / getTotalVotes()) * 100).toFixed(1) : 0}% of total votes
@@ -433,7 +433,7 @@ const LandingPage = () => {
                       className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
                     />
                   )}
-                  <h4 className="text-xl font-semibold text-gray-900 mb-2">{getFemaleWinner().name}</h4>
+                  <h4 className={`text-xl font-semibold text-gray-900 mb-2 ${getBlurClass()}`}>{getFemaleWinner().name}</h4>
                   <p className="text-2xl font-bold text-primary-600 mb-2">{getFemaleWinner().votes || 0} votes</p>
                   <p className="text-sm text-gray-600">
                     {getTotalVotes() > 0 ? (((getFemaleWinner().votes || 0) / getTotalVotes()) * 100).toFixed(1) : 0}% of total votes
