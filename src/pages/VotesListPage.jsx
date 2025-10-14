@@ -90,6 +90,15 @@ const VotesListPage = () => {
     });
   };
 
+  const formatVoteId = (vote, index) => {
+    const date = new Date(vote.timestamp);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    const sequence = String(index + 1).padStart(3, '0');
+    return `${sequence}-${month}${day}${year}`;
+  };
+
   const handleSearchChange = (value) => {
     setSearchValue(value);
   };
@@ -107,8 +116,8 @@ const VotesListPage = () => {
 
   const handleExport = () => {
     try {
-      const csvData = filteredVotes.map(vote => ({
-        'Vote ID': vote.id,
+      const csvData = filteredVotes.map((vote, index) => ({
+        'Vote ID': formatVoteId(vote, index),
         'Voter Name': vote.voterName || 'N/A',
         'Voter Email': vote.voterEmail || 'N/A',
         'Male Candidate': vote.maleCandidateId ? getCandidateName(vote.maleCandidateId) : 'N/A',
@@ -152,9 +161,9 @@ const VotesListPage = () => {
     {
       key: 'id',
       label: 'Vote ID',
-      render: (value) => (
+      render: (value, vote, index) => (
         <span className="font-mono text-sm text-gray-600">
-          {value.substring(0, 8)}...
+          {formatVoteId(vote, index)}
         </span>
       )
     },
@@ -217,41 +226,29 @@ const VotesListPage = () => {
 
   const expandableContent = (vote) => (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Vote Details</h4>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Vote ID:</span>
-              <span className="text-sm font-mono text-gray-900">{vote.id}</span>
+      <div>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">Voted For</h4>
+        <div className="space-y-3">
+          {vote.maleCandidateId && (
+            <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                Male
+              </span>
+              <span className="text-sm font-medium text-gray-900">
+                {getCandidateName(vote.maleCandidateId)}
+              </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-500">IP Address:</span>
-              <span className="text-sm text-gray-900">{vote.ipAddress || 'N/A'}</span>
+          )}
+          {vote.femaleCandidateId && (
+            <div className="flex items-center space-x-3 p-3 bg-pink-50 rounded-lg">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                Female
+              </span>
+              <span className="text-sm font-medium text-gray-900">
+                {getCandidateName(vote.femaleCandidateId)}
+              </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Vote Date:</span>
-              <span className="text-sm text-gray-900">{formatDate(vote.timestamp)}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Candidates Voted For</h4>
-          <div className="space-y-2">
-            {vote.maleCandidateId && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Male:</span>
-                <span className="text-sm text-gray-900">{getCandidateName(vote.maleCandidateId)}</span>
-              </div>
-            )}
-            {vote.femaleCandidateId && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Female:</span>
-                <span className="text-sm text-gray-900">{getCandidateName(vote.femaleCandidateId)}</span>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>
