@@ -617,38 +617,41 @@ const DashboardPage = () => {
                 </div>
                 
                 <div className="space-y-3">
-                  {votingStatus.isActive ? (
+                  {/* Voting Control Buttons Row */}
+                  <div className="flex space-x-3">
+                    {votingStatus.isActive ? (
+                      <Button
+                        onClick={handleStopVoting}
+                        variant="danger"
+                        size="md"
+                        className="flex-1"
+                      >
+                        <StopIcon className="h-5 w-5 mr-2" />
+                        Stop Voting
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleStartVoting}
+                        variant="success"
+                        size="md"
+                        className="flex-1"
+                      >
+                        <PlayIcon className="h-5 w-5 mr-2" />
+                        Start Voting
+                      </Button>
+                    )}
+                    
+                    {/* Auto Stop Button */}
                     <Button
-                      onClick={handleStopVoting}
-                      variant="danger"
+                      onClick={() => setShowVoteControlModal(true)}
+                      variant="primaryOutline"
                       size="md"
-                      className="w-full"
+                      className="flex-1"
                     >
-                      <StopIcon className="h-5 w-5 mr-2" />
-                      Stop Voting
+                      <ClockIcon className="h-5 w-5 mr-2" />
+                      Auto Stop
                     </Button>
-                  ) : (
-                    <Button
-                      onClick={handleStartVoting}
-                      variant="success"
-                      size="md"
-                      className="w-full"
-                    >
-                      <PlayIcon className="h-5 w-5 mr-2" />
-                      Start Voting
-                    </Button>
-                  )}
-                  
-                  {/* Auto Stop Button */}
-                  <Button
-                    onClick={() => setShowVoteControlModal(true)}
-                    variant="primaryOutline"
-                    size="md"
-                    className="w-full"
-                  >
-                    <ClockIcon className="h-5 w-5 mr-2" />
-                    Auto Stop
-                  </Button>
+                  </div>
                   
                   {/* Auto Stop Info */}
                   {votingStatus.autoStopDate && (
