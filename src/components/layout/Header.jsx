@@ -86,6 +86,10 @@ const Header = () => {
 
   const confirmProfileUpdate = async () => {
     try {
+      console.log('User object:', user);
+      console.log('User ID:', user?.id);
+      console.log('Pending profile data:', pendingProfileData);
+      
       // Update user profile in database
       const updatedUser = await updateObject('users', user.id, {
         firstName: pendingProfileData.firstName,
@@ -93,6 +97,8 @@ const Header = () => {
         email: pendingProfileData.email,
         username: pendingProfileData.username
       });
+      
+      console.log('Update successful:', updatedUser);
       
       // Refresh user data from database to get the latest information
       await refreshUser();
@@ -107,6 +113,12 @@ const Header = () => {
       
     } catch (error) {
       console.error('Error updating profile:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        user: user,
+        pendingData: pendingProfileData
+      });
       toast.error('Failed to update profile. Please try again.');
     }
   };
@@ -334,8 +346,7 @@ const Header = () => {
         confirmLabel="Update Profile"
         cancelLabel="Cancel"
         icon="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        iconColor="text-blue-600"
-        iconBgColor="bg-blue-100"
+        variant="info"
       />
 
       {/* View Profile Modal */}
