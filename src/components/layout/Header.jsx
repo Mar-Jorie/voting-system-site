@@ -19,6 +19,8 @@ import Button from '../Button';
 import ConfirmationModal from '../ConfirmationModal';
 import FormModal from '../FormModal';
 import useApp from '../../hooks/useApp';
+import { toast } from 'react-hot-toast';
+import { updateObject } from '../../usecases/api';
 
 const Header = () => {
   const { show, setShow, isMobile: _isMobile, isDesktop: _isDesktop } = useContext(MainLayout.Context);
@@ -84,24 +86,33 @@ const Header = () => {
 
   const confirmProfileUpdate = async () => {
     try {
-      // Here you would make the API call to update the user profile
-      // For now, we'll just log it and show success
       console.log('Updating profile with data:', pendingProfileData);
       
-      // TODO: Replace with actual API call
-      // await updateUserProfile(pendingProfileData);
+      // Update user profile in database
+      const updatedUser = await updateObject('users', {
+        id: user.id,
+        firstName: pendingProfileData.firstName,
+        lastName: pendingProfileData.lastName,
+        email: pendingProfileData.email,
+        username: pendingProfileData.username
+      });
+      
+      console.log('Profile updated successfully:', updatedUser);
       
       // Close modals and reset state
       setShowProfileUpdateConfirm(false);
       setIsEditingProfile(false);
       setPendingProfileData(null);
       
-      // Show success message (you can use toast here)
-      alert('Profile updated successfully!');
+      // Show success toast
+      toast.success('Profile updated successfully!');
+      
+      // TODO: Update the user context/state to reflect the changes
+      // This would require updating the AppContext or refreshing user data
       
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Failed to update profile. Please try again.');
+      toast.error('Failed to update profile. Please try again.');
     }
   };
 
@@ -327,7 +338,7 @@ const Header = () => {
         message="Are you sure you want to update your profile information?"
         confirmLabel="Update Profile"
         cancelLabel="Cancel"
-        icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        icon="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
         iconColor="text-blue-600"
         iconBgColor="bg-blue-100"
       />
