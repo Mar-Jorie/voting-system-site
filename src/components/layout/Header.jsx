@@ -82,8 +82,8 @@ const Header = () => {
   };
 
   const getUserRoleName = (user) => {
-    if (!user) return 'User';
-    return user.role?.name || 'User';
+    if (!user) return 'Admin';
+    return user.role?.name || 'Admin';
   };
 
   // Mock notifications data - in a real app, this would come from an API
@@ -402,21 +402,6 @@ const Header = () => {
                       <div className="grid grid-cols-1 gap-4">
                         <div className="bg-gray-50 rounded-lg p-4">
                           <div className="flex items-center space-x-3">
-                            <UserIcon className="h-5 w-5 text-gray-400" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">Full Name</p>
-                              <p className="text-sm text-gray-600">
-                                {user?.firstName && user?.lastName 
-                                  ? `${user.firstName} ${user.lastName}` 
-                                  : 'Not provided'
-                                }
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-center space-x-3">
                             <EnvelopeIcon className="h-5 w-5 text-gray-400" />
                             <div>
                               <p className="text-sm font-medium text-gray-900">Email Address</p>
@@ -441,21 +426,6 @@ const Header = () => {
                             <div>
                               <p className="text-sm font-medium text-gray-900">Role</p>
                               <p className="text-sm text-gray-600">{getUserRoleName(user)}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-center space-x-3">
-                            <CalendarIcon className="h-5 w-5 text-gray-400" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">Member Since</p>
-                              <p className="text-sm text-gray-600">
-                                {user?.createdAt 
-                                  ? new Date(user.createdAt).toLocaleDateString()
-                                  : 'Not available'
-                                }
-                              </p>
                             </div>
                           </div>
                         </div>
