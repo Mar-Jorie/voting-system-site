@@ -144,8 +144,8 @@ const DashboardPage = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [votingStatus, setVotingStatus] = useState(null);
   const [showVoteControlModal, setShowVoteControlModal] = useState(false);
-  const [autoStopDate, setAutoStopDate] = useState('');
-  const [autoStopTime, setAutoStopTime] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
 
   const handleExportData = () => {
     setShowExportModal(true);
@@ -171,12 +171,12 @@ const DashboardPage = () => {
   };
 
   const handleSetAutoStop = () => {
-    if (!autoStopDate || !autoStopTime) {
+    if (!selectedDate || !selectedTime) {
       toast.error('Please select both date and time');
       return;
     }
 
-    const stopDateTime = new Date(`${autoStopDate}T${autoStopTime}`);
+    const stopDateTime = new Date(`${selectedDate}T${selectedTime}`);
     if (stopDateTime <= new Date()) {
       toast.error('Auto-stop date must be in the future');
       return;
@@ -185,8 +185,8 @@ const DashboardPage = () => {
     if (setAutoStopDate(stopDateTime)) {
       setVotingStatus(getVotingStatusInfo());
       setShowVoteControlModal(false);
-      setAutoStopDate('');
-      setAutoStopTime('');
+      setSelectedDate('');
+      setSelectedTime('');
       toast.success(`Auto-stop set for ${stopDateTime.toLocaleString()}`);
     } else {
       toast.error('Failed to set auto-stop date');
@@ -1006,8 +1006,8 @@ const DashboardPage = () => {
                   </label>
                   <input
                     type="date"
-                    value={autoStopDate}
-                    onChange={(e) => setAutoStopDate(e.target.value)}
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     min={new Date().toISOString().split('T')[0]}
                   />
@@ -1019,8 +1019,8 @@ const DashboardPage = () => {
                   </label>
                   <input
                     type="time"
-                    value={autoStopTime}
-                    onChange={(e) => setAutoStopTime(e.target.value)}
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
