@@ -419,16 +419,6 @@ const Header = () => {
                             </div>
                           </div>
                         </div>
-
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-center space-x-3">
-                            <ShieldCheckIcon className="h-5 w-5 text-gray-400" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">Role</p>
-                              <p className="text-sm text-gray-600">{getUserRoleName(user)}</p>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
