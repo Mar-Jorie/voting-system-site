@@ -693,7 +693,7 @@ const DashboardPage = () => {
                   )}
                   
                   {/* Note Section - Always show to maintain consistent card height */}
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="p-3 bg-white rounded-lg border border-gray-100">
                     <p className="text-xs text-gray-600">
                       {votingStatus.isActive 
                         ? "Voting is currently active and accepting votes from users"
