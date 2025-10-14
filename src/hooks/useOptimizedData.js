@@ -272,6 +272,9 @@ export const useOptimizedCandidatesData = (filters = {}) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Stabilize filters object to prevent infinite re-renders
+  const stableFilters = useMemo(() => filters, [JSON.stringify(filters)]);
+
   // Load candidates with votes
   const loadCandidatesData = useCallback(async () => {
     try {
@@ -281,7 +284,7 @@ export const useOptimizedCandidatesData = (filters = {}) => {
 
       // Load candidates first
       console.log('📡 Making API call to fetch candidates...');
-      const candidatesData = await apiClient.findObjects('candidates', filters);
+      const candidatesData = await apiClient.findObjects('candidates', stableFilters);
       console.log('✅ API call successful, candidates data:', candidatesData);
       setCandidates(candidatesData || []);
 
@@ -324,7 +327,7 @@ export const useOptimizedCandidatesData = (filters = {}) => {
       console.log('🏁 Setting loading to false');
       setLoading(false);
     }
-  }, [filters]);
+  }, [stableFilters]);
 
   useEffect(() => {
     loadCandidatesData();
