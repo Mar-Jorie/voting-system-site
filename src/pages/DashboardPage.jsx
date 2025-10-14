@@ -593,13 +593,13 @@ const DashboardPage = () => {
         {/* Election Control Panel */}
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Election Control Panel</h3>
-            <div className="flex items-center space-x-4">
+            <h3 className="text-lg font-semibold text-gray-900">Election Controls</h3>
+            <div className="flex items-center space-x-6">
               {/* Voting Status */}
               {votingStatus && (
                 <div className="flex items-center space-x-2">
-                  <div className={`w-3 h-3 rounded-full ${votingStatus.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className={`text-sm font-medium ${votingStatus.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`w-2 h-2 rounded-full ${votingStatus.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className="text-sm text-gray-600">
                     {votingStatus.isActive ? 'Voting Active' : 'Voting Stopped'}
                   </span>
                 </div>
@@ -607,144 +607,97 @@ const DashboardPage = () => {
               
               {/* Results Visibility Status */}
               <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'bg-green-500' : 'bg-orange-500'}`}></div>
-                <span className={`text-sm font-medium ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'text-green-600' : 'text-orange-600'}`}>
+                <div className={`w-2 h-2 rounded-full ${resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                <span className="text-sm text-gray-600">
                   {resultsVisibility === RESULTS_VISIBILITY.PUBLIC ? 'Results Public' : 'Results Hidden'}
                 </span>
               </div>
             </div>
           </div>
           
-          {/* Control Buttons Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Control Buttons */}
+          <div className="flex flex-wrap gap-3">
             {/* Vote Control */}
             {votingStatus && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-gray-700 flex items-center">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
-                  Vote Control
-                </h4>
-                <div className="space-y-2">
-                  {votingStatus.isActive ? (
-                    <Button
-                      onClick={handleStopVoting}
-                      variant="danger"
-                      size="sm"
-                      className="w-full flex items-center justify-center"
-                    >
-                      <StopIcon className="h-4 w-4 mr-2" />
-                      Stop Voting
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleStartVoting}
-                      variant="success"
-                      size="sm"
-                      className="w-full flex items-center justify-center"
-                    >
-                      <PlayIcon className="h-4 w-4 mr-2" />
-                      Start Voting
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <>
+                {votingStatus.isActive ? (
+                  <Button
+                    onClick={handleStopVoting}
+                    variant="danger"
+                    size="md"
+                    className="flex items-center"
+                  >
+                    <StopIcon className="h-4 w-4 mr-2" />
+                    Stop Voting
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleStartVoting}
+                    variant="success"
+                    size="md"
+                    className="flex items-center"
+                  >
+                    <PlayIcon className="h-4 w-4 mr-2" />
+                    Start Voting
+                  </Button>
+                )}
+              </>
             )}
 
             {/* Auto Stop */}
             {votingStatus && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-gray-700 flex items-center">
-                  <div className="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>
-                  Auto Stop
-                </h4>
-                <div className="space-y-2">
-                  {votingStatus.autoStopDate ? (
-                    <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                      <p className="font-medium">Scheduled:</p>
-                      <p>{votingStatus.autoStopDate.toLocaleString()}</p>
-                      {votingStatus.timeUntilStop > 0 && (
-                        <p className="text-orange-600 font-medium">
-                          {formatTimeRemaining(votingStatus.timeUntilStop)} left
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-500">No auto-stop scheduled</p>
-                  )}
-                  <Button
-                    onClick={() => setShowVoteControlModal(true)}
-                    variant="primaryOutline"
-                    size="sm"
-                    className="w-full flex items-center justify-center"
-                  >
-                    <ClockIcon className="h-4 w-4 mr-2" />
-                    Set Auto-Stop
-                  </Button>
-                </div>
-              </div>
+              <Button
+                onClick={() => setShowVoteControlModal(true)}
+                variant="primaryOutline"
+                size="md"
+                className="flex items-center"
+              >
+                <ClockIcon className="h-4 w-4 mr-2" />
+                Auto Stop
+              </Button>
             )}
 
             {/* Results Visibility */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-gray-700 flex items-center">
-                <div className="w-2 h-2 rounded-full bg-orange-500 mr-2"></div>
-                Results Visibility
-              </h4>
-              <div className="space-y-2">
-                {resultsVisibility === RESULTS_VISIBILITY.HIDDEN ? (
-                  <Button
-                    onClick={handleShowResults}
-                    variant="success"
-                    size="sm"
-                    className="w-full flex items-center justify-center"
-                  >
-                    <CheckCircleIcon className="h-4 w-4 mr-2" />
-                    Make Public
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleHideResults}
-                    variant="warning"
-                    size="sm"
-                    className="w-full flex items-center justify-center"
-                  >
-                    <XMarkIcon className="h-4 w-4 mr-2" />
-                    Hide Results
-                  </Button>
-                )}
-                <p className="text-xs text-gray-500 text-center">
-                  {resultsVisibility === RESULTS_VISIBILITY.HIDDEN 
-                    ? "Names blurred on landing page"
-                    : "Names visible on landing page"
-                  }
-                </p>
-              </div>
-            </div>
-
-            {/* Status Info */}
-            {votingStatus && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-gray-700 flex items-center">
-                  <div className="w-2 h-2 rounded-full bg-gray-500 mr-2"></div>
-                  Status Info
-                </h4>
-                <div className="text-xs text-gray-600 space-y-1 bg-gray-50 p-2 rounded">
-                  {votingStatus.stoppedAt && (
-                    <p><span className="font-medium">Stopped:</span> {votingStatus.stoppedAt.toLocaleString()}</p>
-                  )}
-                  {votingStatus.stoppedBy && (
-                    <p><span className="font-medium">By:</span> {votingStatus.stoppedBy}</p>
-                  )}
-                  {votingStatus.reason && (
-                    <p><span className="font-medium">Reason:</span> {votingStatus.reason}</p>
-                  )}
-                  {!votingStatus.stoppedAt && (
-                    <p className="text-green-600 font-medium">Voting is active</p>
-                  )}
-                </div>
-              </div>
+            {resultsVisibility === RESULTS_VISIBILITY.HIDDEN ? (
+              <Button
+                onClick={handleShowResults}
+                variant="success"
+                size="md"
+                className="flex items-center"
+              >
+                <CheckCircleIcon className="h-4 w-4 mr-2" />
+                Show Results
+              </Button>
+            ) : (
+              <Button
+                onClick={handleHideResults}
+                variant="warning"
+                size="md"
+                className="flex items-center"
+              >
+                <XMarkIcon className="h-4 w-4 mr-2" />
+                Hide Results
+              </Button>
             )}
           </div>
+
+          {/* Auto Stop Info (only show if scheduled) */}
+          {votingStatus && votingStatus.autoStopDate && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <ClockIcon className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-900">Auto-stop scheduled</span>
+                </div>
+                <span className="text-sm text-blue-700">
+                  {votingStatus.timeUntilStop > 0 
+                    ? formatTimeRemaining(votingStatus.timeUntilStop)
+                    : 'Expired'
+                  }
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Winners */}
