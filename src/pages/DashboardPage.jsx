@@ -187,7 +187,15 @@ const DashboardPage = () => {
       setShowVoteControlModal(false);
       setSelectedDate('');
       setSelectedTime('');
-      toast.success(`Auto-stop set for ${stopDateTime.toLocaleString()}`);
+      toast.success(`Auto-stop set for ${stopDateTime.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: '2-digit' 
+      })} at ${stopDateTime.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      })}`);
     } else {
       toast.error('Failed to set auto-stop date');
     }
@@ -657,7 +665,15 @@ const DashboardPage = () => {
                   {votingStatus.autoStopDate && (
                     <div className="p-3 bg-white rounded-lg border border-primary-100">
                       <p className="text-xs text-gray-600 mb-1">
-                        Scheduled: {votingStatus.autoStopDate.toLocaleString()}
+                        Scheduled: {votingStatus.autoStopDate.toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: '2-digit' 
+                        })} at {votingStatus.autoStopDate.toLocaleTimeString('en-US', { 
+                          hour: 'numeric', 
+                          minute: '2-digit',
+                          hour12: true 
+                        })}
                       </p>
                       {votingStatus.timeUntilStop > 0 && (
                         <p className="text-xs font-medium text-primary-600">
