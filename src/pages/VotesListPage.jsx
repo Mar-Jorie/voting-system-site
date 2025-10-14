@@ -5,15 +5,26 @@ import CollapsibleTable from '../components/CollapsibleTable';
 import SearchFilter from '../components/SearchFilter';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import Button from '../components/Button';
+import { ProgressiveLoader, TableSkeleton } from '../components/SkeletonLoader';
+import { useOptimizedData } from '../hooks/useOptimizedData';
 import { toast } from 'react-hot-toast';
 import apiClient from '../usecases/api';
 import auditLogger from '../utils/auditLogger.js';
 
 const VotesListPage = () => {
-  const [votes, setVotes] = useState([]);
+  // Use optimized data loading
+  const {
+    data: votes,
+    loading,
+    error,
+    refresh
+  } = useOptimizedData('votes', {
+    limit: 100,
+    sort: { created: -1 }
+  });
+  
   const [candidates, setCandidates] = useState([]);
   const [filteredVotes, setFilteredVotes] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [filters, setFilters] = useState({
     category: '',
@@ -25,11 +36,9 @@ const VotesListPage = () => {
   const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
-    loadData();
-    
     // Listen for vote updates
     const handleVotesUpdated = () => {
-      loadData();
+      refresh(); // Use refresh from optimized hook
     };
     
     window.addEventListener('votesUpdated', handleVotesUpdated);
@@ -37,30 +46,28 @@ const VotesListPage = () => {
     return () => {
       window.removeEventListener('votesUpdated', handleVotesUpdated);
     };
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     filterVotes();
   }, [votes, searchValue, filters]);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      // Fetch votes and candidates from database
-      const [votesData, candidatesData] = await Promise.all([
-        apiClient.findObjects('votes', {}),
-        apiClient.findObjects('candidates', {})
-      ]);
-      
-      setVotes(votesData);
-      setCandidates(candidatesData);
-    } catch (error) {
-      console.error('Error loading votes data:', error);
-      toast.error('Failed to load votes data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Load candidates separately
+  useEffect(() => {
+    const loadCandidates = async () => {
+      try {
+        const candidatesData = await apiClient.findObjects('candidates', {});
+        setCandidates(candidatesData);
+      } catch (error) {
+        console.error('Error loading candidates:', error);
+        toast.error('Failed to load candidates');
+      }
+    };
+    
+    loadCandidates();
+  }, []);
+
+  // Note: loadData function removed - now handled by useOptimizedData hook
 
   const filterVotes = () => {
     let filtered = [...votes];
@@ -561,9 +568,16 @@ const VotesListPage = () => {
         />
       </div>
 
-      {/* Table Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <CollapsibleTable
+      {/* Progressive Loading with Skeleton */}
+      <ProgressiveLoader
+        loading={loading}
+        error={error}
+        onRetry={refresh}
+        skeleton={TableSkeleton}
+      >
+        {/* Table Section */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+          <CollapsibleTable
           data={filteredVotes}
           columns={columns}
           loading={loading}
@@ -586,7 +600,8 @@ const VotesListPage = () => {
           selectedRows={selectedVotes}
           onSelectionChange={handleSelectionChange}
         />
-      </div>
+        </div>
+      </ProgressiveLoader>
 
       {/* Floating Action Button */}
       <SmartFloatingActionButton 

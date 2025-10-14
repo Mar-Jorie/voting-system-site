@@ -9,15 +9,26 @@ import SelectInput from '../components/SelectInput';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import SearchFilter from '../components/SearchFilter';
 import CollapsibleTable from '../components/CollapsibleTable';
+import { ProgressiveLoader, TableSkeleton } from '../components/SkeletonLoader';
+import { useOptimizedData } from '../hooks/useOptimizedData';
 import { toast } from 'react-hot-toast';
 import useApp from '../hooks/useApp';
 import apiClient from '../usecases/api';
 import auditLogger from '../utils/auditLogger.js';
 
 const UsersPage = () => {
-  const [users, setUsers] = useState([]);
+  // Use optimized data loading
+  const {
+    data: users,
+    loading,
+    error,
+    refresh
+  } = useOptimizedData('users', {
+    limit: 100,
+    sort: { created: -1 }
+  });
+  
   const [filteredUsers, setFilteredUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
@@ -115,7 +126,6 @@ const UsersPage = () => {
 
   // Load users and roles on component mount
   useEffect(() => {
-    loadUsers();
     loadRoles();
   }, []);
 
@@ -124,46 +134,7 @@ const UsersPage = () => {
     filterUsers();
   }, [users, searchValue, filters]);
 
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      
-      // Load users and roles separately, then merge the data
-      const [usersData, rolesData] = await Promise.all([
-        apiClient.findObjects('users', {}),
-        apiClient.findObjects('roles', {})
-      ]);
-      
-      // Create a map of role IDs to role objects for quick lookup
-      const rolesMap = {};
-      rolesData.forEach(role => {
-        rolesMap[role.id] = role;
-      });
-      
-      // Merge role data into users
-      const usersWithRoles = usersData.map(user => {
-        if (user.roles && Array.isArray(user.roles)) {
-          user.roles = user.roles.map(roleRef => {
-            const fullRole = rolesMap[roleRef.id];
-            return {
-              ...roleRef,
-              name: fullRole?.name || 'Unknown Role',
-              description: fullRole?.description || '',
-              permissions: fullRole?.permissions || []
-            };
-          });
-        }
-        return user;
-      });
-      
-      setUsers(usersWithRoles);
-    } catch (error) {
-      console.error('Error loading users:', error);
-      toast.error('Failed to load users');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Note: loadUsers function removed - now handled by useOptimizedData hook
 
   const loadRoles = async () => {
     try {
@@ -312,7 +283,7 @@ const UsersPage = () => {
       }
       
       // Reload users from database
-      await loadUsers();
+      await refresh();
       
       setShowFormModal(false);
       setFormData({});
@@ -346,7 +317,7 @@ const UsersPage = () => {
       toast.success('User deleted successfully');
       
       // Reload users from database
-      await loadUsers();
+      await refresh();
       
       setShowDeleteModal(false);
       setDeletingUser(null);
@@ -491,7 +462,7 @@ const UsersPage = () => {
       toast.success(`Deleted ${selectedUsers.length} users successfully`);
       
       // Reload users from database
-      await loadUsers();
+      await refresh();
     } catch (error) {
       console.error('Error deleting users:', error);
       toast.error('Failed to delete users');
@@ -544,7 +515,7 @@ const UsersPage = () => {
       toast.success(`Updated ${selectedUsers.length} users to ${newStatus}`);
       
       // Reload users from database
-      await loadUsers();
+      await refresh();
     } catch (error) {
       console.error('Error updating user status:', error);
       toast.error('Failed to update user status');
@@ -693,7 +664,7 @@ const UsersPage = () => {
       toast.success(`User status updated to ${newStatus}`);
       
       // Reload users from database
-      await loadUsers();
+      await refresh();
       
       setShowStatusToggleModal(false);
       setStatusToggleUser(null);
@@ -780,9 +751,16 @@ const UsersPage = () => {
         />
       </div>
 
-      {/* Users Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <CollapsibleTable
+      {/* Progressive Loading with Skeleton */}
+      <ProgressiveLoader
+        loading={loading}
+        error={error}
+        onRetry={refresh}
+        skeleton={TableSkeleton}
+      >
+        {/* Users Table */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+          <CollapsibleTable
           data={filteredUsers}
           columns={columns}
           onEdit={handleEditUser}
@@ -828,7 +806,8 @@ const UsersPage = () => {
           searchPlaceholder="Search users..."
           emptyMessage="No users found"
         />
-      </div>
+        </div>
+      </ProgressiveLoader>
 
       {/* Form Modal */}
       <FormModal

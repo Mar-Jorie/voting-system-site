@@ -8,6 +8,7 @@ import CollapsibleTable from '../components/CollapsibleTable';
 import SearchFilter from '../components/SearchFilter';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import { toast } from 'react-hot-toast';
+import { ProgressiveLoader, TableSkeleton } from '../components/SkeletonLoader';
 import apiClient from '../usecases/api';
 import auditLogger from '../utils/auditLogger.js';
 
@@ -15,6 +16,7 @@ const FAQPage = () => {
   const [faqs, setFaqs] = useState([]);
   const [filteredFaqs, setFilteredFaqs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [searchValue, setSearchValue] = useState('');
   const [filters, setFilters] = useState({
     category: ''
@@ -44,15 +46,21 @@ const FAQPage = () => {
 
   const loadFAQs = async () => {
     setLoading(true);
+    setError(null);
     try {
       const faqsData = await apiClient.findObjects('faqs', {});
       setFaqs(faqsData);
     } catch (error) {
       console.error('Error loading FAQs:', error);
+      setError(error.message || 'Failed to load FAQs');
       toast.error('Failed to load FAQs');
     } finally {
       setLoading(false);
     }
+  };
+
+  const refresh = () => {
+    loadFAQs();
   };
 
 
@@ -508,26 +516,34 @@ const FAQPage = () => {
         />
       </div>
 
-      {/* Table Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <CollapsibleTable
-          data={filteredFaqs}
-          columns={columns}
-          onEdit={handleEditFAQ}
-          onDelete={handleDeleteFAQ}
-          loading={loading}
-          sortable={true}
-          searchable={false}
-          pagination={true}
-          itemsPerPage={10}
-          expandableContent={expandableContent}
-          searchPlaceholder="Search FAQs..."
-          emptyMessage="No FAQs found"
-          enableSelection={true}
-          selectedRows={selectedFaqs}
-          onSelectionChange={handleSelectionChange}
-        />
-      </div>
+      {/* Progressive Loading with Skeleton */}
+      <ProgressiveLoader
+        loading={loading}
+        error={error}
+        onRetry={refresh}
+        skeleton={TableSkeleton}
+      >
+        {/* Table Section */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+          <CollapsibleTable
+            data={filteredFaqs}
+            columns={columns}
+            onEdit={handleEditFAQ}
+            onDelete={handleDeleteFAQ}
+            loading={false}
+            sortable={true}
+            searchable={false}
+            pagination={true}
+            itemsPerPage={10}
+            expandableContent={expandableContent}
+            searchPlaceholder="Search FAQs..."
+            emptyMessage="No FAQs found"
+            enableSelection={true}
+            selectedRows={selectedFaqs}
+            onSelectionChange={handleSelectionChange}
+          />
+        </div>
+      </ProgressiveLoader>
 
       {/* Floating Action Button */}
       <SmartFloatingActionButton 
