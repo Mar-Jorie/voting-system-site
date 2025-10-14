@@ -29,6 +29,8 @@ const Header = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [showProfileUpdateConfirm, setShowProfileUpdateConfirm] = useState(false);
+  const [pendingProfileData, setPendingProfileData] = useState(null);
   
   const profileRef = useRef(null);
   const notificationRef = useRef(null);
@@ -72,6 +74,35 @@ const Header = () => {
   const handleLogout = () => {
     logout();
     setShowLogoutConfirm(false);
+  };
+
+  const handleProfileUpdate = (formData) => {
+    // Store the form data and show confirmation modal
+    setPendingProfileData(formData);
+    setShowProfileUpdateConfirm(true);
+  };
+
+  const confirmProfileUpdate = async () => {
+    try {
+      // Here you would make the API call to update the user profile
+      // For now, we'll just log it and show success
+      console.log('Updating profile with data:', pendingProfileData);
+      
+      // TODO: Replace with actual API call
+      // await updateUserProfile(pendingProfileData);
+      
+      // Close modals and reset state
+      setShowProfileUpdateConfirm(false);
+      setIsEditingProfile(false);
+      setPendingProfileData(null);
+      
+      // Show success message (you can use toast here)
+      alert('Profile updated successfully!');
+      
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
+    }
   };
 
   const getUserDisplayName = (user) => {
@@ -284,6 +315,23 @@ const Header = () => {
         iconBgColor="bg-red-100"
       />
 
+      {/* Profile Update Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showProfileUpdateConfirm}
+        onClose={() => {
+          setShowProfileUpdateConfirm(false);
+          setPendingProfileData(null);
+        }}
+        onConfirm={confirmProfileUpdate}
+        title="Update Profile"
+        message="Are you sure you want to update your profile information?"
+        confirmLabel="Update Profile"
+        cancelLabel="Cancel"
+        icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        iconColor="text-blue-600"
+        iconBgColor="bg-blue-100"
+      />
+
       {/* View Profile Modal */}
       {showProfileModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -333,11 +381,7 @@ const Header = () => {
                   <FormModal
                     isOpen={true}
                     onClose={() => setIsEditingProfile(false)}
-                    onSubmit={(formData) => {
-                      // Handle profile update here
-                      console.log('Profile updated:', formData);
-                      setIsEditingProfile(false);
-                    }}
+                    onSubmit={handleProfileUpdate}
                     title=""
                     fields={[
                       {
