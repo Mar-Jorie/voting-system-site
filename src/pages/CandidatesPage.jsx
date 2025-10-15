@@ -8,6 +8,7 @@ import InputFactory from '../components/InputFactory';
 import SelectInput from '../components/SelectInput';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import SearchFilter from '../components/SearchFilter';
+import Pagination from '../components/Pagination';
 import { ProgressiveLoader, CandidatesPageSkeleton } from '../components/SkeletonLoader';
 import LazyImage from '../components/LazyImage';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -46,8 +47,18 @@ const CandidatesPage = () => {
   const [filters, setFilters] = useState({});
   const [candidateImageIndex, setCandidateImageIndex] = useState({});
   
+  // Individual category pagination
+  const [maleCurrentPage, setMaleCurrentPage] = useState(1);
+  const [femaleCurrentPage, setFemaleCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(6); // 3 per category to show both categories on same page
+  
   // Multi-select state
   const [selectedCandidates, setSelectedCandidates] = useState(new Set());
+  
+  // Loading states for confirmation modals
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
   useEffect(() => {
     // Listen for vote updates
@@ -55,10 +66,17 @@ const CandidatesPage = () => {
       refresh(); // Use refresh from optimized hook
     };
     
+    // Listen for candidate updates
+    const handleCandidatesUpdated = () => {
+      refresh(); // Use refresh from optimized hook
+    };
+    
     window.addEventListener('votesUpdated', handleVotesUpdated);
+    window.addEventListener('candidatesUpdated', handleCandidatesUpdated);
     
     return () => {
       window.removeEventListener('votesUpdated', handleVotesUpdated);
+      window.removeEventListener('candidatesUpdated', handleCandidatesUpdated);
     };
   }, [refresh]);
 
@@ -80,6 +98,9 @@ const CandidatesPage = () => {
     }
     
     setFilteredCandidates(filtered);
+    // Reset pagination when filtering
+    setMaleCurrentPage(1);
+    setFemaleCurrentPage(1);
   }, [candidates, searchValue, filters]);
 
   // Note: loadCandidates function removed - now handled by useOptimizedCandidatesData hook
@@ -119,6 +140,7 @@ const CandidatesPage = () => {
   };
 
   const handleConfirmSave = async () => {
+    setSaveLoading(true);
     try {
       const candidateData = {
         name: pendingFormData.name,
@@ -148,6 +170,10 @@ const CandidatesPage = () => {
 
       // Reload candidates from database
       await refresh();
+      
+      // Dispatch event to notify other components (like dashboard) of the update
+      window.dispatchEvent(new CustomEvent('candidatesUpdated'));
+      
       setShowFormModal(false);
       setEditingCandidate(null);
       setShowConfirmModal(false);
@@ -157,6 +183,8 @@ const CandidatesPage = () => {
       toast.error('Failed to save candidate');
       setShowConfirmModal(false);
       setPendingFormData(null);
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -166,6 +194,7 @@ const CandidatesPage = () => {
   };
 
   const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
     try {
       await apiClient.deleteObject('candidates', deletingCandidate.id);
       await auditLogger.logDelete('candidate', deletingCandidate.id, deletingCandidate.name, {
@@ -175,11 +204,17 @@ const CandidatesPage = () => {
       
       // Reload candidates from database
       await refresh();
+      
+      // Dispatch event to notify other components (like dashboard) of the update
+      window.dispatchEvent(new CustomEvent('candidatesUpdated'));
+      
       setShowDeleteModal(false);
       setDeletingCandidate(null);
     } catch (error) {
       console.error('Error deleting candidate:', error);
       toast.error('Failed to delete candidate');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -213,6 +248,24 @@ const CandidatesPage = () => {
   const getCandidatesByCategory = (category) => {
     return filteredCandidates.filter(candidate => candidate.category === category);
   };
+
+  // Get candidates by category with pagination
+  const maleCandidates = getCandidatesByCategory('male');
+  const femaleCandidates = getCandidatesByCategory('female');
+  
+  // Calculate pagination for each category
+  const candidatesPerPage = 3; // Show 3 candidates per category per page
+  const maleTotalPages = Math.ceil(maleCandidates.length / candidatesPerPage);
+  const femaleTotalPages = Math.ceil(femaleCandidates.length / candidatesPerPage);
+  
+  // Get paginated candidates for each category
+  const maleStartIndex = (maleCurrentPage - 1) * candidatesPerPage;
+  const maleEndIndex = maleStartIndex + candidatesPerPage;
+  const paginatedMaleCandidates = maleCandidates.slice(maleStartIndex, maleEndIndex);
+  
+  const femaleStartIndex = (femaleCurrentPage - 1) * candidatesPerPage;
+  const femaleEndIndex = femaleStartIndex + candidatesPerPage;
+  const paginatedFemaleCandidates = femaleCandidates.slice(femaleStartIndex, femaleEndIndex);
 
   // Image carousel helpers
   const getCandidateImages = (candidate) => {
@@ -291,6 +344,7 @@ const CandidatesPage = () => {
   };
 
   const confirmBulkDelete = async () => {
+    setBulkDeleteLoading(true);
     try {
       const candidatesToDelete = filteredCandidates.filter(c => selectedCandidates.has(c.id));
       
@@ -305,11 +359,17 @@ const CandidatesPage = () => {
       
       // Reload candidates from database
       await refresh();
+      
+      // Dispatch event to notify other components (like dashboard) of the update
+      window.dispatchEvent(new CustomEvent('candidatesUpdated'));
+      
       setSelectedCandidates(new Set());
       setShowBulkDeleteModal(false);
     } catch (error) {
       console.error('Error deleting candidates:', error);
       toast.error('Failed to delete candidates');
+    } finally {
+      setBulkDeleteLoading(false);
     }
   };
 
@@ -501,11 +561,19 @@ const CandidatesPage = () => {
         skeleton={CandidatesPageSkeleton}
       >
         {/* Male Candidates */}
-        {getCandidatesByCategory('male').length > 0 && (
+        {maleCandidates.length > 0 && (
         <div className="p-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Male Candidates</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">Male Candidates</h2>
+            <Pagination
+              currentPage={maleCurrentPage}
+              totalPages={maleTotalPages}
+              onPageChange={setMaleCurrentPage}
+              totalItems={maleCandidates.length}
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {getCandidatesByCategory('male').map((candidate) => {
+            {paginatedMaleCandidates.map((candidate) => {
               const images = getCandidateImages(candidate);
               const currentIndex = getCurrentImageIndex(candidate.id);
               const hasImages = images.length > 0;
@@ -631,11 +699,19 @@ const CandidatesPage = () => {
       )}
 
       {/* Female Candidates */}
-      {!loading && getCandidatesByCategory('female').length > 0 && (
+      {!loading && femaleCandidates.length > 0 && (
         <div className="p-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Female Candidates</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">Female Candidates</h2>
+            <Pagination
+              currentPage={femaleCurrentPage}
+              totalPages={femaleTotalPages}
+              onPageChange={setFemaleCurrentPage}
+              totalItems={femaleCandidates.length}
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {getCandidatesByCategory('female').map((candidate) => {
+            {paginatedFemaleCandidates.map((candidate) => {
               const images = getCandidateImages(candidate);
               const currentIndex = getCurrentImageIndex(candidate.id);
               const hasImages = images.length > 0;
@@ -853,6 +929,7 @@ const CandidatesPage = () => {
         message={`Are you sure you want to ${editingCandidate ? 'update' : 'create'} this candidate?`}
         confirmLabel={editingCandidate ? "Update Candidate" : "Create Candidate"}
         cancelLabel="Cancel"
+        loading={saveLoading}
         variant="info"
         icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
@@ -866,6 +943,7 @@ const CandidatesPage = () => {
         message={`Are you sure you want to delete "${deletingCandidate?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
+        loading={deleteLoading}
         icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
         variant="danger"
       />
@@ -879,6 +957,7 @@ const CandidatesPage = () => {
         message={`Are you sure you want to delete ${selectedCandidates.size} selected candidate(s)? This action cannot be undone.`}
         confirmLabel="Delete All"
         cancelLabel="Cancel"
+        loading={bulkDeleteLoading}
         icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
         variant="danger"
       />

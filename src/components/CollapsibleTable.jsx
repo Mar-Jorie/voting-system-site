@@ -19,6 +19,7 @@ import {
   UserPlusIcon
 } from '@heroicons/react/24/outline';
 import Button from './Button';
+import LoadingSpinner from './LoadingSpinner';
 
 const CollapsibleTable = ({
   data = [],
@@ -178,7 +179,7 @@ const CollapsibleTable = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <LoadingSpinner size="lg" text="Loading data..." />
       </div>
     );
   }

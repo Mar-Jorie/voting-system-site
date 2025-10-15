@@ -35,6 +35,11 @@ const FAQPage = () => {
   
   // Selection state
   const [selectedFaqs, setSelectedFaqs] = useState(new Set());
+  
+  // Loading states for confirmation modals
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
   useEffect(() => {
     loadFAQs();
@@ -119,6 +124,7 @@ const FAQPage = () => {
   };
 
   const handleConfirmSave = async () => {
+    setSaveLoading(true);
     try {
       const faqData = {
         question: pendingFormData.question,
@@ -157,6 +163,8 @@ const FAQPage = () => {
       toast.error('Failed to save FAQ');
       setShowConfirmModal(false);
       setPendingFormData(null);
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -166,6 +174,7 @@ const FAQPage = () => {
   };
 
   const handleConfirmDelete = async () => {
+    setDeleteLoading(true);
     try {
       await apiClient.deleteObject('faqs', deletingFaq.id);
       await auditLogger.logDelete('faq', deletingFaq.id, deletingFaq.question, {
@@ -180,6 +189,8 @@ const FAQPage = () => {
     } catch (error) {
       console.error('Error deleting FAQ:', error);
       toast.error('Failed to delete FAQ');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -210,6 +221,7 @@ const FAQPage = () => {
   };
 
   const handleBulkDeleteConfirm = async () => {
+    setBulkDeleteLoading(true);
     try {
       const faqsToDelete = filteredFaqs.filter(faq => selectedFaqs.has(faq.id));
       
@@ -241,6 +253,8 @@ const FAQPage = () => {
     } catch (error) {
       console.error('Error deleting FAQs:', error);
       toast.error('Failed to delete FAQs');
+    } finally {
+      setBulkDeleteLoading(false);
     }
   };
 
@@ -585,6 +599,7 @@ const FAQPage = () => {
         message={`Are you sure you want to ${editingFaq ? 'update' : 'create'} this FAQ?`}
         confirmLabel={editingFaq ? "Update FAQ" : "Create FAQ"}
         cancelLabel="Cancel"
+        loading={saveLoading}
         variant="info"
         icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
@@ -601,6 +616,7 @@ const FAQPage = () => {
         message={`Are you sure you want to delete the FAQ "${deletingFaq?.question}"? This action cannot be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
+        loading={deleteLoading}
         icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
         variant="danger"
       />
@@ -614,6 +630,7 @@ const FAQPage = () => {
         message={`Are you sure you want to delete ${selectedFaqs.size} selected FAQ(s)? This action cannot be undone.`}
         confirmLabel="Delete All"
         cancelLabel="Cancel"
+        loading={bulkDeleteLoading}
         icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
         variant="danger"
       />

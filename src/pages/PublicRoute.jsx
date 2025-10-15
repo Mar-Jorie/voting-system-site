@@ -9,15 +9,36 @@ const PublicRoute = ({ children }) => {
 
   // Check for stored user data on component mount
   useEffect(() => {
-    const checkAuth = () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser && !user) {
+    const checkAuth = async () => {
+      const sessionToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('sessionToken='))
+        ?.split('=')[1];
+        
+      if (sessionToken && !user) {
         try {
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
+          // Extract user ID from session token
+          const tokenParts = sessionToken.split('_');
+          if (tokenParts.length >= 2) {
+            const userId = tokenParts[1];
+            
+            // Fetch the specific user from database using the user ID from session token
+            const { getObject } = await import('../usecases/api');
+            const userData = await getObject('users', userId);
+            
+            if (userData && userData.status === 'active') {
+              setUser(userData);
+            } else {
+              // User no longer exists or is inactive, clear session
+              document.cookie = 'sessionToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            }
+          } else {
+            // Invalid session token format, clear session
+            document.cookie = 'sessionToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          }
         } catch (error) {
-          console.error('Error parsing stored user data:', error);
-          localStorage.removeItem('user');
+          console.error('Error fetching user data:', error);
+          document.cookie = 'sessionToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         }
       }
       setIsCheckingAuth(false);

@@ -22,6 +22,7 @@ const NavSidebar = () => {
   const { user, logout } = useApp();
   const location = useLocation();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -33,9 +34,16 @@ const NavSidebar = () => {
     setShowLogoutConfirm(true);
   };
 
-  const handleLogout = () => {
-    logout();
-    setShowLogoutConfirm(false);
+  const handleLogout = async () => {
+    setLogoutLoading(true);
+    try {
+      await logout();
+      setShowLogoutConfirm(false);
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      setLogoutLoading(false);
+    }
   };
 
   const getUserDisplayName = (user) => {
@@ -176,6 +184,7 @@ const NavSidebar = () => {
         message="Are you sure you want to sign out?"
         confirmLabel="Sign out"
         cancelLabel="Cancel"
+        loading={logoutLoading}
         icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
         iconColor="text-red-600"
         iconBgColor="bg-red-100"

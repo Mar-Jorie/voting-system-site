@@ -49,6 +49,13 @@ const UsersPage = () => {
     role: ''
   });
   const [selectedRows, setSelectedRows] = useState(new Set());
+  
+  // Loading states for confirmation modals
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+  const [bulkStatusLoading, setBulkStatusLoading] = useState(false);
+  const [statusToggleLoading, setStatusToggleLoading] = useState(false);
 
   // Hooks
   const { user: currentUser } = useApp();
@@ -238,6 +245,7 @@ const UsersPage = () => {
   };
 
   const handleConfirmSave = async () => {
+    setSaveLoading(true);
     try {
       // Convert role name to Relation object
       const roleName = pendingFormData.role;
@@ -295,6 +303,8 @@ const UsersPage = () => {
       toast.error(error.message || 'Failed to save user');
       setShowConfirmModal(false);
       setPendingFormData(null);
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -306,6 +316,7 @@ const UsersPage = () => {
   const handleDeleteConfirm = async () => {
     if (!deletingUser) return;
 
+    setDeleteLoading(true);
     try {
       // Delete user from database
       await apiClient.deleteObject('users', deletingUser.id);
@@ -324,6 +335,8 @@ const UsersPage = () => {
     } catch (error) {
       console.error('Error deleting user:', error);
       toast.error('Failed to delete user');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -437,6 +450,7 @@ const UsersPage = () => {
     const selectedUsers = filteredUsers.filter((user, index) => selectedRows.has(user.id || index));
     if (selectedUsers.length === 0) return;
 
+    setBulkDeleteLoading(true);
     try {
       // Delete selected users from database
       await Promise.all(
@@ -466,6 +480,8 @@ const UsersPage = () => {
     } catch (error) {
       console.error('Error deleting users:', error);
       toast.error('Failed to delete users');
+    } finally {
+      setBulkDeleteLoading(false);
     }
   };
 
@@ -487,6 +503,7 @@ const UsersPage = () => {
     const selectedUsers = filteredUsers.filter((user, index) => selectedRows.has(user.id || index));
     if (selectedUsers.length === 0) return;
     
+    setBulkStatusLoading(true);
     try {
       // Update all selected users in database
       await Promise.all(
@@ -519,6 +536,8 @@ const UsersPage = () => {
     } catch (error) {
       console.error('Error updating user status:', error);
       toast.error('Failed to update user status');
+    } finally {
+      setBulkStatusLoading(false);
     }
   };
 
@@ -659,6 +678,7 @@ const UsersPage = () => {
   const confirmUserStatusToggle = async () => {
     if (!statusToggleUser) return;
     
+    setStatusToggleLoading(true);
     try {
       await apiClient.updateObject('users', statusToggleUser.id, { status: newStatus });
       toast.success(`User status updated to ${newStatus}`);
@@ -671,6 +691,8 @@ const UsersPage = () => {
     } catch (error) {
       console.error('Error updating user status:', error);
       toast.error('Failed to update user status');
+    } finally {
+      setStatusToggleLoading(false);
     }
   };
 
@@ -829,6 +851,7 @@ const UsersPage = () => {
         message={`Are you sure you want to ${editingUser ? 'update' : 'create'} this user?`}
         confirmLabel={editingUser ? "Update User" : "Create User"}
         cancelLabel="Cancel"
+        loading={saveLoading}
         variant="info"
         icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
@@ -842,6 +865,7 @@ const UsersPage = () => {
         message={`Are you sure you want to delete ${deletingUser ? getUserDisplayName(deletingUser) : 'this user'}? This action cannot be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
+        loading={deleteLoading}
         icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
         variant="danger"
       />
@@ -855,6 +879,7 @@ const UsersPage = () => {
         message={`Are you sure you want to delete ${selectedRows.size} selected users? This action cannot be undone.`}
         confirmLabel="Delete All"
         cancelLabel="Cancel"
+        loading={bulkDeleteLoading}
         icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
         variant="danger"
       />
@@ -868,6 +893,7 @@ const UsersPage = () => {
         message={`Are you sure you want to set ${selectedRows.size} selected users to ${newStatus}?`}
         confirmLabel={`Set to ${newStatus}`}
         cancelLabel="Cancel"
+        loading={bulkStatusLoading}
         icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
         variant="warning"
       />
@@ -881,6 +907,7 @@ const UsersPage = () => {
         message={`Are you sure you want to set ${statusToggleUser ? getUserDisplayName(statusToggleUser) : 'this user'} to ${newStatus}?`}
         confirmLabel={`Set to ${newStatus}`}
         cancelLabel="Cancel"
+        loading={statusToggleLoading}
         icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
         variant="warning"
       />

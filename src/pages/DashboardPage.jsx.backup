@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { CalendarDaysIcon, UserGroupIcon, TrophyIcon, CheckCircleIcon, PlusIcon, ArrowDownTrayIcon, XMarkIcon, ClockIcon, StopIcon, PlayIcon } from '@heroicons/react/24/outline';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import Button from '../components/Button';
-import FormModal from '../components/FormModal';
-import ConfirmationModal from '../components/ConfirmationModal';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { DashboardSkeleton, ProgressiveLoader } from '../components/SkeletonLoader';
 import LazyImage from '../components/LazyImage';
 import { useOptimizedDashboardData } from '../hooks/useOptimizedData';
@@ -15,37 +14,30 @@ import auditLogger from '../utils/auditLogger.js';
 
 const DashboardPage = () => {
   // Use optimized data loading
-  const {
-    metrics,
-    candidates,
-    votes,
-    auditLogs,
-    loading,
-    error,
-    refresh
+  const { 
+    metrics, 
+    candidates, 
+    votes, 
+    auditLogs, 
+    loading, 
+    error, 
+    refresh 
   } = useOptimizedDashboardData();
-
+  
   const [resultsVisibility, setResultsVisibilityState] = useState(RESULTS_VISIBILITY.HIDDEN);
 
   useEffect(() => {
     // Listen for vote updates
     const handleVotesUpdated = () => {
-      refresh(); // Call refresh from the optimized hook
-    };
-    
-    // Listen for candidate updates
-    const handleCandidatesUpdated = () => {
-      refresh(); // Call refresh from the optimized hook
+      refresh();
     };
     
     window.addEventListener('votesUpdated', handleVotesUpdated);
-    window.addEventListener('candidatesUpdated', handleCandidatesUpdated);
     
     return () => {
       window.removeEventListener('votesUpdated', handleVotesUpdated);
-      window.removeEventListener('candidatesUpdated', handleCandidatesUpdated);
     };
-  }, [refresh]); // Dependency array includes refresh
+  }, [refresh]);
 
   // Load voting status
   useEffect(() => {
@@ -83,6 +75,7 @@ const DashboardPage = () => {
     };
   }, []);
 
+  // Remove loadData function as it's now handled by useOptimizedDashboardData
 
   // Helper function to get display name and blur class for candidate names
   const getDisplayName = (candidate) => {
@@ -140,7 +133,7 @@ const DashboardPage = () => {
   const femaleWinner = getWinner(femaleCandidates);
 
   const handleAddCandidate = () => {
-    setShowFormModal(true);
+    console.log('Add new candidate');
   };
 
   const handleViewResults = () => {
@@ -153,74 +146,9 @@ const DashboardPage = () => {
   const [showStopConfirmationModal, setShowStopConfirmationModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
-  
-  // FormModal state for adding candidates
-  const [showFormModal, setShowFormModal] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [pendingFormData, setPendingFormData] = useState(null);
-  const [saveLoading, setSaveLoading] = useState(false);
 
   const handleExportData = () => {
     setShowExportModal(true);
-  };
-
-  // Form submission handlers for candidate creation
-  const handleFormSubmit = async (formData) => {
-    // Store form data and show confirmation modal
-    setPendingFormData(formData);
-    setShowConfirmModal(true);
-  };
-
-  const handleConfirmSave = async () => {
-    if (!pendingFormData) return;
-
-    try {
-      setSaveLoading(true);
-      
-      // Create candidate object
-      const candidateData = {
-        name: pendingFormData.name,
-        category: pendingFormData.category,
-        description: pendingFormData.description || '',
-        images: pendingFormData.images || []
-      };
-
-      // Create candidate via API
-      await apiClient.createObject('candidates', candidateData);
-      
-      // Log the creation
-      await auditLogger.log({
-        action: 'candidate_created',
-        entity_type: 'candidate',
-        entity_name: candidateData.name,
-        details: {
-          category: candidateData.category,
-          description: candidateData.description,
-          images_count: candidateData.images.length
-        },
-        category: 'candidate_management',
-        severity: 'info'
-      });
-
-      toast.success('Candidate created successfully');
-
-      // Refresh dashboard data to show updated metrics
-      await refresh();
-      
-      // Dispatch event to notify other components (like candidates page) of the update
-      window.dispatchEvent(new CustomEvent('candidatesUpdated'));
-      
-      setShowFormModal(false);
-      setShowConfirmModal(false);
-      setPendingFormData(null);
-    } catch (error) {
-      console.error('Error creating candidate:', error);
-      toast.error('Failed to create candidate');
-      setShowConfirmModal(false);
-      setPendingFormData(null);
-    } finally {
-      setSaveLoading(false);
-    }
   };
 
   // Vote Control Functions
@@ -709,24 +637,24 @@ const DashboardPage = () => {
         onRetry={refresh}
       >
         <div className="space-y-6">
-        {/* Key Metrics Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Total Voters */}
+          {/* Key Metrics Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 3xl:grid-cols-6 gap-4">
+          {/* Total Votes */}
           <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center">
                 <CheckCircleIcon className="h-6 w-6 text-primary-600" />
               </div>
               <span className="text-xs font-medium text-green-800 bg-green-50 px-2 py-1 rounded-full">
-                Active
+                +12%
               </span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">{metrics.totalVoters || 0}</h3>
-            <p className="text-sm text-gray-600 mb-2">Total Voters</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{metrics.totalVotes}</h3>
+            <p className="text-sm text-gray-600 mb-2">Total Votes</p>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">Votes cast</span>
+              <span className="text-xs text-gray-500">From last week</span>
               <div className="flex items-center space-x-1">
-                <span className="text-xs font-medium text-green-800">Live</span>
+                <span className="text-xs font-medium text-green-800">12%</span>
               </div>
             </div>
           </div>
@@ -741,56 +669,55 @@ const DashboardPage = () => {
                 Active
               </span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">{metrics.totalCandidates || 0}</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{metrics.totalCandidates}</h3>
             <p className="text-sm text-gray-600 mb-2">Total Candidates</p>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">Male & Female</span>
+              <span className="text-xs text-gray-500">Currently active</span>
               <div className="flex items-center space-x-1">
-                <span className="text-xs font-medium text-blue-800">All</span>
+                <span className="text-xs font-medium text-blue-800">2</span>
               </div>
             </div>
           </div>
 
-          {/* Total FAQs */}
+          {/* Total Voters */}
           <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
-                <TrophyIcon className="h-6 w-6 text-purple-600" />
+              <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                <UserGroupIcon className="h-6 w-6 text-green-600" />
               </div>
-              <span className="text-xs font-medium text-purple-800 bg-purple-50 px-2 py-1 rounded-full">
-                Help
+              <span className="text-xs font-medium text-green-800 bg-green-50 px-2 py-1 rounded-full">
+                +8%
               </span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">{metrics.totalFaqs || 0}</h3>
-            <p className="text-sm text-gray-600 mb-2">Total FAQs</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{metrics.totalVoters}</h3>
+            <p className="text-sm text-gray-600 mb-2">Total Voters</p>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">Help articles</span>
+              <span className="text-xs text-gray-500">Unique voters</span>
               <div className="flex items-center space-x-1">
-                <span className="text-xs font-medium text-purple-800">Info</span>
+                <span className="text-xs font-medium text-green-800">8%</span>
               </div>
             </div>
           </div>
 
-          {/* Total Site Visitors */}
+          {/* Active Voting Today */}
           <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center">
                 <CalendarDaysIcon className="h-6 w-6 text-orange-600" />
               </div>
               <span className="text-xs font-medium text-orange-800 bg-orange-50 px-2 py-1 rounded-full">
-                Traffic
+                Today
               </span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">{metrics.totalSiteVisitors || 0}</h3>
-            <p className="text-sm text-gray-600 mb-2">Site Visitors</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{metrics.activeVoting}</h3>
+            <p className="text-sm text-gray-600 mb-2">Votes Today</p>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">Landing page</span>
+              <span className="text-xs text-gray-500">Last 24 hours</span>
               <div className="flex items-center space-x-1">
                 <span className="text-xs font-medium text-orange-800">Live</span>
               </div>
             </div>
           </div>
-        </div>
 
         {/* Election Control Panel - 2 Card Design */}
         <div className="space-y-4">
@@ -942,7 +869,7 @@ const DashboardPage = () => {
             {maleWinner ? (
               <div className="text-center">
                 {maleWinner.image && (
-                  <img 
+                  <LazyImage 
                     src={maleWinner.image} 
                     alt={maleWinner.name}
                     className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
@@ -975,7 +902,7 @@ const DashboardPage = () => {
             {femaleWinner ? (
               <div className="text-center">
                 {femaleWinner.image && (
-                  <img 
+                  <LazyImage 
                     src={femaleWinner.image} 
                     alt={femaleWinner.name}
                     className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
@@ -1020,7 +947,7 @@ const DashboardPage = () => {
                       </span>
                     </div>
                     {candidate.image && (
-                      <img 
+                      <LazyImage 
                         src={candidate.image} 
                         alt={candidate.name}
                         className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
@@ -1074,7 +1001,7 @@ const DashboardPage = () => {
                       </span>
                     </div>
                     {candidate.image && (
-                      <img 
+                      <LazyImage 
                         src={candidate.image} 
                         alt={candidate.name}
                         className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
@@ -1220,7 +1147,6 @@ const DashboardPage = () => {
               </div>
             )}
           </div>
-        </div>
         </div>
       </ProgressiveLoader>
 
@@ -1421,77 +1347,8 @@ const DashboardPage = () => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Form Modal for Adding Candidates */}
-      <FormModal
-        isOpen={showFormModal}
-        onClose={() => setShowFormModal(false)}
-        onSubmit={handleFormSubmit}
-        title="Add New Candidate"
-        submitButtonText="Add Candidate"
-        isUpdate={false}
-        fields={[
-          {
-            name: 'name',
-            label: 'Candidate Name',
-            type: 'String',
-            placeholder: 'Enter candidate name',
-            required: true
-          },
-          {
-            name: 'category',
-            label: 'Category',
-            type: 'select',
-            placeholder: 'Select category',
-            required: true,
-            options: [
-              { value: 'male', label: 'Male' },
-              { value: 'female', label: 'Female' }
-            ]
-          },
-          {
-            name: 'description',
-            label: 'Description',
-            type: 'String',
-            placeholder: 'Enter candidate description (optional)',
-            required: false
-          },
-          {
-            name: 'images',
-            label: 'Candidate Images',
-            type: 'file',
-            placeholder: 'Upload candidate images',
-            required: false,
-            multiple: true,
-            maxFiles: 5,
-            maxSize: 5 * 1024 * 1024, // 5MB
-            accept: 'image/*',
-            showPreview: true,
-            previewSize: 'medium'
-          }
-        ]}
-        initialData={{
-          name: '',
-          category: '',
-          description: '',
-          images: []
-        }}
-      />
-
-      {/* Confirmation Modal for Candidate Creation */}
-      <ConfirmationModal
-        isOpen={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
-        onConfirm={handleConfirmSave}
-        title="Confirm Candidate Creation"
-        message={`Are you sure you want to create the candidate "${pendingFormData?.name}"?`}
-        confirmLabel="Create Candidate"
-        cancelLabel="Cancel"
-        icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
-        variant="info"
-        loading={saveLoading}
-      />
+        )}
+      </div>
     </div>
   );
 };

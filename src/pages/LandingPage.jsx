@@ -24,6 +24,9 @@ const LandingPage = () => {
   };
 
   useEffect(() => {
+    // Track site visitor only once per session
+    trackSiteVisitor();
+    
     // Load data from database
     loadData();
     
@@ -65,6 +68,42 @@ const LandingPage = () => {
       clearInterval(interval);
     };
   }, []);
+
+  const trackSiteVisitor = async () => {
+    try {
+      // Check if visitor has already been tracked in this session
+      const hasTrackedVisitor = sessionStorage.getItem('visitorTracked');
+      if (hasTrackedVisitor) {
+        return; // Already tracked in this session
+      }
+
+      // Get or create session ID
+      let sessionId = sessionStorage.getItem('sessionId');
+      if (!sessionId) {
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('sessionId', sessionId);
+      }
+
+      // Get visitor information
+      const visitorData = {
+        ip_address: 'unknown', // In a real app, you'd get this from the server
+        user_agent: navigator.userAgent,
+        page_visited: 'landing',
+        session_id: sessionId,
+        referrer: document.referrer || 'direct',
+        is_unique_visitor: true
+      };
+
+      // Create visitor record
+      await apiClient.createObject('site_visitors', visitorData);
+      
+      // Mark as tracked in this session
+      sessionStorage.setItem('visitorTracked', 'true');
+    } catch (error) {
+      // Silently fail - don't interrupt user experience
+      console.log('Visitor tracking failed:', error);
+    }
+  };
 
   const loadData = async () => {
     try {

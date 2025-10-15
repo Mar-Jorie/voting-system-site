@@ -196,10 +196,10 @@ export const useOptimizedData = (collection, options = {}) => {
 // Optimized dashboard data hook
 export const useOptimizedDashboardData = () => {
   const [metrics, setMetrics] = useState({
+    totalVoters: 0,
     totalCandidates: 0,
-    totalVotes: 0,
-    totalUsers: 0,
-    activeVoters: 0
+    totalFaqs: 0,
+    totalSiteVisitors: 0
   });
   const [candidates, setCandidates] = useState([]);
   const [votes, setVotes] = useState([]);
@@ -217,9 +217,11 @@ export const useOptimizedDashboardData = () => {
       const candidatesData = await apiClient.findObjects('candidates', {});
       setCandidates(candidatesData || []);
 
-      // Load votes in parallel with audit logs
-      const [votesData, auditLogsData] = await Promise.all([
+      // Load votes, FAQs, site visitors, and audit logs in parallel
+      const [votesData, faqsData, siteVisitorsData, auditLogsData] = await Promise.all([
         apiClient.findObjects('votes', {}),
+        apiClient.findObjects('faqs', {}),
+        apiClient.findObjects('site_visitors', {}),
         apiClient.findObjects('audit_logs', {}, { 
           limit: 20, 
           sort: { created: -1 } 
@@ -230,16 +232,16 @@ export const useOptimizedDashboardData = () => {
       setAuditLogs(auditLogsData || []);
 
       // Calculate metrics
+      const totalVoters = votesData ? votesData.length : 0;
       const totalCandidates = candidatesData ? candidatesData.length : 0;
-      const totalVotes = votesData ? votesData.length : 0;
-      const totalUsers = await apiClient.countObjects('users', {});
-      const activeVoters = votesData ? new Set(votesData.map(vote => vote.user_id)).size : 0;
+      const totalFaqs = faqsData ? faqsData.length : 0;
+      const totalSiteVisitors = siteVisitorsData ? siteVisitorsData.length : 0;
 
       setMetrics({
+        totalVoters,
         totalCandidates,
-        totalVotes,
-        totalUsers,
-        activeVoters
+        totalFaqs,
+        totalSiteVisitors
       });
 
     } catch (err) {

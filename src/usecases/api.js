@@ -251,7 +251,7 @@ export const findObjects = (collection, { where, limit, skip, sort, includes, ke
 
 export const getObject = (collection, id, options) => request(`/collections/${collection}/${id}`, options);
 
-export const updateObject = (collection, data, options) => request(`/collections/${collection}/${data.id}`, { method: "PUT", body: data, ...options });
+export const updateObject = (collection, objectId, data, options) => request(`/collections/${collection}/${objectId}`, { method: "PUT", body: data, ...options });
 
 export const deleteObject = (collection, id, options) => request(`/collections/${collection}/${id}`, { method: "DELETE", ...options });
 

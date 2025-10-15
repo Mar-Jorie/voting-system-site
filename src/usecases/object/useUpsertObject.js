@@ -21,7 +21,7 @@ export function useUpsertObject() {
       // Check if this is an update (has id) or create (no id)
       if (object && object.id) {
         // Update existing object
-        response = await updateObject(collection, object, {
+        response = await updateObject(collection, object.id, object, {
           signal: abortControllerRef.current.signal,
           upsert: true,
           ...options,

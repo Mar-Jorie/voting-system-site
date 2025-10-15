@@ -34,6 +34,7 @@ const Header = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [showProfileUpdateConfirm, setShowProfileUpdateConfirm] = useState(false);
   const [pendingProfileData, setPendingProfileData] = useState(null);
+  const [profileUpdateLoading, setProfileUpdateLoading] = useState(false);
   
   const profileRef = useRef(null);
   const notificationRef = useRef(null);
@@ -94,6 +95,7 @@ const Header = () => {
   };
 
   const confirmProfileUpdate = async () => {
+    setProfileUpdateLoading(true);
     try {
       console.log('User object:', user);
       console.log('User ID:', user?.id);
@@ -129,6 +131,8 @@ const Header = () => {
         pendingData: pendingProfileData
       });
       toast.error('Failed to update profile. Please try again.');
+    } finally {
+      setProfileUpdateLoading(false);
     }
   };
 
@@ -355,6 +359,7 @@ const Header = () => {
         message="Are you sure you want to update your profile information?"
         confirmLabel="Update Profile"
         cancelLabel="Cancel"
+        loading={profileUpdateLoading}
         icon="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
         variant="info"
       />

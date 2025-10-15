@@ -103,6 +103,7 @@ const VotingModal = ({ isOpen, onClose }) => {
   });
   const [votingComplete, setVotingComplete] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
+  const [voteLoading, setVoteLoading] = useState(false);
   
   // Image preview modal state
   const [showImagePreview, setShowImagePreview] = useState(false);
@@ -114,7 +115,11 @@ const VotingModal = ({ isOpen, onClose }) => {
   const [searchValue, setSearchValue] = useState('');
   const [filters, setFilters] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(4); // 2 per category
+  const [itemsPerPage] = useState(6); // 3 per category to show both categories on same page
+  
+  // Individual category pagination
+  const [maleCurrentPage, setMaleCurrentPage] = useState(1);
+  const [femaleCurrentPage, setFemaleCurrentPage] = useState(1);
 
   // Image carousel helpers
   const getCandidateImages = (candidate) => {
@@ -198,6 +203,8 @@ const VotingModal = ({ isOpen, onClose }) => {
     
     setFilteredCandidates(filtered);
     setCurrentPage(1); // Reset to first page when filtering
+    setMaleCurrentPage(1); // Reset male pagination when filtering
+    setFemaleCurrentPage(1); // Reset female pagination when filtering
   }, [candidates, searchValue, filters]);
 
   const checkVotingStatus = useCallback(() => {
@@ -225,15 +232,23 @@ const VotingModal = ({ isOpen, onClose }) => {
     }));
   };
 
-  // Pagination logic
-  const totalPages = Math.ceil(filteredCandidates.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedCandidates = filteredCandidates.slice(startIndex, endIndex);
-
   // Get candidates by category
-  const maleCandidates = paginatedCandidates.filter(candidate => candidate.category === 'male');
-  const femaleCandidates = paginatedCandidates.filter(candidate => candidate.category === 'female');
+  const maleCandidates = filteredCandidates.filter(candidate => candidate.category === 'male');
+  const femaleCandidates = filteredCandidates.filter(candidate => candidate.category === 'female');
+  
+  // Individual pagination for each category
+  const candidatesPerPage = 3; // Show 3 candidates per category per page
+  const maleTotalPages = Math.ceil(maleCandidates.length / candidatesPerPage);
+  const femaleTotalPages = Math.ceil(femaleCandidates.length / candidatesPerPage);
+  
+  // Get paginated candidates for each category using their own pagination
+  const maleStartIndex = (maleCurrentPage - 1) * candidatesPerPage;
+  const maleEndIndex = maleStartIndex + candidatesPerPage;
+  const paginatedMaleCandidates = maleCandidates.slice(maleStartIndex, maleEndIndex);
+  
+  const femaleStartIndex = (femaleCurrentPage - 1) * candidatesPerPage;
+  const femaleEndIndex = femaleStartIndex + candidatesPerPage;
+  const paginatedFemaleCandidates = femaleCandidates.slice(femaleStartIndex, femaleEndIndex);
 
   const handleCandidateSelect = (candidate) => {
     if (hasVoted) return; // Prevent changes if already voted
@@ -262,6 +277,7 @@ const VotingModal = ({ isOpen, onClose }) => {
   };
 
   const handleConfirmVote = async () => {
+    setVoteLoading(true);
     try {
       // Create a single vote entry with both male and female candidates
       const vote = {
@@ -311,6 +327,8 @@ const VotingModal = ({ isOpen, onClose }) => {
       console.error('Error submitting vote:', error);
       toast.error('Failed to submit vote. Please try again.');
       setShowConfirmationModal(false);
+    } finally {
+      setVoteLoading(false);
     }
   };
 
@@ -418,15 +436,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                       <p className="text-gray-600">
                         Select one candidate from each category to cast your vote.
                       </p>
-                      {/* Pagination */}
-                      {totalPages > 1 && (
-                        <Pagination
-                          currentPage={currentPage}
-                          totalPages={totalPages}
-                          onPageChange={setCurrentPage}
-                          totalItems={filteredCandidates.length}
-                        />
-                      )}
+                      {/* Global pagination removed - each category has its own pagination */}
                     </div>
                     {hasVoted && (
                       <div className="mt-4 inline-flex items-center px-3 py-1 bg-green-100 rounded-full">
@@ -457,14 +467,23 @@ const VotingModal = ({ isOpen, onClose }) => {
                   {/* Male Category */}
                   {maleCandidates.length > 0 && (
                     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-                      <div className="flex items-center mb-4">
-                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mr-3">
-                          <UserIcon className="h-5 w-5 text-blue-600" />
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mr-3">
+                            <UserIcon className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <h2 className="text-xl font-semibold text-gray-900">Male Category</h2>
                         </div>
-                        <h2 className="text-xl font-semibold text-gray-900">Male Category</h2>
+                        {/* Male Category Pagination */}
+                        <Pagination
+                          currentPage={maleCurrentPage}
+                          totalPages={maleTotalPages}
+                          onPageChange={setMaleCurrentPage}
+                          totalItems={maleCandidates.length}
+                        />
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 3xl:grid-cols-3 gap-4">
-                        {maleCandidates.map((candidate) => (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {paginatedMaleCandidates.map((candidate) => (
                           <div
                             key={candidate.id}
                             onClick={() => handleCandidateSelect(candidate)}
@@ -512,14 +531,23 @@ const VotingModal = ({ isOpen, onClose }) => {
                   {/* Female Category */}
                   {femaleCandidates.length > 0 && (
                     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-                      <div className="flex items-center mb-4">
-                        <div className="w-8 h-8 bg-pink-50 rounded-lg flex items-center justify-center mr-3">
-                          <UserIcon className="h-5 w-5 text-pink-600" />
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-pink-50 rounded-lg flex items-center justify-center mr-3">
+                            <UserIcon className="h-5 w-5 text-pink-600" />
+                          </div>
+                          <h2 className="text-xl font-semibold text-gray-900">Female Category</h2>
                         </div>
-                        <h2 className="text-xl font-semibold text-gray-900">Female Category</h2>
+                        {/* Female Category Pagination */}
+                        <Pagination
+                          currentPage={femaleCurrentPage}
+                          totalPages={femaleTotalPages}
+                          onPageChange={setFemaleCurrentPage}
+                          totalItems={femaleCandidates.length}
+                        />
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 3xl:grid-cols-3 gap-4">
-                        {femaleCandidates.map((candidate) => (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {paginatedFemaleCandidates.map((candidate) => (
                           <div
                             key={candidate.id}
                             onClick={() => handleCandidateSelect(candidate)}
@@ -560,6 +588,40 @@ const VotingModal = ({ isOpen, onClose }) => {
                             </div>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Selection Status */}
+                  {filteredCandidates.length > 0 && (
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full mr-2 ${selectedCandidates.male ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                            <span className="text-sm font-medium text-gray-700">Male Category</span>
+                            {selectedCandidates.male && (
+                              <span className="ml-2 text-sm text-green-600 font-medium">
+                                ✓ {selectedCandidates.male.name}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full mr-2 ${selectedCandidates.female ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                            <span className="text-sm font-medium text-gray-700">Female Category</span>
+                            {selectedCandidates.female && (
+                              <span className="ml-2 text-sm text-green-600 font-medium">
+                                ✓ {selectedCandidates.female.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {selectedCandidates.male && selectedCandidates.female && (
+                          <div className="flex items-center text-green-600">
+                            <CheckCircleIcon className="h-5 w-5 mr-2" />
+                            <span className="text-sm font-medium">Ready to vote!</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -705,6 +767,7 @@ const VotingModal = ({ isOpen, onClose }) => {
         message={`Are you sure you want to vote for ${selectedCandidates.male?.name} (Male) and ${selectedCandidates.female?.name} (Female)? This action cannot be undone.`}
         confirmLabel="Yes, Cast My Vote"
         cancelLabel="Cancel"
+        loading={voteLoading}
         icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L4.318 18.5c-.77.833.192 2.5 1.732 2.5z"
         variant="info"
       />

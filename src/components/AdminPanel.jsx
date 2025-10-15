@@ -24,6 +24,10 @@ const AdminPanel = () => {
   });
   const [pendingFormData, setPendingFormData] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Loading states for confirmation modals
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const categoryOptions = [
     { value: 'male', label: 'Male' },
@@ -87,6 +91,7 @@ const AdminPanel = () => {
   };
 
   const handleConfirmSave = async () => {
+    setSaveLoading(true);
     try {
       if (selectedCandidate) {
         // Edit existing candidate
@@ -117,6 +122,8 @@ const AdminPanel = () => {
       toast.error('Failed to save candidate');
       setShowConfirmModal(false);
       setPendingFormData(null);
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -126,6 +133,7 @@ const AdminPanel = () => {
   };
 
   const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
     try {
       await apiClient.deleteObject('candidates', selectedCandidate.id);
       toast.success('Candidate deleted successfully');
@@ -137,6 +145,8 @@ const AdminPanel = () => {
     } catch (error) {
       console.error('Error deleting candidate:', error);
       toast.error('Failed to delete candidate');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -412,9 +422,10 @@ const AdminPanel = () => {
         onConfirm={handleDeleteConfirm}
         title="Delete Candidate"
         message={`Are you sure you want to delete "${selectedCandidate?.name}"? This action cannot be undone.`}
-        confirmButtonText="Delete"
-        cancelButtonText="Cancel"
-        confirmButtonVariant="danger"
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        loading={deleteLoading}
+        variant="danger"
       />
 
       <ConfirmationModal
@@ -425,6 +436,7 @@ const AdminPanel = () => {
         message={`Are you sure you want to ${selectedCandidate ? 'update' : 'create'} this candidate?`}
         confirmLabel={selectedCandidate ? "Update Candidate" : "Create Candidate"}
         cancelLabel="Cancel"
+        loading={saveLoading}
         variant="info"
         icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />

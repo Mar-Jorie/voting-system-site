@@ -7,7 +7,7 @@ export function useUpdateObject() {
   const [error, setError] = useState(null);
   const abortControllerRef = useRef(null);
 
-  const update = useCallback(async (collection, object, options = {}) => {
+  const update = useCallback(async (collection, objectId, data, options = {}) => {
     setLoading(true);
     setError(null);
     
@@ -17,7 +17,7 @@ export function useUpdateObject() {
     abortControllerRef.current = new AbortController();
     
     try {
-      const response = await updateObject(collection, object, {
+      const response = await updateObject(collection, objectId, data, {
         signal: abortControllerRef.current.signal,
         ...options,
       });
