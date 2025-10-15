@@ -25,6 +25,9 @@ const LandingPage = () => {
   };
 
   useEffect(() => {
+    // Reset tracking ref for each page load
+    trackingRef.current = false;
+    
     // Track site visitor immediately
     trackSiteVisitor();
     
@@ -73,15 +76,15 @@ const LandingPage = () => {
   const trackSiteVisitor = async () => {
     try {
       // Check if visitor has already been tracked in this page session
-      const hasTrackedInSession = sessionStorage.getItem('visitorTrackedInSession');
-      if (hasTrackedInSession || trackingRef.current) {
+      if (trackingRef.current) {
         console.log('Visitor already tracked in this session, skipping...');
         return; // Already tracked in this session
       }
 
+      console.log('Starting visitor tracking...');
+      
       // Immediately mark as tracked to prevent duplicate calls
       trackingRef.current = true;
-      sessionStorage.setItem('visitorTrackedInSession', 'true');
 
       // Get or create session ID
       let sessionId = sessionStorage.getItem('sessionId');
@@ -91,15 +94,23 @@ const LandingPage = () => {
       }
 
       // Create a unique device fingerprint based on multiple device characteristics
-      const deviceFingerprint = btoa(
-        navigator.userAgent + 
-        navigator.language + 
-        screen.width + 
-        screen.height + 
-        navigator.platform + 
-        navigator.cookieEnabled + 
-        new Date().getTimezoneOffset()
-      ).substring(0, 20);
+      let deviceFingerprint;
+      try {
+        deviceFingerprint = btoa(
+          navigator.userAgent + 
+          navigator.language + 
+          screen.width + 
+          screen.height + 
+          navigator.platform + 
+          navigator.cookieEnabled + 
+          new Date().getTimezoneOffset()
+        ).substring(0, 20);
+      } catch (error) {
+        console.log('Error creating device fingerprint:', error);
+        deviceFingerprint = 'fallback_' + Date.now();
+      }
+      
+      console.log('Device fingerprint created:', deviceFingerprint);
 
       // Get visitor information
       const visitorData = {
@@ -115,13 +126,14 @@ const LandingPage = () => {
       };
 
       // Create visitor record
-      await apiClient.createObject('site_visitors', visitorData);
+      console.log('Creating visitor record with data:', visitorData);
+      const result = await apiClient.createObject('site_visitors', visitorData);
+      console.log('Visitor record created successfully:', result);
       
       console.log('New visitor tracked:', deviceFingerprint);
     } catch (error) {
       // If tracking fails, remove the session flag so it can be retried
       trackingRef.current = false;
-      sessionStorage.removeItem('visitorTrackedInSession');
       console.log('Visitor tracking failed:', error);
     }
   };
