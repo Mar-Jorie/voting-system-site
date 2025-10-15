@@ -7,6 +7,7 @@ import VotingModal from '../components/VotingModal';
 import { isVotingActive, getVotingStatusInfo, getResultsVisibility, RESULTS_VISIBILITY } from '../utils/voteControl';
 import { ProgressiveLoader, LandingPageSkeleton } from '../components/SkeletonLoader';
 import apiClient from '../usecases/api';
+import { getVisitorStats } from '../utils/visitorTracking';
 
 const LandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -19,12 +20,43 @@ const LandingPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const trackingRef = useRef(false);
+  const trackingTimeoutRef = useRef(null);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  const cleanupOldSessionData = () => {
+    try {
+      const now = Date.now();
+      const oneDayAgo = now - (24 * 60 * 60 * 1000); // 24 hours in milliseconds
+      
+      // Get all sessionStorage keys
+      const keys = Object.keys(sessionStorage);
+      
+      keys.forEach(key => {
+        if (key.startsWith('visitorTracked_session_')) {
+          // Extract timestamp from session ID
+          const sessionId = key.replace('visitorTracked_', '');
+          const timestampMatch = sessionId.match(/session_(\d+)_/);
+          
+          if (timestampMatch) {
+            const sessionTimestamp = parseInt(timestampMatch[1]);
+            if (sessionTimestamp < oneDayAgo) {
+              sessionStorage.removeItem(key);
+            }
+          }
+        }
+      });
+    } catch (error) {
+      // Silent error handling
+    }
+  };
+
   useEffect(() => {
+    // Clean up old session tracking data (older than 24 hours)
+    cleanupOldSessionData();
+    
     // Track site visitor immediately
     trackSiteVisitor();
     
@@ -67,75 +99,134 @@ const LandingPage = () => {
       window.removeEventListener('votesUpdated', handleVotesUpdated);
       window.removeEventListener('resultsVisibilityChanged', handleResultsVisibilityChanged);
       clearInterval(interval);
+      // Clean up tracking timeout
+      if (trackingTimeoutRef.current) {
+        clearTimeout(trackingTimeoutRef.current);
+      }
     };
   }, []);
 
   const trackSiteVisitor = async () => {
-    try {
-      // Check if visitor has already been tracked in this page session
-      const hasTrackedInSession = sessionStorage.getItem('visitorTrackedInSession');
-      if (hasTrackedInSession || trackingRef.current) {
-        console.log('Visitor already tracked in this session, skipping...', { hasTrackedInSession, trackingRef: trackingRef.current });
-        return; // Already tracked in this session
-      }
-
-      console.log('Starting visitor tracking...');
-      
-      // Immediately mark as tracked to prevent duplicate calls
-      trackingRef.current = true;
-      sessionStorage.setItem('visitorTrackedInSession', 'true');
-
-      // Get or create session ID
-      let sessionId = sessionStorage.getItem('sessionId');
-      if (!sessionId) {
-        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        sessionStorage.setItem('sessionId', sessionId);
-      }
-
-      // Create a unique device fingerprint based on multiple device characteristics
-      let deviceFingerprint;
-      try {
-        deviceFingerprint = btoa(
-          navigator.userAgent + 
-          navigator.language + 
-          screen.width + 
-          screen.height + 
-          navigator.platform + 
-          navigator.cookieEnabled + 
-          new Date().getTimezoneOffset()
-        ).substring(0, 20);
-      } catch (error) {
-        console.log('Error creating device fingerprint:', error);
-        deviceFingerprint = 'fallback_' + Date.now();
-      }
-      
-      console.log('Device fingerprint created:', deviceFingerprint);
-
-      // Get visitor information
-      const visitorData = {
-        ip_address: 'unknown', // In a real app, you'd get this from the server
-        user_agent: navigator.userAgent,
-        page_visited: 'landing',
-        session_id: sessionId,
-        referrer: document.referrer || 'direct',
-        device_fingerprint: deviceFingerprint,
-        screen_resolution: `${screen.width}x${screen.height}`,
-        language: navigator.language,
-        is_unique_visitor: true
-      };
-
-      // Create visitor record
-      console.log('Creating visitor record with data:', visitorData);
-      const result = await apiClient.createObject('site_visitors', visitorData);
-      console.log('Visitor record created successfully:', result);
-      
-      console.log('New visitor tracked:', deviceFingerprint);
-    } catch (error) {
-      // If tracking fails, remove the session flag so it can be retried
-      trackingRef.current = false;
-      sessionStorage.removeItem('visitorTrackedInSession');
-      console.log('Visitor tracking failed:', error);
+    // Clear any existing timeout to prevent multiple calls
+    if (trackingTimeoutRef.current) {
+      clearTimeout(trackingTimeoutRef.current);
     }
+
+    // Debounce the tracking call to prevent race conditions
+    trackingTimeoutRef.current = setTimeout(async () => {
+      try {
+        // Get or create session ID first
+        let sessionId = sessionStorage.getItem('sessionId');
+        if (!sessionId) {
+          sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+          sessionStorage.setItem('sessionId', sessionId);
+        }
+
+        // Create a more robust device fingerprint based on multiple device characteristics
+        let deviceFingerprint;
+        try {
+          // Create a more comprehensive fingerprint
+          const fingerprintData = [
+            navigator.userAgent,
+            navigator.language,
+            screen.width,
+            screen.height,
+            screen.colorDepth,
+            navigator.platform,
+            navigator.cookieEnabled,
+            navigator.doNotTrack,
+            new Date().getTimezoneOffset(),
+            navigator.hardwareConcurrency || 'unknown',
+            navigator.maxTouchPoints || 0,
+            window.devicePixelRatio || 1
+          ].join('|');
+          
+          // Use a more robust hashing approach
+          deviceFingerprint = btoa(fingerprintData).replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
+        } catch (error) {
+          // Fallback fingerprint
+          deviceFingerprint = 'fallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Check if this session has already been tracked
+        const sessionTrackingKey = `visitorTracked_${sessionId}`;
+        const hasTrackedInSession = sessionStorage.getItem(sessionTrackingKey);
+        
+        if (hasTrackedInSession === 'true' || trackingRef.current) {
+          return; // Already tracked in this session
+        }
+        
+        // Immediately mark as tracked to prevent duplicate calls
+        trackingRef.current = true;
+        sessionStorage.setItem(sessionTrackingKey, 'true');
+
+        // Check if device already exists in database
+        const existingVisitors = await apiClient.findObjects('site_visitors', {
+          device_fingerprint: deviceFingerprint
+        });
+
+        if (existingVisitors.length > 0) {
+          // Device exists - update visit count and session info
+          const existingVisitor = existingVisitors[0];
+          const currentVisitCount = existingVisitor.visit_count || 1;
+          const newVisitCount = currentVisitCount + 1;
+          
+          const updateData = {
+            visit_count: newVisitCount,
+            last_visit_timestamp: new Date().toISOString(),
+            last_session_id: sessionId,
+            session_id: sessionId, // Update current session
+            referrer: document.referrer || 'direct',
+            page_visited: 'landing',
+            updated: new Date().toISOString()
+          };
+          
+          try {
+            await apiClient.updateObject('site_visitors', existingVisitor.id, updateData);
+            console.log('✅ Updated existing visitor:', existingVisitor.id, 'Visit count:', newVisitCount);
+          } catch (updateError) {
+            console.error('❌ Failed to update visitor:', updateError);
+            throw updateError;
+          }
+        } else {
+          // Device doesn't exist - create new record
+          const visitorData = {
+            ip_address: 'unknown', // In a real app, you'd get this from the server
+            user_agent: navigator.userAgent,
+            page_visited: 'landing',
+            session_id: sessionId,
+            referrer: document.referrer || 'direct',
+            device_fingerprint: deviceFingerprint,
+            screen_resolution: `${screen.width}x${screen.height}`,
+            language: navigator.language,
+            is_unique_visitor: true,
+            visit_count: 1,
+            first_visit_timestamp: new Date().toISOString(),
+            last_visit_timestamp: new Date().toISOString(),
+            last_session_id: sessionId,
+            visit_timestamp: new Date().toISOString()
+          };
+
+          try {
+            const newVisitor = await apiClient.createObject('site_visitors', visitorData);
+            console.log('✅ Created new visitor:', newVisitor.id, 'Device fingerprint:', deviceFingerprint);
+          } catch (apiError) {
+            console.error('❌ Failed to create visitor:', apiError);
+            throw apiError; // Re-throw to be caught by outer try-catch
+          }
+        }
+      } catch (error) {
+        console.error('❌ Visitor tracking error:', error);
+        // If tracking fails, remove the session flag so it can be retried
+        trackingRef.current = false;
+        const sessionId = sessionStorage.getItem('sessionId');
+        if (sessionId) {
+          const sessionTrackingKey = `visitorTracked_${sessionId}`;
+          sessionStorage.removeItem(sessionTrackingKey);
+        }
+        // Silent error handling - don't show errors to users
+      }
+    }, 100); // 100ms debounce to prevent rapid successive calls
   };
 
   const loadData = async () => {
@@ -181,6 +272,28 @@ const LandingPage = () => {
   const refresh = () => {
     loadData();
   };
+
+  // Function to log visitor stats for testing
+  const logVisitorStats = async () => {
+    try {
+      const stats = await getVisitorStats();
+      console.log('📊 Visitor Statistics:', stats);
+      return stats;
+    } catch (error) {
+      console.error('❌ Error getting visitor stats:', error);
+    }
+  };
+
+  // Log visitor stats on component mount for testing
+  useEffect(() => {
+    // Log visitor stats after a delay to allow tracking to complete
+    const timer = setTimeout(() => {
+      logVisitorStats();
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
 
   // Helper function to get display name and blur class for candidate names
   const getDisplayName = (candidate) => {
