@@ -26,25 +26,20 @@ const LandingPage = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const cleanupOldSessionData = () => {
+  const cleanupOldPageLoadData = () => {
     try {
       const now = Date.now();
-      const oneDayAgo = now - (24 * 60 * 60 * 1000); // 24 hours in milliseconds
+      const oneMinuteAgo = now - (60 * 1000); // 1 minute in milliseconds
       
       // Get all sessionStorage keys
       const keys = Object.keys(sessionStorage);
       
       keys.forEach(key => {
-        if (key.startsWith('visitorTracked_session_')) {
-          // Extract timestamp from session ID
-          const sessionId = key.replace('visitorTracked_', '');
-          const timestampMatch = sessionId.match(/session_(\d+)_/);
-          
-          if (timestampMatch) {
-            const sessionTimestamp = parseInt(timestampMatch[1]);
-            if (sessionTimestamp < oneDayAgo) {
-              sessionStorage.removeItem(key);
-            }
+        if (key.startsWith('pageLoadTracked_')) {
+          // Extract timestamp from page load tracking key
+          const timestamp = parseInt(key.replace('pageLoadTracked_', ''));
+          if (timestamp < oneMinuteAgo) {
+            sessionStorage.removeItem(key);
           }
         }
       });
@@ -54,8 +49,8 @@ const LandingPage = () => {
   };
 
   useEffect(() => {
-    // Clean up old session tracking data (older than 24 hours)
-    cleanupOldSessionData();
+    // Clean up old page load tracking data (older than 1 minute)
+    cleanupOldPageLoadData();
     
     // Track site visitor immediately
     trackSiteVisitor();
@@ -148,82 +143,64 @@ const LandingPage = () => {
           deviceFingerprint = 'fallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
 
-        // Check if this session has already been tracked
-        const sessionTrackingKey = `visitorTracked_${sessionId}`;
-        const hasTrackedInSession = sessionStorage.getItem(sessionTrackingKey);
+        // Check if this specific page load has already been tracked (prevent duplicate calls within same page load)
+        const pageLoadTrackingKey = `pageLoadTracked_${Date.now()}`;
+        const hasTrackedThisPageLoad = sessionStorage.getItem(pageLoadTrackingKey);
         
-        if (hasTrackedInSession === 'true' || trackingRef.current) {
-          return; // Already tracked in this session
+        if (hasTrackedThisPageLoad === 'true' || trackingRef.current) {
+          return; // Already tracked in this page load
         }
         
-        // Immediately mark as tracked to prevent duplicate calls
+        // Immediately mark as tracked to prevent duplicate calls within same page load
         trackingRef.current = true;
-        sessionStorage.setItem(sessionTrackingKey, 'true');
-
-        // Check if device already exists in database
-        const existingVisitors = await apiClient.findObjects('site_visitors', {
-          device_fingerprint: deviceFingerprint
+        sessionStorage.setItem(pageLoadTrackingKey, 'true');
+        
+        // Clean up old page load tracking keys (keep only recent ones)
+        const keys = Object.keys(sessionStorage);
+        keys.forEach(key => {
+          if (key.startsWith('pageLoadTracked_')) {
+            const timestamp = parseInt(key.replace('pageLoadTracked_', ''));
+            if (Date.now() - timestamp > 60000) { // Remove keys older than 1 minute
+              sessionStorage.removeItem(key);
+            }
+          }
         });
 
-        if (existingVisitors.length > 0) {
-          // Device exists - update visit count and session info
-          const existingVisitor = existingVisitors[0];
-          const currentVisitCount = existingVisitor.visit_count || 1;
-          const newVisitCount = currentVisitCount + 1;
-          
-          const updateData = {
-            visit_count: newVisitCount,
-            last_visit_timestamp: new Date().toISOString(),
-            last_session_id: sessionId,
-            session_id: sessionId, // Update current session
-            referrer: document.referrer || 'direct',
-            page_visited: 'landing',
-            updated: new Date().toISOString()
-          };
-          
-          try {
-            await apiClient.updateObject('site_visitors', existingVisitor.id, updateData);
-            console.log('✅ Updated existing visitor:', existingVisitor.id, 'Visit count:', newVisitCount);
-          } catch (updateError) {
-            console.error('❌ Failed to update visitor:', updateError);
-            throw updateError;
-          }
-        } else {
-          // Device doesn't exist - create new record
-          const visitorData = {
-            ip_address: 'unknown', // In a real app, you'd get this from the server
-            user_agent: navigator.userAgent,
-            page_visited: 'landing',
-            session_id: sessionId,
-            referrer: document.referrer || 'direct',
-            device_fingerprint: deviceFingerprint,
-            screen_resolution: `${screen.width}x${screen.height}`,
-            language: navigator.language,
-            is_unique_visitor: true,
-            visit_count: 1,
-            first_visit_timestamp: new Date().toISOString(),
-            last_visit_timestamp: new Date().toISOString(),
-            last_session_id: sessionId,
-            visit_timestamp: new Date().toISOString()
-          };
+        // Always create a new visitor record for every page visit
+        const visitorData = {
+          ip_address: 'unknown', // In a real app, you'd get this from the server
+          user_agent: navigator.userAgent,
+          page_visited: 'landing',
+          session_id: sessionId,
+          referrer: document.referrer || 'direct',
+          device_fingerprint: deviceFingerprint,
+          screen_resolution: `${screen.width}x${screen.height}`,
+          language: navigator.language,
+          is_unique_visitor: true,
+          visit_count: 1,
+          first_visit_timestamp: new Date().toISOString(),
+          last_visit_timestamp: new Date().toISOString(),
+          last_session_id: sessionId,
+          visit_timestamp: new Date().toISOString()
+        };
 
-          try {
-            const newVisitor = await apiClient.createObject('site_visitors', visitorData);
-            console.log('✅ Created new visitor:', newVisitor.id, 'Device fingerprint:', deviceFingerprint);
-          } catch (apiError) {
-            console.error('❌ Failed to create visitor:', apiError);
-            throw apiError; // Re-throw to be caught by outer try-catch
-          }
+        try {
+          const newVisitor = await apiClient.createObject('site_visitors', visitorData);
+          console.log('✅ Created new visitor record:', newVisitor.id, 'Device fingerprint:', deviceFingerprint);
+        } catch (apiError) {
+          console.error('❌ Failed to create visitor:', apiError);
+          throw apiError; // Re-throw to be caught by outer try-catch
         }
       } catch (error) {
         console.error('❌ Visitor tracking error:', error);
-        // If tracking fails, remove the session flag so it can be retried
+        // If tracking fails, remove the page load flag so it can be retried
         trackingRef.current = false;
-        const sessionId = sessionStorage.getItem('sessionId');
-        if (sessionId) {
-          const sessionTrackingKey = `visitorTracked_${sessionId}`;
-          sessionStorage.removeItem(sessionTrackingKey);
-        }
+        const keys = Object.keys(sessionStorage);
+        keys.forEach(key => {
+          if (key.startsWith('pageLoadTracked_')) {
+            sessionStorage.removeItem(key);
+          }
+        });
         // Silent error handling - don't show errors to users
       }
     }, 100); // 100ms debounce to prevent rapid successive calls
