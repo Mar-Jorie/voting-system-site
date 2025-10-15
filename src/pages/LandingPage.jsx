@@ -24,10 +24,8 @@ const LandingPage = () => {
   };
 
   useEffect(() => {
-    // Track site visitor with a small delay to prevent rapid-fire requests
-    setTimeout(() => {
-      trackSiteVisitor();
-    }, 1000);
+    // Track site visitor immediately
+    trackSiteVisitor();
     
     // Load data from database
     loadData();
@@ -73,6 +71,20 @@ const LandingPage = () => {
 
   const trackSiteVisitor = async () => {
     try {
+      // Check if visitor has already been tracked in this page session
+      const hasTrackedInSession = sessionStorage.getItem('visitorTrackedInSession');
+      if (hasTrackedInSession) {
+        console.log('Visitor already tracked in this session, skipping...');
+        return; // Already tracked in this session
+      }
+
+      // Get or create session ID
+      let sessionId = sessionStorage.getItem('sessionId');
+      if (!sessionId) {
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('sessionId', sessionId);
+      }
+
       // Create a unique device fingerprint based on multiple device characteristics
       const deviceFingerprint = btoa(
         navigator.userAgent + 
@@ -83,23 +95,6 @@ const LandingPage = () => {
         navigator.cookieEnabled + 
         new Date().getTimezoneOffset()
       ).substring(0, 20);
-      
-      // Check if this specific device has been tracked recently (within last 24 hours)
-      const lastTracked = localStorage.getItem(`visitor_${deviceFingerprint}`);
-      const now = Date.now();
-      const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-      
-      if (lastTracked && (now - parseInt(lastTracked)) < twentyFourHours) {
-        console.log('Device already tracked within 24 hours, skipping...');
-        return; // Already tracked this device within 24 hours
-      }
-
-      // Get or create session ID
-      let sessionId = sessionStorage.getItem('sessionId');
-      if (!sessionId) {
-        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        sessionStorage.setItem('sessionId', sessionId);
-      }
 
       // Get visitor information
       const visitorData = {
@@ -117,8 +112,8 @@ const LandingPage = () => {
       // Create visitor record
       await apiClient.createObject('site_visitors', visitorData);
       
-      // Mark this device as tracked with current timestamp
-      localStorage.setItem(`visitor_${deviceFingerprint}`, now.toString());
+      // Mark this session as tracked
+      sessionStorage.setItem('visitorTrackedInSession', 'true');
       
       console.log('New visitor tracked:', deviceFingerprint);
     } catch (error) {
