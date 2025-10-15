@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Bars3Icon, UserIcon, ChartBarIcon, ShieldCheckIcon, ClockIcon, TrophyIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button';
@@ -18,6 +18,7 @@ const LandingPage = () => {
   const [votes, setVotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const trackingRef = useRef(false);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -73,10 +74,14 @@ const LandingPage = () => {
     try {
       // Check if visitor has already been tracked in this page session
       const hasTrackedInSession = sessionStorage.getItem('visitorTrackedInSession');
-      if (hasTrackedInSession) {
+      if (hasTrackedInSession || trackingRef.current) {
         console.log('Visitor already tracked in this session, skipping...');
         return; // Already tracked in this session
       }
+
+      // Immediately mark as tracked to prevent duplicate calls
+      trackingRef.current = true;
+      sessionStorage.setItem('visitorTrackedInSession', 'true');
 
       // Get or create session ID
       let sessionId = sessionStorage.getItem('sessionId');
@@ -112,12 +117,11 @@ const LandingPage = () => {
       // Create visitor record
       await apiClient.createObject('site_visitors', visitorData);
       
-      // Mark this session as tracked
-      sessionStorage.setItem('visitorTrackedInSession', 'true');
-      
       console.log('New visitor tracked:', deviceFingerprint);
     } catch (error) {
-      // Silently fail - don't interrupt user experience
+      // If tracking fails, remove the session flag so it can be retried
+      trackingRef.current = false;
+      sessionStorage.removeItem('visitorTrackedInSession');
       console.log('Visitor tracking failed:', error);
     }
   };
