@@ -24,8 +24,10 @@ const LandingPage = () => {
   };
 
   useEffect(() => {
-    // Track site visitor only once per session
-    trackSiteVisitor();
+    // Track site visitor with a small delay to prevent rapid-fire requests
+    setTimeout(() => {
+      trackSiteVisitor();
+    }, 1000);
     
     // Load data from database
     loadData();
@@ -71,10 +73,25 @@ const LandingPage = () => {
 
   const trackSiteVisitor = async () => {
     try {
-      // Check if visitor has already been tracked in this session
-      const hasTrackedVisitor = sessionStorage.getItem('visitorTracked');
-      if (hasTrackedVisitor) {
-        return; // Already tracked in this session
+      // Create a unique device fingerprint based on multiple device characteristics
+      const deviceFingerprint = btoa(
+        navigator.userAgent + 
+        navigator.language + 
+        screen.width + 
+        screen.height + 
+        navigator.platform + 
+        navigator.cookieEnabled + 
+        new Date().getTimezoneOffset()
+      ).substring(0, 20);
+      
+      // Check if this specific device has been tracked recently (within last 24 hours)
+      const lastTracked = localStorage.getItem(`visitor_${deviceFingerprint}`);
+      const now = Date.now();
+      const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+      
+      if (lastTracked && (now - parseInt(lastTracked)) < twentyFourHours) {
+        console.log('Device already tracked within 24 hours, skipping...');
+        return; // Already tracked this device within 24 hours
       }
 
       // Get or create session ID
@@ -91,14 +108,19 @@ const LandingPage = () => {
         page_visited: 'landing',
         session_id: sessionId,
         referrer: document.referrer || 'direct',
+        device_fingerprint: deviceFingerprint,
+        screen_resolution: `${screen.width}x${screen.height}`,
+        language: navigator.language,
         is_unique_visitor: true
       };
 
       // Create visitor record
       await apiClient.createObject('site_visitors', visitorData);
       
-      // Mark as tracked in this session
-      sessionStorage.setItem('visitorTracked', 'true');
+      // Mark this device as tracked with current timestamp
+      localStorage.setItem(`visitor_${deviceFingerprint}`, now.toString());
+      
+      console.log('New visitor tracked:', deviceFingerprint);
     } catch (error) {
       // Silently fail - don't interrupt user experience
       console.log('Visitor tracking failed:', error);
