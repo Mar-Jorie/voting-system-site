@@ -25,9 +25,6 @@ const LandingPage = () => {
   };
 
   useEffect(() => {
-    // Reset tracking ref for each page load
-    trackingRef.current = false;
-    
     // Track site visitor immediately
     trackSiteVisitor();
     
@@ -76,8 +73,9 @@ const LandingPage = () => {
   const trackSiteVisitor = async () => {
     try {
       // Check if visitor has already been tracked in this page session
-      if (trackingRef.current) {
-        console.log('Visitor already tracked in this session, skipping...');
+      const hasTrackedInSession = sessionStorage.getItem('visitorTrackedInSession');
+      if (hasTrackedInSession || trackingRef.current) {
+        console.log('Visitor already tracked in this session, skipping...', { hasTrackedInSession, trackingRef: trackingRef.current });
         return; // Already tracked in this session
       }
 
@@ -85,6 +83,7 @@ const LandingPage = () => {
       
       // Immediately mark as tracked to prevent duplicate calls
       trackingRef.current = true;
+      sessionStorage.setItem('visitorTrackedInSession', 'true');
 
       // Get or create session ID
       let sessionId = sessionStorage.getItem('sessionId');
@@ -134,6 +133,7 @@ const LandingPage = () => {
     } catch (error) {
       // If tracking fails, remove the session flag so it can be retried
       trackingRef.current = false;
+      sessionStorage.removeItem('visitorTrackedInSession');
       console.log('Visitor tracking failed:', error);
     }
   };
