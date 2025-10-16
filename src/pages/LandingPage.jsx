@@ -890,7 +890,7 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-center text-gray-400 py-6 px-4 sm:px-6 pb-20 sm:pb-6">
+      <footer className="bg-gray-900 text-center text-gray-400 py-6 px-4 sm:px-6">
         <div className="space-y-2">
           <p className="text-xs sm:text-sm">
             &copy; 2024 Voting System by Mrj. All rights reserved.
