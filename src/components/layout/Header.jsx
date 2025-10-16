@@ -265,7 +265,7 @@ const Header = () => {
 
               {/* Notification Dropdown */}
               {showNotificationDropdown && (
-                <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 sm:right-0 right-1/2 sm:right-0 transform sm:transform-none -translate-x-1/2 sm:translate-x-0">
+                <div className="absolute right-1/2 transform -translate-x-1/2 mt-2 w-[calc(100vw-2rem)] sm:right-0 sm:transform-none sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                   <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
                     {notifications.some(n => n.unread) && (
@@ -340,7 +340,7 @@ const Header = () => {
 
               {/* Profile Dropdown Menu - MANDATORY RESPONSIVE PATTERN */}
               {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 sm:right-0 right-1/2 sm:right-0 transform sm:transform-none -translate-x-1/2 sm:translate-x-0">
+                <div className="absolute right-1/2 transform -translate-x-1/2 mt-2 w-[calc(100vw-2rem)] sm:right-0 sm:transform-none sm:w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                   {/* Desktop: View Profile + Help only */}
                   <div className="hidden lg:block">
                     <button 
