@@ -5,6 +5,8 @@ import CollapsibleTable from '../components/CollapsibleTable';
 import SearchFilter from '../components/SearchFilter';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import Button from '../components/Button';
+import Calendar from '../components/Calendar';
+import Pagination from '../components/Pagination';
 import { ProgressiveLoader, TableSkeleton } from '../components/SkeletonLoader';
 import { useOptimizedData } from '../hooks/useOptimizedData';
 import { toast } from 'react-hot-toast';
@@ -29,13 +31,16 @@ const VotesListPage = () => {
   const [filteredVotes, setFilteredVotes] = useState([]);
   const [searchValue, setSearchValue] = useState('');
   const [filters, setFilters] = useState({
-    category: '',
-    dateRange: ''
+    dateRange: null
   });
   
   // Selection state
   const [selectedVotes, setSelectedVotes] = useState(new Set());
   const [showExportModal, setShowExportModal] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     // Listen for vote updates
@@ -90,25 +95,24 @@ const VotesListPage = () => {
       });
     }
 
-    // Category filter (status in SearchFilter maps to category in votes)
-    if (filters.status) {
+    // Date range filter
+    if (filters.dateRange && filters.dateRange.start && filters.dateRange.end) {
       filtered = filtered.filter(vote => {
-        if (vote.vote_type === 'dual_selection') {
-          // For dual selection votes, show them for both categories
-          return true;
-        } else {
-          // Handle legacy votes
-          if (filters.status === 'male') {
-            return vote.category === 'male';
-          } else if (filters.status === 'female') {
-            return vote.category === 'female';
-          }
-          return true;
-        }
+        const voteDate = new Date(vote.created);
+        const startDate = new Date(filters.dateRange.start);
+        const endDate = new Date(filters.dateRange.end);
+        
+        // Set time to start/end of day for proper comparison
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        
+        return voteDate >= startDate && voteDate <= endDate;
       });
     }
 
     setFilteredVotes(filtered);
+    // Reset pagination when filtering
+    setCurrentPage(1);
   };
 
   const getCandidateName = (candidateId) => {
@@ -536,11 +540,6 @@ const VotesListPage = () => {
     </div>
   );
 
-  const categoryOptions = [
-    { value: '', label: 'All Categories' },
-    { value: 'male', label: 'Male Votes' },
-    { value: 'female', label: 'Female Votes' }
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -564,10 +563,34 @@ const VotesListPage = () => {
           onFilterChange={handleFilterChange}
           filters={filters}
           useSelectForSearch={false}
-          statusOptions={categoryOptions}
+          statusOptions={[]}
           getUniqueCompanies={() => []}
           className="bg-gray-50 border-gray-200"
         />
+        
+        {/* Date Range Filter */}
+        <div className="mt-4">
+          <div className="flex items-center space-x-4">
+            <label className="text-sm font-medium text-gray-700">Date Range:</label>
+            <Calendar
+              mode="range"
+              value={filters.dateRange}
+              onChange={(value) => handleFilterChange('dateRange', value)}
+              placeholder="Select date range"
+              className="w-64"
+            />
+            {filters.dateRange && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleFilterChange('dateRange', null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Progressive Loading with Skeleton */}
@@ -577,31 +600,50 @@ const VotesListPage = () => {
         onRetry={refresh}
         skeleton={TableSkeleton}
       >
+        {/* Pagination Header */}
+        {filteredVotes.length > 0 && (
+          <div className="mb-4 flex justify-end">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredVotes.length / itemsPerPage)}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredVotes.length}
+              showInfo={true}
+            />
+          </div>
+        )}
+
         {/* Table Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100">
           <CollapsibleTable
-          data={filteredVotes}
-          columns={columns}
-          loading={loading}
-          sortable={true}
-          searchable={false}
-          pagination={true}
-          itemsPerPage={10}
-          expandableContent={expandableContent}
-          additionalActions={[
-            { 
-              label: 'View Details', 
-              icon: 'EyeIcon', 
-              variant: 'secondaryOutline',
-              action: handleViewDetails
-            }
-          ]}
-          searchPlaceholder="Search votes..."
-          emptyMessage="No votes found"
-          enableSelection={true}
-          selectedRows={selectedVotes}
-          onSelectionChange={handleSelectionChange}
-        />
+            data={(() => {
+              // Calculate paginated data
+              const startIndex = (currentPage - 1) * itemsPerPage;
+              const endIndex = startIndex + itemsPerPage;
+              return filteredVotes.slice(startIndex, endIndex);
+            })()}
+            columns={columns}
+            loading={loading}
+            sortable={true}
+            searchable={false}
+            pagination={false}
+            itemsPerPage={itemsPerPage}
+            expandableContent={expandableContent}
+            additionalActions={[
+              { 
+                label: 'View Details', 
+                icon: 'EyeIcon', 
+                variant: 'secondaryOutline',
+                action: handleViewDetails
+              }
+            ]}
+            searchPlaceholder="Search votes..."
+            emptyMessage="No votes found"
+            enableSelection={true}
+            selectedRows={selectedVotes}
+            onSelectionChange={handleSelectionChange}
+          />
         </div>
       </ProgressiveLoader>
 
