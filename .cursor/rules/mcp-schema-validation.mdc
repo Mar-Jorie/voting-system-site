@@ -1,0 +1,707 @@
+---
+description: MCP Database Schema Validation and Management for TODO Workflow Integration
+globs: 
+alwaysApply: true
+---
+
+# MCP Database Schema Validation Rule
+
+## ⚠️ CRITICAL: MCP Schema Checking Protocol (MANDATORY)
+
+**BEFORE creating any TODO list or implementing database-related features, AI AGENTS MUST:**
+
+1. **Check MCP Database Connection** - Verify connectivity to Innque database
+2. **Audit Existing Schemas** - Review all current database schemas
+3. **Identify Required Schemas** - Determine what schemas need to be created/updated
+4. **Include Schema Tasks in TODO** - Add schema management tasks to the TODO list
+5. **Validate Schema Implementation** - Ensure schemas are properly created/updated
+
+---
+
+## MCP Schema Validation Workflow (MANDATORY)
+
+### Step 1: Database Connection Check
+```javascript
+// ALWAYS start with connection verification
+mcp_innque-mcp_find_schema({ limit: 10 })
+// Expected: List of existing schemas or empty array
+```
+
+### Step 2: Schema Audit
+```javascript
+// Check for existing schemas relevant to the project
+mcp_innque-mcp_find_schema({ where: { collection: { $in: ["users", "websites", "templates", "projects"] } } })
+// Expected: Current schema definitions for project collections
+```
+
+### Step 3: TODO Integration Requirements
+**MANDATORY TODO items that MUST be included:**
+
+```markdown
+## Database Schema Management
+- [ ] Check existing database schemas using MCP tools
+- [ ] Create/update [collection_name] schema with proper field definitions
+- [ ] Validate schema permissions and ACL settings
+- [ ] Test schema with sample data operations
+- [ ] Verify schema matches frontend data models
+```
+
+### Step 4: Schema Creation/Update Protocol
+```javascript
+// For each required collection:
+// 1. Check if schema exists
+mcp_innque-mcp_get_schema({ collection: "collection_name" })
+
+// 2a. If schema exists, update it
+mcp_innque-mcp_update_schema({
+  collection: "collection_name",
+  schema: {
+    fields: {
+      // Updated field definitions
+    }
+  }
+})
+
+// 2b. If schema doesn't exist, create it
+mcp_innque-mcp_create_schema({
+  collection: "collection_name",
+  fields: {
+    // New field definitions
+  }
+})
+```
+
+---
+
+## Required Schema Collections for Authentication System
+
+### Core Authentication Collections (MANDATORY)
+```javascript
+// 1. Users Collection (MANDATORY)
+{
+  collection: "users",
+  fields: {
+    id: { type: "String", default: "${crypto.uuid}", once: true },
+    email: { type: "String", required: true, unique: true },
+    password: { type: "String", required: true },
+    firstName: { type: "String", required: true },
+    lastName: { type: "String", required: true },
+    role: { type: "Pointer", target: "roles" },
+    status: { type: "String", default: "active", enum: ["active", "inactive", "suspended"], required: true },
+    source: { type: "String", default: "registration", enum: ["registration", "admin", "import"] },
+    lastLogin: { type: "Date" },
+    created: { type: "Date", default: "${date.iso}", once: true },
+    updated: { type: "Date", value: "${date.iso}" },
+    acl: { 
+      type: "ACL", 
+      default: { read: ["*"], write: ["${user.id}"] } 
+    }
+  },
+  permissions: {
+    create: ["*"],
+    find: ["*"],
+    update: ["${user.id}", "role:admin"],
+    delete: ["role:admin"]
+  }
+}
+
+// 2. Roles Collection (MANDATORY)
+{
+  collection: "roles",
+  fields: {
+    id: { type: "String", default: "${crypto.uuid}", once: true },
+    name: { type: "String", required: true, unique: true },
+    description: { type: "String" },
+    permissions: { type: "Array", enum: ["read", "write", "delete", "admin"] },
+    isActive: { type: "Boolean", default: true },
+    created: { type: "Date", default: "${date.iso}", once: true },
+    updated: { type: "Date", value: "${date.iso}" },
+    acl: { 
+      type: "ACL", 
+      default: { read: ["*"], write: ["role:admin"] } 
+    }
+  },
+  permissions: {
+    create: ["role:admin"],
+    find: ["*"],
+    update: ["role:admin"],
+    delete: ["role:admin"]
+  }
+}
+```
+
+## Required Schema Collections for Project Management System
+
+### Core Project Collections (MANDATORY)
+```javascript
+// 3. Projects Collection
+{
+  collection: "projects",
+  fields: {
+    id: { type: "String", default: "${crypto.uuid}", once: true },
+    name: { type: "String", required: true },
+    description: { type: "String" },
+    status: { type: "String", default: "active", enum: ["active", "completed", "on_hold", "cancelled"] },
+    client: { type: "Pointer", target: "clients" },
+    manager: { type: "Pointer", target: "users" },
+    startDate: { type: "Date" },
+    endDate: { type: "Date" },
+    budget: { type: "Number" },
+    progress: { type: "Number", default: 0 },
+    created: { type: "Date", default: "${date.iso}", once: true },
+    updated: { type: "Date", value: "${date.iso}" },
+    acl: { 
+      type: "ACL", 
+      default: { read: ["*"], write: ["${user.id}", "role:admin"] } 
+    }
+  },
+  permissions: {
+    create: ["*"],
+    find: ["*"],
+    update: ["${user.id}", "role:admin"],
+    delete: ["role:admin"]
+  }
+}
+
+// 4. Clients Collection
+{
+  collection: "clients",
+  fields: {
+    id: { type: "String", default: "${crypto.uuid}", once: true },
+    name: { type: "String", required: true },
+    email: { type: "String" },
+    phone: { type: "String" },
+    address: { type: "String" },
+    status: { type: "String", default: "active", enum: ["active", "inactive"] },
+    created: { type: "Date", default: "${date.iso}", once: true },
+    updated: { type: "Date", value: "${date.iso}" },
+    acl: { 
+      type: "ACL", 
+      default: { read: ["*"], write: ["${user.id}", "role:admin"] } 
+    }
+  },
+  permissions: {
+    create: ["*"],
+    find: ["*"],
+    update: ["${user.id}", "role:admin"],
+    delete: ["role:admin"]
+  }
+}
+
+// 5. Tasks Collection
+{
+  collection: "tasks",
+  fields: {
+    id: { type: "String", default: "${crypto.uuid}", once: true },
+    title: { type: "String", required: true },
+    description: { type: "String" },
+    project: { type: "Pointer", target: "projects", required: true },
+    assignee: { type: "Pointer", target: "users" },
+    status: { type: "String", default: "todo", enum: ["todo", "in_progress", "completed", "cancelled"] },
+    priority: { type: "String", default: "medium", enum: ["low", "medium", "high", "urgent"] },
+    dueDate: { type: "Date" },
+    completedAt: { type: "Date" },
+    created: { type: "Date", default: "${date.iso}", once: true },
+    updated: { type: "Date", value: "${date.iso}" },
+    acl: { 
+      type: "ACL", 
+      default: { read: ["*"], write: ["${user.id}", "role:admin"] } 
+    }
+  },
+  permissions: {
+    create: ["*"],
+    find: ["*"],
+    update: ["${user.id}", "role:admin"],
+    delete: ["role:admin"]
+  }
+}
+```
+
+### Authentication Schema Requirements (MANDATORY)
+
+```javascript
+// Authentication Schema Standards - MANDATORY
+// 1. Password Hashing: See @rest-api-implementation.mdc for complete implementation
+// 2. Error Handling: ALWAYS use toast notifications for errors
+// 3. InputFactory: NEVER create objects for password fields
+// 4. Session Management: ALWAYS implement JWT token management
+// 5. Role Management: ALWAYS fetch role information from database
+
+// Users Collection with Crypto-JS MD5 Support (MANDATORY)
+{
+  collection: "users",
+  fields: {
+    id: { type: "String", default: "${crypto.uuid}", once: true },
+    email: { type: "String", required: true, unique: true },
+    password: { type: "String", required: true }, // See @rest-api-implementation.mdc for hashing details
+    firstName: { type: "String", required: true },
+    lastName: { type: "String", required: true },
+    username: { type: "String", required: true, unique: true },
+    role: { type: "Pointer", target: "roles" },
+    status: { type: "String", default: "active", enum: ["active", "inactive", "suspended"] },
+    source: { type: "String", default: "registration", enum: ["registration", "admin", "import"] },
+    lastLogin: { type: "Date" },
+    created: { type: "Date", default: "${date.iso}", once: true },
+    updated: { type: "Date", value: "${date.iso}" },
+    acl: { 
+      type: "ACL", 
+      default: { read: ["*"], write: ["${user.id}"] } 
+    }
+  },
+  permissions: {
+    create: ["*"],
+    find: ["*"],
+    update: ["${user.id}", "role:admin"],
+    delete: ["role:admin"]
+  }
+}
+
+// Roles Collection with Comprehensive Permissions (MANDATORY)
+{
+  collection: "roles",
+  fields: {
+    id: { type: "String", default: "${crypto.uuid}", once: true },
+    name: { type: "String", required: true, unique: true },
+    description: { type: "String" },
+    permissions: { type: "Array", enum: ["read", "write", "delete", "admin"] },
+    isActive: { type: "Boolean", default: true },
+    created: { type: "Date", default: "${date.iso}", once: true },
+    updated: { type: "Date", value: "${date.iso}" },
+    acl: { 
+      type: "ACL", 
+      default: { read: ["*"], write: ["role:admin"] } 
+    }
+  },
+  permissions: {
+    create: ["role:admin"],
+    find: ["*"],
+    update: ["role:admin"],
+    delete: ["role:admin"]
+  }
+}
+
+// InputFactory Password Field Fix Schema
+// CRITICAL: Password fields must be String type, never Object type
+// This prevents [object] [object] display in password inputs
+```
+
+### Authentication Implementation Checklist (MANDATORY)
+
+**Database Schema Validation:**
+- [ ] Users collection created (see @rest-api-implementation.mdc for password support)
+- [ ] Roles collection created with comprehensive permissions
+- [ ] Email and username fields marked as unique
+- [ ] User status field with proper enum values (active/inactive/suspended) - REQUIRED
+- [ ] Role pointer field properly configured
+- [ ] ACL permissions properly set for user data isolation
+
+**Authentication Flow Validation:**
+- [ ] Password hashing implemented (see @rest-api-implementation.mdc for details)
+- [ ] User existence validation against database
+- [ ] User status validation (active/inactive/suspended) - MANDATORY CHECK
+- [ ] Password validation with MD5 comparison
+- [ ] JWT token management with cookie storage
+- [ ] Role information fetched from database
+- [ ] Session persistence across browser restarts
+
+**Status Field Requirements (MANDATORY):**
+- [ ] All users MUST have a status field with enum values: ["active", "inactive", "suspended"]
+- [ ] Status field MUST be required: true in schema
+- [ ] Default status MUST be "active" for new users
+- [ ] Authentication MUST check user.status !== 'active' and block inactive/suspended users
+- [ ] No conditional status checking - status field is mandatory for all users
+
+**Field Naming Convention (MANDATORY):**
+- [ ] ALL database field names MUST use snake_case convention (first_name, last_name, job_title, etc.)
+- [ ] NO camelCase field names allowed in database schema
+- [ ] NO redundant fields with both camelCase and snake_case versions
+- [ ] API calls MUST use snake_case field names when interacting with database
+- [ ] Frontend code MUST map UI labels to snake_case database field names
+- [ ] Examples: first_name (not firstName), last_name (not lastName), job_title (not jobTitle)
+
+**Database Connectivity Validation (MANDATORY):**
+- [ ] Verify MCP database connection is working
+- [ ] Confirm users collection exists with real user data
+- [ ] Test login with real database users (not hardcoded)
+- [ ] Test signup creates real users in database
+- [ ] Verify password hashing matches database storage format
+- [ ] Confirm role information is fetched from database
+- [ ] Test session management with real JWT tokens
+
+**Real-time Data Validation (MANDATORY):**
+- [ ] ALL data displayed is fetched in real-time from database
+- [ ] NO hardcoded data in any component or page
+- [ ] NO mock data for display purposes
+- [ ] ALL tables, forms, displays show real database data
+- [ ] Proper loading states implemented for all data fetching
+- [ ] Error handling implemented for database connection issues
+- [ ] Data updates in real-time when database changes
+- [ ] All CRUD operations use real database endpoints
+
+#### ⚠️ CRITICAL: Real-time Authentication Validation (MANDATORY)
+
+**REALTIME AUTHENTICATION MEANS: EVERY LOGIN ATTEMPT QUERIES DATABASE DIRECTLY**
+
+**Prohibited Authentication Patterns (NEVER DO THIS):**
+- ❌ Get users from database once, then hardcode them in code
+- ❌ Cache user data in memory or localStorage
+- ❌ Use hardcoded user lists for validation
+- ❌ Store user credentials in component state
+- ❌ Use mock user data for testing
+
+**Required Real-time Authentication Patterns (ALWAYS DO THIS):**
+- ✅ Query database directly for every login attempt
+- ✅ Use Collections API to find user by email in real-time
+- ✅ Validate password against database in real-time
+- ✅ Generate JWT token based on real-time database user
+- ✅ No caching or hardcoding of user data
+- ✅ Fresh database query for each authentication attempt
+
+#### ⚠️ CRITICAL: MCP Tools for Real-time Database Operations (MANDATORY)
+
+**Use MCP Tools for Schema Management and Real-time Data Operations:**
+
+**1. Check Existing Users (Real-time Validation):**
+```javascript
+// ✅ CORRECT: Use MCP tools to check existing users
+import { mcp_innque_mcp_find_objects } from './mcp-tools';
+
+const checkExistingUsers = async () => {
+  const users = await mcp_innque_mcp_find_objects({
+    collection: "users",
+    limit: 10
+  });
+  return users;
+};
+```
+
+**2. Find User by Email (Real-time Login):**
+```javascript
+// ✅ CORRECT: Use MCP tools to find specific user
+const findUserByEmail = async (email) => {
+  const users = await mcp_innque_mcp_find_objects({
+    collection: "users",
+    where: { email: email },
+    limit: 1
+  });
+  return users[0] || null;
+};
+```
+
+**3. Create New User (Real-time Signup):**
+```javascript
+// ✅ CORRECT: Use MCP tools to create new user
+import { mcp_innque_mcp_create_object } from './mcp-tools';
+
+const createNewUser = async (userData) => {
+  const { MD5 } = await import('crypto-js');
+  const hashedPassword = MD5(userData.password).toString();
+  
+  const newUser = {
+    email: userData.email,
+    username: userData.username,
+    password: hashedPassword,
+    firstName: userData.firstName,
+    lastName: userData.lastName,
+    status: "active"
+  };
+  
+  const user = await mcp_innque_mcp_create_object({
+    collection: "users",
+    object: newUser
+  });
+  return user;
+};
+```
+
+**4. Update User (Real-time User Management):**
+```javascript
+// ✅ CORRECT: Use MCP tools to update user
+import { mcp_innque_mcp_update_object } from './mcp-tools';
+
+const updateUser = async (userId, updateData) => {
+  const user = await mcp_innque_mcp_update_object({
+    collection: "users",
+    object_id: userId,
+    object: updateData
+  });
+  return user;
+};
+```
+
+**5. Delete User (Real-time User Management):**
+```javascript
+// ✅ CORRECT: Use MCP tools to delete user
+import { mcp_innque_mcp_delete_object } from './mcp-tools';
+
+const deleteUser = async (userId) => {
+  const result = await mcp_innque_mcp_delete_object({
+    collection: "users",
+    object_id: userId
+  });
+  return result;
+};
+```
+
+**6. Get User by ID (Real-time User Details):**
+```javascript
+// ✅ CORRECT: Use MCP tools to get specific user
+import { mcp_innque_mcp_get_object } from './mcp-tools';
+
+const getUserById = async (userId) => {
+  const user = await mcp_innque_mcp_get_object({
+    collection: "users",
+    object_id: userId
+  });
+  return user;
+};
+```
+
+**7. Count Users (Real-time Statistics):**
+```javascript
+// ✅ CORRECT: Use MCP tools to count users
+import { mcp_innque_mcp_count_objects } from './mcp-tools';
+
+const countUsers = async () => {
+  const count = await mcp_innque_mcp_count_objects({
+    collection: "users"
+  });
+  return count;
+};
+```
+
+**Note: For complete authentication implementation patterns, see `@rest-api-implementation.mdc`**
+
+**Security Implementation:**
+- [ ] No hardcoded passwords or credentials
+- [ ] Proper error handling with toast notifications
+- [ ] Input validation with real-time feedback
+- [ ] Session management with automatic logout
+- [ ] Role-based access control implementation
+- [ ] Database-driven user and role management
+
+#### ⚠️ CRITICAL: Prohibited Authentication Patterns (MANDATORY)
+
+**NEVER IMPLEMENT THESE PATTERNS:**
+- ❌ Hardcoded user credentials in code
+- ❌ Mock authentication responses
+- ❌ Local storage user validation
+- ❌ Static user data arrays
+- ❌ Fake JWT tokens
+- ❌ Simulated database responses
+- ❌ Hardcoded login credentials for testing
+- ❌ Mock user data for authentication
+
+**ALWAYS IMPLEMENT THESE PATTERNS:**
+- ✅ Real database user validation
+- ✅ MD5 password hashing with crypto-js
+- ✅ Collections API for user operations
+- ✅ Real JWT token generation
+- ✅ Database-driven role management
+- ✅ Session persistence with real tokens
+- ✅ Email-based authentication (not username)
+- ✅ Database-driven signup and signin
+```
+
+### Extended Collections (CONDITIONAL)
+```javascript
+// 4. Analytics Collection (if analytics features required)
+{
+  collection: "analytics",
+  fields: {
+    website: { type: "Pointer", target: "websites", required: true },
+    page: { type: "Pointer", target: "website_pages" },
+    event_type: { type: "String", required: true },
+    event_data: { type: "Object" },
+    user_agent: { type: "String" },
+    ip_address: { type: "String" },
+    created: { type: "Date", default: "${date.iso}" }
+  }
+}
+
+// 5. Website Settings Collection (if complex settings required)
+{
+  collection: "website_settings",
+  fields: {
+    website: { type: "Pointer", target: "websites", required: true },
+    seo_settings: { type: "Object" },
+    social_settings: { type: "Object" },
+    custom_css: { type: "String" },
+    custom_js: { type: "String" },
+    created: { type: "Date", default: "${date.iso}" },
+    updated: { type: "Date", value: "${date.iso}" }
+  }
+}
+```
+
+---
+
+## TODO Integration Examples
+
+### Example 1: Basic Authentication System TODO
+```markdown
+## Database Schema Management
+- [ ] Check existing database schemas using MCP tools
+- [ ] Create 'users' schema with email, password, firstName, lastName, role fields
+- [ ] Create 'roles' schema with name, description, permissions, isActive fields
+- [ ] Validate all schemas have proper ACL and permissions
+- [ ] Test user registration and login operations
+- [ ] Verify authentication schemas match frontend data models
+- [ ] Test role-based access control functionality
+```
+
+### Example 2: Complete Project Management System TODO
+```markdown
+## Database Schema Management
+- [ ] Check existing database schemas using MCP tools
+- [ ] Create 'users' schema with full authentication field definitions
+- [ ] Create 'roles' schema with comprehensive permission system
+- [ ] Create 'projects' schema with client, manager, status, budget fields
+- [ ] Create 'clients' schema with contact information and status
+- [ ] Create 'tasks' schema with project, assignee, status, priority fields
+- [ ] Set up proper ACL permissions for user data isolation
+- [ ] Test all authentication and CRUD operations with sample data
+- [ ] Verify frontend-backend data model consistency
+- [ ] Test role-based access control across all collections
+```
+
+### Example 3: Authentication-First Application TODO
+```markdown
+## Database Schema Management
+- [ ] Check existing database schemas using MCP tools
+- [ ] Create 'users' schema with MD5 password hashing support (crypto-js)
+- [ ] Create 'roles' schema with granular permission system
+- [ ] Validate email uniqueness and format constraints
+- [ ] Test user registration with role assignment
+- [ ] Test user login with credential validation
+- [ ] Test session management and token handling
+- [ ] Verify password hashing and security measures (see @rest-api-implementation.mdc)
+- [ ] Test account status management (active/inactive/suspended)
+- [ ] Verify ACL permissions prevent unauthorized access
+- [ ] Test toast error system for authentication errors
+- [ ] Verify InputFactory password fields don't show [object] [object]
+```
+
+---
+
+## Schema Validation Checklist (MANDATORY)
+
+### Before Implementation
+- [ ] MCP database connection verified
+- [ ] Existing schemas audited and documented
+- [ ] Required schemas identified from requirements
+- [ ] Schema tasks added to TODO list
+- [ ] Field types and relationships defined
+
+### During Implementation
+- [ ] Schemas created/updated using MCP tools
+- [ ] ACL permissions properly configured
+- [ ] Field validation rules implemented
+- [ ] Relationships between collections established
+- [ ] Sample data operations tested
+
+### After Implementation
+- [ ] All schemas match frontend data models
+- [ ] CRUD operations working correctly
+- [ ] User permissions properly enforced
+- [ ] Data integrity maintained
+- [ ] Performance optimized for expected usage
+
+---
+
+## Error Handling and Recovery
+
+### Common Schema Issues
+1. **Schema Already Exists**: Use `update_schema` instead of `create_schema`
+2. **Field Type Mismatch**: Verify field types match frontend expectations
+3. **Permission Errors**: Check ACL settings and user roles
+4. **Relationship Errors**: Verify Pointer targets exist
+5. **Validation Errors**: Check field constraints and requirements
+
+### Authentication-Specific Schema Issues
+1. **Password Field Missing**: Ensure password field exists in users schema
+2. **Role Pointer Invalid**: Verify role field points to existing roles collection
+3. **Email Not Unique**: Check email field has unique constraint
+4. **ACL Permissions Too Restrictive**: Verify users can read/write their own data
+5. **Status Enum Invalid**: Ensure status field uses correct enum values
+6. **Missing Required Fields**: Verify all required authentication fields are present
+
+### Recovery Actions
+```javascript
+// If schema creation fails, check existing schema first
+mcp_innque-mcp_get_schema({ collection: "collection_name" })
+
+// If update fails, verify field definitions
+mcp_innque-mcp_find_schema({ where: { collection: "collection_name" } })
+
+// If permissions fail, check ACL settings
+// Review schema ACL configuration and user roles
+```
+
+---
+
+## Integration with Orchestrator Workflow
+
+**Note: For complete TODO creation requirements, see `@orchestrator.mdc` Step 6**
+
+### Step 14: Enhanced MCP Database Connection
+**MANDATORY**: Expand MCP database connection step:
+
+```markdown
+14. **MCP/Innque Database Connection** (following `@mcp-tools.mdc` and `@schema-structure.mdc`)
+    - Connect to Innque database using MCP tools
+    - **Audit existing schemas** using `mcp_innque_find_schema`
+    - **Create and manage database schemas** for all collections identified in requirements
+    - Use `mcp_innque_create_schema` for new collections
+    - Use `mcp_innque_update_schema` for existing collections
+    - **Validate schema permissions and ACL settings**
+    - **Test database connectivity and operations** with sample data
+    - **Verify schemas match frontend data models**
+```
+
+---
+
+## ⚠️ MANDATORY IMPLEMENTATION RULES
+
+### 1. Schema Checking Rules (MANDATORY)
+- ✅ ALWAYS check MCP database connection before creating TODO
+- ✅ ALWAYS audit existing schemas before implementation
+- ✅ ALWAYS include schema management tasks in TODO list
+- ✅ ALWAYS validate schemas match frontend data models
+- ❌ NEVER skip schema checking in TODO workflow
+- ❌ NEVER implement without proper schema validation
+
+### 2. TODO Integration Rules (MANDATORY)
+- ✅ ALWAYS include "Database Schema Management" section in TODO
+- ✅ ALWAYS specify which collections need schemas
+- ✅ ALWAYS include schema validation and testing tasks
+- ✅ ALWAYS verify frontend-backend data consistency
+- ❌ NEVER create TODO without schema management tasks
+- ❌ NEVER skip schema validation steps
+
+### 3. Implementation Rules (MANDATORY)
+- ✅ ALWAYS use MCP tools for schema operations
+- ✅ ALWAYS follow schema-structure.mdc conventions
+- ✅ ALWAYS test schemas with sample data
+- ✅ ALWAYS configure proper ACL permissions
+- ❌ NEVER create schemas without MCP tools
+- ❌ NEVER skip schema testing and validation
+
+---
+
+## 🚨 COMPLIANCE ENFORCEMENT
+
+**AI AGENTS MUST:**
+1. **Check MCP connection** before any database-related work
+2. **Audit existing schemas** before creating TODO lists
+3. **Include schema tasks** in every TODO list
+4. **Validate schema implementation** during development
+5. **Test schema operations** before marking tasks complete
+6. **Verify data consistency** between frontend and backend
+
+**NON-COMPLIANCE WILL RESULT IN:**
+- ❌ Rejection of TODO list creation
+- ❌ Mandatory schema checking before proceeding
+- ❌ Database schema violation warnings
+
+**THIS RULE IS NON-NEGOTIABLE AND MUST BE FOLLOWED IN ALL IMPLEMENTATIONS.**
