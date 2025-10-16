@@ -5,7 +5,6 @@ import CollapsibleTable from '../components/CollapsibleTable';
 import SearchFilter from '../components/SearchFilter';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import Button from '../components/Button';
-import Calendar from '../components/Calendar';
 import Pagination from '../components/Pagination';
 import { ProgressiveLoader, TableSkeleton } from '../components/SkeletonLoader';
 import { useOptimizedData } from '../hooks/useOptimizedData';
@@ -561,36 +560,12 @@ const VotesListPage = () => {
           onChange={handleSearchChange}
           onSearch={handleSearch}
           onFilterChange={handleFilterChange}
-          filters={{}} // Don't pass dateRange to SearchFilter since we handle it separately
+          filters={filters}
           useSelectForSearch={false}
           statusOptions={[]}
           getUniqueCompanies={() => []}
           className="bg-gray-50 border-gray-200"
         />
-        
-        {/* Date Range Filter */}
-        <div className="mt-4">
-          <div className="flex items-center space-x-4">
-            <label className="text-sm font-medium text-gray-700">Date Range:</label>
-            <Calendar
-              mode="range"
-              value={filters.dateRange}
-              onChange={(value) => handleFilterChange('dateRange', value)}
-              placeholder="Select date range"
-              className="w-64"
-            />
-            {filters.dateRange && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleFilterChange('dateRange', null)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                Clear
-              </Button>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Progressive Loading with Skeleton */}

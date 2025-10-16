@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import SelectInput from './SelectInput';
+import Calendar from './Calendar';
 
 const SearchFilter = ({
   placeholder = "Search...",
@@ -149,20 +150,13 @@ const SearchFilter = ({
             {filters.dateRange !== undefined && (
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Date Range</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="date"
-                    value={filters.dateRange.start || ''}
-                    onChange={(e) => handleFilterChange('dateRange', { ...filters.dateRange, start: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                  <input
-                    type="date"
-                    value={filters.dateRange.end || ''}
-                    onChange={(e) => handleFilterChange('dateRange', { ...filters.dateRange, end: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
+                <Calendar
+                  mode="range"
+                  value={filters.dateRange}
+                  onChange={(value) => handleFilterChange('dateRange', value)}
+                  placeholder="Select date range"
+                  className="w-full"
+                />
               </div>
             )}
 
