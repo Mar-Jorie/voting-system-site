@@ -81,7 +81,10 @@ export const setVoteControl = async (control) => {
         results_visibility: control.resultsVisibility || RESULTS_VISIBILITY.HIDDEN
       };
       
-      await apiClient.updateObject('voting_sessions', control.id, updateData);
+      const result = await apiClient.updateObject('voting_sessions', control.id, updateData);
+      if (!result) {
+        throw new Error('Failed to update voting session');
+      }
     } else {
       // Create new voting session
       const createData = {
@@ -93,7 +96,10 @@ export const setVoteControl = async (control) => {
         results_visibility: control.resultsVisibility || RESULTS_VISIBILITY.HIDDEN
       };
       
-      await apiClient.createObject('voting_sessions', createData);
+      const result = await apiClient.createObject('voting_sessions', createData);
+      if (!result) {
+        throw new Error('Failed to create voting session');
+      }
     }
     
     // Dispatch event to notify all devices of the change
@@ -102,6 +108,10 @@ export const setVoteControl = async (control) => {
     return true;
   } catch (error) {
     console.error('Error setting vote control in database:', error);
+    // Show error toast to user if available
+    if (typeof window !== 'undefined' && window.toast) {
+      window.toast.error(`Failed to update voting status: ${error.message}`);
+    }
     return false;
   }
 };
