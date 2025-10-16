@@ -265,7 +265,15 @@ const Header = () => {
 
               {/* Notification Dropdown */}
               {showNotificationDropdown && (
-                <div className="fixed mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50" style={{ left: '50%', top: '4rem', transform: 'translateX(-50%)' }}>
+                <div 
+                  className="absolute mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50" 
+                  style={{
+                    ...(window.innerWidth < 768 
+                      ? { left: '50%', top: '4rem', transform: 'translateX(-50%)' }
+                      : { right: '0', top: 'auto' }
+                    )
+                  }}
+                >
                   <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
                     {notifications.some(n => n.unread) && (
