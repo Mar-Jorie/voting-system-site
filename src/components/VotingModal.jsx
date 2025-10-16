@@ -477,7 +477,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                           <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mr-3">
                             <UserIcon className="h-5 w-5 text-blue-600" />
                           </div>
-                          <h2 className="text-lg font-semibold text-gray-900">Male Category</h2>
+                          <h2 className="text-lg font-semibold text-gray-900">Male</h2>
                         </div>
                         {/* Male Category Pagination */}
                         {!candidatesLoading && (
@@ -550,7 +550,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                           <div className="w-8 h-8 bg-pink-50 rounded-lg flex items-center justify-center mr-3">
                             <UserIcon className="h-5 w-5 text-pink-600" />
                           </div>
-                          <h2 className="text-lg font-semibold text-gray-900">Female Category</h2>
+                          <h2 className="text-lg font-semibold text-gray-900">Female</h2>
                         </div>
                         {/* Female Category Pagination */}
                         {!candidatesLoading && (
@@ -622,7 +622,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                         <div className="flex items-center space-x-4">
                           <div className="flex items-center">
                             <div className={`w-3 h-3 rounded-full mr-2 ${selectedCandidates.male ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                            <span className="text-sm font-medium text-gray-700">Male Category</span>
+                            <span className="text-sm font-medium text-gray-700">Male</span>
                             {selectedCandidates.male && (
                               <span className="ml-2 text-sm text-green-600 font-medium">
                                 ✓ {selectedCandidates.male.name}
@@ -631,7 +631,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                           </div>
                           <div className="flex items-center">
                             <div className={`w-3 h-3 rounded-full mr-2 ${selectedCandidates.female ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                            <span className="text-sm font-medium text-gray-700">Female Category</span>
+                            <span className="text-sm font-medium text-gray-700">Female</span>
                             {selectedCandidates.female && (
                               <span className="ml-2 text-sm text-green-600 font-medium">
                                 ✓ {selectedCandidates.female.name}
