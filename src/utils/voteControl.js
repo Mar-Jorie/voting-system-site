@@ -18,11 +18,16 @@ export const RESULTS_VISIBILITY = {
 export const getVoteControl = async () => {
   try {
     // Get the current voting session
+    console.log('🔄 getVoteControl: Fetching voting sessions from database...');
     const sessions = await apiClient.findObjects('voting_sessions', {});
+    console.log('🔄 getVoteControl: Raw sessions data:', sessions);
     
     if (sessions && sessions.length > 0) {
       const session = sessions[0]; // Get the first (and should be only) session
-      return {
+      console.log('🔄 getVoteControl: Processing session:', session);
+      console.log('🔄 getVoteControl: session.is_active =', session.is_active);
+      
+      const result = {
         id: session.id,
         status: session.is_active ? VOTE_STATUS.ACTIVE : VOTE_STATUS.STOPPED,
         autoStopDate: session.end_date ? new Date(session.end_date) : null,
@@ -32,6 +37,9 @@ export const getVoteControl = async () => {
         resultsVisibility: session.results_visibility || RESULTS_VISIBILITY.HIDDEN,
         updatedAt: new Date(session.updated)
       };
+      
+      console.log('🔄 getVoteControl: Returning processed result:', result);
+      return result;
     }
     
     // If no session exists, create default one
@@ -83,13 +91,34 @@ export const setVoteControl = async (control) => {
         results_visibility: control.resultsVisibility || RESULTS_VISIBILITY.HIDDEN
       };
       
+      console.log('🔄 setVoteControl: Control ID:', control.id);
       console.log('🔄 setVoteControl: Updating with data:', updateData);
-      const result = await apiClient.updateObject('voting_sessions', control.id, updateData);
-      console.log('🔄 setVoteControl: Update result:', result);
+      console.log('🔄 setVoteControl: API call: updateObject("voting_sessions", "' + control.id + '", updateData)');
       
-      if (!result) {
-        throw new Error('Failed to update voting session');
+      try {
+        const result = await apiClient.updateObject('voting_sessions', control.id, updateData);
+        console.log('🔄 setVoteControl: Update result:', result);
+        
+        if (!result) {
+          throw new Error('Failed to update voting session - API returned null/undefined');
+        }
+        
+        // Verify the update was successful by checking the returned data
+        if (result.is_active !== updateData.is_active) {
+          console.error('❌ setVoteControl: Update verification failed - is_active mismatch');
+          console.error('❌ Expected:', updateData.is_active, 'Got:', result.is_active);
+          throw new Error('Database update verification failed');
+        }
+        
+        console.log('✅ setVoteControl: Update verified successfully');
+      } catch (apiError) {
+        console.error('❌ setVoteControl: API call failed:', apiError);
+        throw new Error(`API call failed: ${apiError.message}`);
       }
+      
+      // Verify the update by reading back the data
+      const verifyResult = await apiClient.findObjects('voting_sessions', {});
+      console.log('🔄 setVoteControl: Verification - current sessions:', verifyResult);
     } else {
       // Create new voting session
       const createData = {
@@ -114,9 +143,20 @@ export const setVoteControl = async (control) => {
     console.log('🔄 setVoteControl: Dispatching votingStatusChanged event');
     window.dispatchEvent(new CustomEvent('votingStatusChanged'));
     
+    // Also dispatch a custom event with the new status for debugging
+    const newControl = await getVoteControl();
+    console.log('🔄 setVoteControl: Final control after update:', newControl);
+    window.dispatchEvent(new CustomEvent('votingStatusUpdated', { detail: newControl }));
+    
     return true;
   } catch (error) {
     console.error('❌ setVoteControl: Error setting vote control in database:', error);
+    console.error('❌ setVoteControl: Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     // Show error toast to user if available
     if (typeof window !== 'undefined' && window.toast) {
       window.toast.error(`Failed to update voting status: ${error.message}`);
@@ -147,6 +187,28 @@ export const isVotingActive = async () => {
     return false;
   }
   
+  return true;
+};
+
+// Check if voting should be active without side effects (for display purposes)
+export const isVotingActiveReadOnly = async () => {
+  console.log('🔄 isVotingActiveReadOnly: Getting control...');
+  const control = await getVoteControl();
+  console.log('🔄 isVotingActiveReadOnly: Control received:', control);
+  
+  // If manually stopped, voting is not active
+  if (control.status === VOTE_STATUS.STOPPED) {
+    console.log('🔄 isVotingActiveReadOnly: Status is STOPPED, returning false');
+    return false;
+  }
+  
+  // Check if auto-stop date has passed (without modifying database)
+  if (control.autoStopDate && new Date() >= control.autoStopDate) {
+    console.log('🔄 isVotingActiveReadOnly: Auto-stop date has passed, returning false');
+    return false;
+  }
+  
+  console.log('🔄 isVotingActiveReadOnly: Voting should be active, returning true');
   return true;
 };
 
@@ -181,6 +243,18 @@ export const startVoting = async () => {
   const result = await setVoteControl(newControl);
   console.log('🔄 startVoting: setVoteControl result:', result);
   
+  // Wait a moment for the database update to propagate
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  // Verify the update was successful
+  const verifyControl = await getVoteControl();
+  console.log('🔄 startVoting: Verification - new control:', verifyControl);
+  
+  if (verifyControl.status !== VOTE_STATUS.ACTIVE) {
+    console.error('❌ startVoting: Verification failed - status is still not ACTIVE');
+    throw new Error('Failed to start voting - status verification failed');
+  }
+  
   return result;
 };
 
@@ -199,8 +273,16 @@ export const getVotingStatusInfo = async () => {
   const control = await getVoteControl();
   console.log('🔄 getVotingStatusInfo: Control:', control);
   
-  const isActive = await isVotingActive();
-  console.log('🔄 getVotingStatusInfo: isActive:', isActive);
+  // Calculate isActive directly from the control data to avoid race conditions
+  let isActive = control.status === VOTE_STATUS.ACTIVE;
+  
+  // Check if auto-stop date has passed (without modifying database)
+  if (isActive && control.autoStopDate && new Date() >= control.autoStopDate) {
+    console.log('🔄 getVotingStatusInfo: Auto-stop date has passed, setting isActive to false');
+    isActive = false;
+  }
+  
+  console.log('🔄 getVotingStatusInfo: Calculated isActive:', isActive);
   
   const statusInfo = {
     isActive,

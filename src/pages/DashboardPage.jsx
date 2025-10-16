@@ -34,7 +34,11 @@ const DashboardPage = () => {
   // Load voting status
   useEffect(() => {
     const loadVotingStatus = async () => {
+      console.log('🔄 DashboardPage: Loading voting status...');
       const status = await getVotingStatusInfo();
+      console.log('🔄 DashboardPage: Loaded voting status:', status);
+      console.log('🔄 DashboardPage: status.isActive =', status.isActive);
+      console.log('🔄 DashboardPage: status.status =', status.status);
       setVotingStatus(status);
     };
 
@@ -45,14 +49,22 @@ const DashboardPage = () => {
     
     // Listen for real-time voting status changes
     const handleVotingStatusChanged = () => {
+      console.log('🔄 DashboardPage: Received votingStatusChanged event');
       loadVotingStatus();
     };
     
+    // Listen for detailed voting status updates
+    const handleVotingStatusUpdated = (event) => {
+      console.log('🔄 DashboardPage: Received votingStatusUpdated event with detail:', event.detail);
+    };
+    
     window.addEventListener('votingStatusChanged', handleVotingStatusChanged);
+    window.addEventListener('votingStatusUpdated', handleVotingStatusUpdated);
     
     return () => {
       clearInterval(interval);
       window.removeEventListener('votingStatusChanged', handleVotingStatusChanged);
+      window.removeEventListener('votingStatusUpdated', handleVotingStatusUpdated);
     };
   }, []);
 
@@ -142,6 +154,15 @@ const DashboardPage = () => {
 
   const [showExportModal, setShowExportModal] = useState(false);
   const [votingStatus, setVotingStatus] = useState(null);
+  
+  // Debug votingStatus changes
+  useEffect(() => {
+    console.log('🔄 DashboardPage: votingStatus state changed:', votingStatus);
+    if (votingStatus) {
+      console.log('🔄 DashboardPage: votingStatus.isActive =', votingStatus.isActive);
+      console.log('🔄 DashboardPage: votingStatus.status =', votingStatus.status);
+    }
+  }, [votingStatus]);
   const [showVoteControlModal, setShowVoteControlModal] = useState(false);
   const [showStopConfirmationModal, setShowStopConfirmationModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
@@ -275,11 +296,22 @@ const DashboardPage = () => {
           severity: 'info'
         });
         
-        setVotingStatus(await getVotingStatusInfo());
+        // Force refresh the voting status immediately
+        console.log('🔄 DashboardPage: Force refreshing voting status after start...');
+        const newStatus = await getVotingStatusInfo();
+        console.log('🔄 DashboardPage: New status after start:', newStatus);
+        setVotingStatus(newStatus);
+        
         toast.success('Voting has been resumed');
+        
+        // Also dispatch the event to notify other components
+        window.dispatchEvent(new CustomEvent('votingStatusChanged'));
       } else {
         toast.error('Failed to start voting');
       }
+    } catch (error) {
+      console.error('❌ DashboardPage: Error starting voting:', error);
+      toast.error(`Failed to start voting: ${error.message}`);
     } finally {
       setVotingControlLoading(false);
     }
@@ -832,7 +864,7 @@ const DashboardPage = () => {
                       ? 'bg-primary-100 text-primary-700' 
                       : 'bg-red-100 text-red-700'
                   }`}>
-                    {votingStatus.isActive ? 'Active' : 'Stopped'}
+                    {votingStatus.isActive ? 'Voting Open' : 'Stopped'}
                   </span>
                 </div>
                 

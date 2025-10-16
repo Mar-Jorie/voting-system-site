@@ -4,7 +4,7 @@ const SESSION_TOKEN = "eyJzaWQiOiJjNTA3NDk5Zi1iZGI0LTQ5NGYtYjc5MC04ZTc1ZjNkY2IxM
 
 // Common master keys to test
 const masterKeys = [
-  "Cbd9e198-8f76-4d8f-93b1-04201de94e5d", // Current one
+  "cbd9e198-8f76-4d8f-93b1-04201de94e5d", // Current one
   "your-master-key", // Placeholder
   "master-key", // Simple
   "admin-key", // Admin

@@ -4,7 +4,7 @@ import { Bars3Icon, UserIcon, ChartBarIcon, ShieldCheckIcon, ClockIcon, TrophyIc
 import Button from '../components/Button';
 import FloatingChatbot from '../components/FloatingChatbot';
 import VotingModal from '../components/VotingModal';
-import { isVotingActive, getVotingStatusInfo, getResultsVisibility, RESULTS_VISIBILITY } from '../utils/voteControl';
+import { getVotingStatusInfo, getResultsVisibility, RESULTS_VISIBILITY } from '../utils/voteControl';
 import { ProgressiveLoader, LandingPageSkeleton } from '../components/SkeletonLoader';
 import apiClient from '../usecases/api';
 import { getVisitorStats } from '../utils/visitorTracking';
