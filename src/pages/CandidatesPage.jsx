@@ -107,6 +107,28 @@ const CandidatesPage = () => {
     loadVoteCounts();
   }, [candidates]);
 
+  // Auto-print functionality for mobile and tablet devices
+  useEffect(() => {
+    const checkDeviceAndAutoPrint = () => {
+      // Check if device is mobile or tablet
+      const isMobile = window.innerWidth < 768; // Mobile
+      const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024; // Tablet
+      
+      if ((isMobile || isTablet) && !loading && filteredCandidates.length > 0) {
+        // Small delay to ensure page is fully loaded
+        setTimeout(() => {
+          // Trigger print dialog automatically
+          window.print();
+        }, 1000);
+      }
+    };
+
+    // Check and auto-print when candidates are loaded
+    if (!loading && filteredCandidates.length > 0) {
+      checkDeviceAndAutoPrint();
+    }
+  }, [loading, filteredCandidates]);
+
   useEffect(() => {
     // Listen for vote updates
     const handleVotesUpdated = () => {
