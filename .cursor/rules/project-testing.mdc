@@ -1,0 +1,496 @@
+---
+description: This rule guides LLM agents on how to leverage Puppeteer for comprehensive end-to-end testing of React applications.
+alwaysApply: false
+---
+# Project Testing Rule
+
+## Core Testing Philosophy
+
+**End-to-End Testing with Real Data**: Implement comprehensive functional testing that validates user workflows through actual data inputs, form submissions, and business logic validation.
+
+**Puppeteer-Only Testing**: All tests use Puppeteer exclusively - no additional testing frameworks or dependencies. Configure Puppeteer with `headless: false` for browser-controlled testing that allows visual observation of test execution.
+
+## Performance Optimization
+
+**Visual Testing Configuration**: Tests should run with visual observation enabled for human monitoring and debugging. Optimize for reliability and visibility:
+- **Headless Mode**: Use `headless: false` for visual observation of test execution
+- **Zero Delays**: Set `slowMo: 0` to eliminate artificial delays
+- **Fast Navigation**: Use `waitUntil: 'domcontentloaded'` instead of `networkidle0`
+- **Minimal Waits**: Only wait for elements when necessary, avoid arbitrary timeouts
+- **Parallel Execution**: Run independent test suites concurrently when possible
+- **Wait Strategy**: Only wait for elements that are actually needed for the test to proceed. If a selector is available, proceed immediately.
+
+## Testing Strategy
+
+### Test Creation Pattern
+Create focused test scripts in `scripts/` folder following this hierarchy:
+
+1. **Authentication Foundation**: `test-signup.js`, `test-signin.js`
+2. **Feature-Specific**: `test-[feature-name].js` (one script per major feature)
+3. **Integration**: `test-navigation.js`, `test-offline.js`
+
+### Test Design Principles
+
+**Single Responsibility**: Each script tests ONE specific feature or functionality
+- ✅ `test-signup.js` - Only user registration
+- ❌ `test-authentication.js` - Both signup AND signin
+
+**Real Data Validation**: Use realistic test data that mirrors production scenarios
+- Include edge cases and boundary conditions
+- Test form validation, business logic, and data persistence
+- Validate both happy path and error scenarios
+- **MANDATORY: Test database connectivity for authentication flows**
+- **MANDATORY: Validate password hashing and authentication against real database**
+- **MANDATORY: Test signup saves new users to database with proper validation**
+
+**Comprehensive Coverage**: Test all critical user workflows
+- Authentication flows (signup/signin)
+- Core application features
+- Navigation and routing
+- Offline capabilities and sync
+
+### Test Implementation Approach
+
+**Pre-Test Validation**: Before writing any test, verify that input names and button selectors match the actual page elements
+- Inspect form inputs to ensure `name` attributes are correctly set
+- Verify button text, classes, and IDs match the test selectors
+- Confirm all interactive elements are accessible and properly identified
+- This prevents test failures due to mismatched selectors and ensures reliable automation
+
+**Modular Structure**: Create reusable test utilities
+- Browser initialization and cleanup
+- Form filling and validation helpers
+- Error capture and reporting
+- Business logic validation
+
+**Error Handling**: Capture comprehensive error information
+- Browser console errors and warnings
+- Network request failures
+- Form validation errors
+- UI interaction failures
+
+**Test Data Management**: Use consistent, realistic test data
+- Default credentials for authentication
+- Invalid data for validation testing
+- Edge cases and boundary conditions
+
+## Quality Assurance Standards
+
+### Test Reliability
+- Use stable selectors and wait strategies
+- Implement proper error handling and cleanup
+- Handle flaky tests appropriately
+- Generate comprehensive reports with timestamps and metrics
+
+### Test Maintenance
+- Update test data to match application changes
+- Add new test cases for new features
+- Remove obsolete tests
+- Optimize test performance
+
+## Implementation Guidelines
+
+### When to Create Tests
+- After implementing new features
+- Before major deployments
+- When fixing critical bugs
+- During refactoring efforts
+
+### Test Execution Strategy
+- Run tests in controlled environments
+- Ensure development server is running
+- Clean up test data after execution
+- Generate comprehensive reports
+
+## Iterative Testing Loop
+
+**Continuous Quality Assurance**: After tests are executed, follow this iterative loop until all tests pass without issues:
+
+### Post-Test Analysis
+1. **Observe Test Results**: Carefully review test output, error messages, and browser console logs
+2. **Identify Root Cause**: Determine if failures are due to:
+   - Test implementation issues (incorrect selectors, timing, data)
+   - Application code bugs (functionality, UI, business logic)
+   - Environment issues (server, dependencies, configuration)
+
+### Problem Resolution Process
+3. **Fix Test Issues**: If problems are in test code:
+   - Update selectors to match actual DOM elements
+   - Adjust timing and wait strategies
+   - Correct test data and validation logic
+   - Improve error handling and reporting
+
+4. **Fix Application Code**: If problems are in application code:
+   - Debug and resolve functionality issues
+   - Fix UI/UX problems
+   - Correct business logic errors
+   - Address performance and reliability issues
+
+### Continuous Loop
+5. **Re-run Tests**: Execute the test suite again after fixes
+6. **Validate Results**: Ensure all tests now pass and no new issues are introduced
+7. **Repeat Until Success**: Continue the loop until:
+   - All tests pass without errors
+   - No console warnings or errors
+   - Application functions correctly in all tested scenarios
+   - No regressions are detected
+
+### Quality Gates
+- **Zero Tolerance**: No test failures are acceptable in production-ready code
+- **Complete Coverage**: All critical user workflows must be validated
+- **Stable Performance**: Tests must run consistently without flakiness
+- **Clean Output**: No console errors or warnings during test execution
+
+This iterative approach ensures that both test quality and application functionality reach production standards through continuous improvement and validation.
+
+## 🔐 Authentication Testing Patterns (MANDATORY)
+
+### Database-Connected Authentication Testing
+
+**CRITICAL**: All authentication tests MUST validate real database connectivity and data persistence.
+
+#### Login Testing Pattern (MANDATORY)
+```javascript
+// ✅ CORRECT: Test login with real database authentication
+test('should authenticate user with real database credentials', async () => {
+  await page.goto('http://localhost:3000/signin');
+  await page.waitForSelector('form', { timeout: 10000 });
+  
+  // Use REAL database credentials (not mock data)
+  await page.type('input[type="email"]', 'user@example.com');
+  await page.type('input[type="password"]', 'qwer1234');
+  
+  // Submit form
+  await page.click('button[type="submit"]');
+  
+  // Wait for authentication to complete
+  await page.waitForFunction(() => {
+    return window.location.href.includes('/dashboard');
+  }, { timeout: 10000 });
+  
+  // Verify successful login by checking dashboard elements
+  await page.waitForSelector('h1', { timeout: 5000 });
+  const dashboardTitle = await page.$eval('h1', el => el.textContent);
+  expect(dashboardTitle).toContain('Welcome');
+  
+  // Verify user session is stored
+  const userData = await page.evaluate(() => {
+    return localStorage.getItem('user');
+  });
+  expect(userData).toBeTruthy();
+  expect(JSON.parse(userData).email).toBe('user@example.com');
+});
+```
+
+#### Signup Testing Pattern (MANDATORY)
+```javascript
+// ✅ CORRECT: Test signup saves to real database
+test('should create new user in database', async () => {
+  await page.goto('http://localhost:3000/signup');
+  await page.waitForSelector('form', { timeout: 10000 });
+  
+  // Generate unique test data
+  const timestamp = Date.now();
+  const testEmail = `testuser${timestamp}@example.com`;
+  
+  // Fill signup form with valid data
+  await page.type('input[name="firstName"]', 'Test');
+  await page.type('input[name="lastName"]', 'User');
+  await page.type('input[type="email"]', testEmail);
+  await page.type('input[name="password"]', 'testpass123');
+  await page.type('input[name="confirmPassword"]', 'testpass123');
+  
+  // Submit form
+  await page.click('button[type="submit"]');
+  
+  // Wait for signup to complete
+  await page.waitForFunction(() => {
+    return window.location.href.includes('/dashboard') || 
+           document.querySelector('.error') !== null;
+  }, { timeout: 10000 });
+  
+  // Verify successful signup (redirect to dashboard)
+  if (page.url().includes('/dashboard')) {
+    // Verify user session is stored
+    const userData = await page.evaluate(() => {
+      return localStorage.getItem('user');
+    });
+    expect(userData).toBeTruthy();
+    expect(JSON.parse(userData).email).toBe(testEmail);
+  }
+});
+```
+
+#### Password Hashing Validation (MANDATORY)
+```javascript
+// ✅ CORRECT: Test password hashing is working
+test('should hash password before authentication', async () => {
+  await page.goto('http://localhost:3000/signin');
+  await page.waitForSelector('form', { timeout: 10000 });
+  
+  // Monitor network requests to verify password is hashed
+  const requests = [];
+  page.on('request', request => {
+    if (request.url().includes('/auth/login')) {
+      requests.push(request.postData());
+    }
+  });
+  
+  // Fill and submit form
+  await page.type('input[type="email"]', 'user@example.com');
+  await page.type('input[type="password"]', 'qwer1234');
+  await page.click('button[type="submit"]');
+  
+  // Wait for request to complete
+  await page.waitForFunction(() => requests.length > 0, { timeout: 5000 });
+  
+  // Verify password is hashed (not plain text)
+  const requestData = JSON.parse(requests[0]);
+  expect(requestData.password).not.toBe('qwer1234'); // Should be hashed
+  // See @rest-api-implementation.mdc for password hashing validation
+});
+```
+
+#### Database Connectivity Testing (MANDATORY)
+```javascript
+// ✅ CORRECT: Test database connectivity
+test('should connect to database for authentication', async () => {
+  await page.goto('http://localhost:3000/signin');
+  await page.waitForSelector('form', { timeout: 10000 });
+  
+  // Test with invalid credentials to verify database connection
+  await page.type('input[type="email"]', 'nonexistent@example.com');
+  await page.type('input[type="password"]', 'wrongpassword');
+  await page.click('button[type="submit"]');
+  
+  // Wait for authentication attempt
+  await page.waitForFunction(() => {
+    const button = document.querySelector('button[type="submit"]');
+    return button && !button.disabled;
+  }, { timeout: 5000 });
+  
+  // Verify error message indicates database connectivity
+  const errorMessage = await page.$eval('.error, [role="alert"]', el => el.textContent);
+  expect(errorMessage).toContain('Invalid email or password');
+  
+  // Verify we're still on signin page (authentication failed)
+  expect(page.url()).toContain('/signin');
+});
+```
+
+#### Logout Testing Pattern (MANDATORY)
+```javascript
+// ✅ CORRECT: Test logout functionality with session clearing and redirect
+test('should logout user and redirect to signin page', async () => {
+  // First, login to get authenticated state
+  await page.goto('http://localhost:3000/signin');
+  await page.waitForSelector('form', { timeout: 10000 });
+  
+  // Login with real database credentials
+  await page.type('input[type="email"]', 'user@example.com');
+  await page.type('input[type="password"]', 'qwer1234');
+  await page.click('button[type="submit"]');
+  
+  // Wait for successful login and redirect to dashboard
+  await page.waitForURL('**/dashboard');
+  
+  // Verify user is logged in
+  const userData = await page.evaluate(() => localStorage.getItem('user'));
+  expect(userData).toBeTruthy();
+  
+  // Now test logout functionality
+  // Click on profile dropdown or logout button
+  await page.click('[data-testid="profile-dropdown"], .profile-dropdown, button:has-text("Profile")');
+  
+  // Wait for dropdown to appear and click logout
+  await page.waitForSelector('button:has-text("Sign Out"), button:has-text("Logout")', { timeout: 5000 });
+  await page.click('button:has-text("Sign Out"), button:has-text("Logout")');
+  
+  // Wait for confirmation modal to appear
+  await page.waitForSelector('[role="dialog"], .modal, .confirmation-modal', { timeout: 5000 });
+  
+  // Click confirm button in modal
+  await page.click('button:has-text("Sign out"), button:has-text("Confirm"), button:has-text("Logout")');
+  
+  // Wait for redirect to signin page
+  await page.waitForURL('**/signin');
+  
+  // ✅ MANDATORY: Verify session data is cleared from localStorage
+  const clearedUserData = await page.evaluate(() => localStorage.getItem('user'));
+  expect(clearedUserData).toBeNull();
+  
+  const clearedSessionToken = await page.evaluate(() => localStorage.getItem('sessionToken'));
+  expect(clearedSessionToken).toBeNull();
+  
+  // ✅ MANDATORY: Verify we're on signin page
+  expect(page.url()).toContain('/signin');
+  
+  // ✅ MANDATORY: Verify signin form is visible
+  await expect(page.locator('form')).toBeVisible();
+});
+```
+
+#### Complete Authentication Flow Testing (MANDATORY)
+```javascript
+// ✅ CORRECT: Test complete authentication flow from login to logout
+test('should complete full authentication flow with database connectivity', async () => {
+  // Step 1: Test login with real database credentials
+  await page.goto('http://localhost:3000/signin');
+  await page.waitForSelector('form', { timeout: 10000 });
+  
+  // Fill in real database credentials
+  await page.type('input[type="email"]', 'user@example.com');
+  await page.type('input[type="password"]', 'qwer1234');
+  
+  // Submit form
+  await page.click('button[type="submit"]');
+  
+  // Wait for successful login and redirect
+  await page.waitForURL('**/dashboard');
+  
+  // Verify user is logged in
+  const userData = await page.evaluate(() => localStorage.getItem('user'));
+  expect(userData).toBeTruthy();
+  expect(JSON.parse(userData).email).toBe('user@example.com');
+  
+  // Step 2: Verify protected routes are accessible
+  await page.goto('http://localhost:3000/projects');
+  expect(page.url()).toContain('/projects');
+  
+  // Step 3: Test logout functionality
+  await page.click('[data-testid="profile-dropdown"], .profile-dropdown, button:has-text("Profile")');
+  await page.waitForSelector('button:has-text("Sign Out")', { timeout: 5000 });
+  await page.click('button:has-text("Sign Out")');
+  
+  // Wait for confirmation modal
+  await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
+  await page.click('button:has-text("Sign out")');
+  
+  // Wait for redirect to signin
+  await page.waitForURL('**/signin');
+  
+  // Step 4: Verify session is cleared
+  const clearedUserData = await page.evaluate(() => localStorage.getItem('user'));
+  expect(clearedUserData).toBeNull();
+  
+  // Step 5: Verify protected routes redirect to signin
+  await page.goto('http://localhost:3000/dashboard');
+  await page.waitForURL('**/signin');
+  expect(page.url()).toContain('/signin');
+});
+```
+
+### Authentication Testing Anti-Patterns (AVOID THESE)
+
+#### ❌ INCORRECT: Mock Authentication Testing
+```javascript
+// ❌ WRONG: Don't test with mock data or hardcoded responses
+test('should login with mock credentials', async () => {
+  // This doesn't test real database connectivity
+  await page.type('input[type="email"]', 'mock@example.com');
+  await page.type('input[type="password"]', 'mockpassword');
+  // ... rest of test
+});
+```
+
+#### ❌ INCORRECT: UI-Only Testing
+```javascript
+// ❌ WRONG: Don't only test form UI without database validation
+test('should display login form', async () => {
+  // This only tests UI, not authentication functionality
+  const emailField = await page.$('input[type="email"]');
+  expect(emailField).toBeTruthy();
+  // Missing: actual authentication testing
+});
+```
+
+#### ❌ INCORRECT: No Password Hashing Validation
+```javascript
+// ❌ WRONG: Don't test without verifying password hashing
+test('should login user', async () => {
+  // This doesn't verify password is properly hashed
+  await page.type('input[type="password"]', 'plaintextpassword');
+  // Missing: verification that password is hashed before sending
+});
+```
+
+### Authentication Test Requirements (MANDATORY)
+
+1. **Real Database Credentials**: Use actual user credentials from the database
+2. **Password Hashing Validation**: Verify passwords are hashed before API calls
+3. **Session Management**: Test localStorage session storage and retrieval
+4. **Error Handling**: Test invalid credentials and network failures with toast notifications
+5. **Redirect Validation**: Verify proper redirects after login/logout
+6. **Database Persistence**: Test that signup actually saves to database
+7. **Logout Functionality**: Test logout clears session and redirects properly
+8. **Toast Error System**: Test that errors are displayed via toast notifications, not inline field errors
+
+### Toast Error System Testing (MANDATORY)
+
+```javascript
+// ✅ CORRECT: Test toast error notifications
+test('should display form errors via toast notifications', async () => {
+  await page.goto('http://localhost:3000/signin');
+  
+  // Submit form with invalid credentials
+  await page.type('input[type="email"]', 'invalid@example.com');
+  await page.type('input[type="password"]', 'wrongpassword');
+  await page.click('button[type="submit"]');
+  
+  // Wait for toast notification to appear
+  await page.waitForSelector('.toast-notification', { timeout: 5000 });
+  
+  // Verify toast contains error message
+  const toastMessage = await page.textContent('.toast-notification');
+  expect(toastMessage).toContain('Invalid credentials');
+  
+  // Verify no inline field errors are displayed
+  const fieldErrors = await page.$$('.error-message');
+  expect(fieldErrors).toHaveLength(0);
+});
+
+// ✅ CORRECT: Test password field doesn't show [object] [object]
+test('should not display [object] [object] in password fields', async () => {
+  await page.goto('http://localhost:3000/signin');
+  
+  const passwordField = await page.$('input[type="password"]');
+  await passwordField.type('testpassword');
+  
+  const fieldValue = await passwordField.inputValue();
+  expect(fieldValue).toBe('testpassword');
+  expect(fieldValue).not.toContain('[object]');
+});
+```
+
+### Test Data Management for Authentication
+
+```javascript
+// ✅ CORRECT: Use real database credentials in tests
+const TEST_CREDENTIALS = {
+  validUser: {
+    email: 'user@example.com',
+    password: 'qwer1234',
+    role: 'User'
+  },
+  validAdmin: {
+    email: 'admin@example.com', 
+    password: 'admin123',
+    role: 'Admin'
+  },
+  invalidUser: {
+    email: 'nonexistent@example.com',
+    password: 'wrongpassword'
+  }
+};
+
+// ✅ CORRECT: Generate unique test data for signup
+const generateTestUser = () => ({
+  firstName: 'Test',
+  lastName: 'User',
+  email: `testuser${Date.now()}@example.com`,
+  password: 'testpass123',
+  confirmPassword: 'testpass123'
+});
+```
+
+This rule enables autonomous LLM agents to create comprehensive end-to-end test suites that validate React applications through real user workflows with proper database connectivity testing.

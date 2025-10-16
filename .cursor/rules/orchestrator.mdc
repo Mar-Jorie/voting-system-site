@@ -1,0 +1,610 @@
+---
+description: Main orchestrator workflow for autonomous React application development with comprehensive rule compliance and step-by-step implementation guidance.
+alwaysApply: true
+---
+
+# Main Orchestrator
+
+## Core Philosophy
+
+**Agentic Coding: Humans Requirements, Agents Code!**
+
+### **Primary Objective**
+
+**Create a production-ready React application based on human requirements.** The AI will analyze human requirements and implement a complete, functional, and deployable application that meets all specified needs.
+
+### **Project Scope Clarification**
+
+**This project focuses exclusively on frontend implementation.** The backend is already implemented using the Innque API, and this React application serves as a frontend client that connects to and consumes the existing Innque API services. No backend development is required.
+
+### **Autonomous Development Approach**
+
+**The AI is fully autonomous and will analyze the current project state to determine what needs to be implemented to achieve a production-ready application.**
+
+### **Standard Prompt Format**
+
+**All prompts should follow this standardized format:**
+
+```
+"Create me a [system description] with [key features]. Then use these:
+Color Palette #[hex color]
+App ID: [app_id]
+Master Key: [master_key]
+
+Follow all the rules in the .cursor folder."
+```
+
+**Example:**
+```
+"Create me a project management system with team collaboration and task tracking features - with user authentication and dashboard analytics - with landing page. Then use these:
+Color Palette #3E5F44
+App ID: PMS123
+Master Key: 5dcd8901-5e39-4855-afe1-699f109cb089
+
+Follow all the rules in the .cursor folder."
+```
+
+**This format ensures all required elements are always present:**
+- System description with key features
+- Color palette hex code
+- App ID (replaces all "your-app-id" fields in the system)
+- Master Key (for Innque API authentication)
+- Reference to follow all rules
+
+**App ID and Master Key Integration:**
+- The provided App ID will automatically replace all "your-application-id" placeholders throughout the system
+- The provided Master Key will be used for Innque API authentication
+- **Auto-Configuration Process**: 
+  - Replace "your-application-id" placeholder with user-provided App ID in api.js
+  - Replace master key placeholder with user-provided Master Key in api.js
+  - Preserve `import.meta.env.VITE_APP_ID` and `import.meta.env.VITE_MASTER_KEY` as primary source (environment variables take precedence)
+  - Update fallback from "your-application-id" to actual App ID
+  - Update fallback from undefined to actual Master Key
+  - Create/update .env file with `VITE_APP_ID=provided-app-id` and `VITE_MASTER_KEY=provided-master-key`
+- **Syntax Preservation**: NEVER remove or modify `import.meta.env` syntax - only replace the placeholder string
+- **Pattern**: `const APP_ID = import.meta.env.VITE_APP_ID || "user-provided-app-id";`
+- **Pattern**: `const MASTER_KEY = import.meta.env.VITE_MASTER_KEY || "user-provided-master-key";`
+- Both App ID and Master Key are required for proper Innque API authentication
+
+---
+
+## ⚠️ CRITICAL: Rule Reading Protocol (MANDATORY)
+
+**BEFORE TAKING ANY ACTION, AI AGENTS MUST:**
+
+1. **Read and understand ALL relevant rules completely** before starting any implementation
+2. **Identify all rules that might apply** to the current task or workflow
+3. **Understand the complete sequence and workflow** from start to finish
+4. **Resolve any conflicts or ambiguities** between rules before proceeding
+5. **Read Again** if anything is unclear rather than making assumptions
+6. **Only then proceed** with implementation following the understood workflow
+
+**This prevents confusion, incorrect sequences, and rule violations that require backtracking.**
+
+### **Rule Hierarchy (MANDATORY)**
+
+**When rules conflict, follow this priority order:**
+
+1. **PRIMARY RULES** (This file - orchestrator.mdc)
+   - Workflow sequence and execution order
+   - Overall project strategy and approach
+   - Rule hierarchy and conflict resolution
+
+2. **DOMAIN-SPECIFIC RULES** (Specialized rule files)
+   - **Authentication**: `@rest-api-implementation.mdc` (SINGLE SOURCE OF TRUTH)
+   - **Database/Real-time Data**: `@page-layouts.mdc` Section 7 (SINGLE SOURCE OF TRUTH)
+   - **UI Components**: `@component-design.mdc`
+   - **Page Layouts**: `@page-layouts.mdc`
+   - **Project Structure**: `@project-structure.mdc`
+
+3. **IMPLEMENTATION DETAILS** (Supporting rule files)
+   - **Compliance Checking**: `@compliance-checking.mdc`
+   - **Testing**: `@project-testing.mdc`
+   - **Deployment**: `@project-deployment.mdc`
+
+**CONFLICT RESOLUTION**: When rules conflict, the higher-priority rule takes precedence. Domain-specific rules override implementation details, and primary rules override all others.
+
+---
+
+## Execution Policy (Do, don't just plan)
+
+- After creating any TODO/plan, **immediately execute Step 1** and continue **sequentially** through all items **without asking**.
+- **Do not** end with "Next:" or planning-only summaries. End with either `DONE` (when all steps are finished) or a Stop Condition (see below).
+- If rules are referenced, use `fetch_rules` to read the relevant files in `.cursor/rules/` before proceeding.
+- **Rule Hierarchy**: ALWAYS follow the rule hierarchy defined above. When rules conflict, use the priority order to resolve conflicts.
+- **Design Implementation**: Follow `@component-design.mdc`, `@design-system.mdc`, `@layout-structure.mdc`, `@page-layouts.mdc`, and `@responsive-layout.mdc` for UI implementations.
+- **Project Structure**: Follow `@project-structure.mdc` for file creation and structure requirements.
+- **Authentication Logic**: **SINGLE SOURCE OF TRUTH**: `@rest-api-implementation.mdc` is the ONLY authoritative source for authentication implementation.
+- **Database/Real-time Data**: **SINGLE SOURCE OF TRUTH**: `@page-layouts.mdc` Section 7 is the ONLY authoritative source for real-time database rules.
+- **Testing**: Use `@project-testing.mdc` for end-to-end testing guidance.
+- **Color Palette**: Use `@color-palette-generation.mdc` for color palette generation.
+- **MCP Schema**: Use `@mcp-schema-validation.mdc` for database schema management.
+- **Compliance**: Use `@compliance-checking.mdc` with DETECT-INVESTIGATE-FIX-VERIFY process.
+- **Content**: Read content from requirements.md using the protocol in `@page-layouts.mdc`.
+- **TODO Management**: Complete every TODO item sequentially - no skipping allowed.
+
+---
+
+## **Enhanced Implementation State Analysis (MANDATORY WORKFLOW)**
+
+**This is the SINGLE, UNIFIED workflow that AI agents MUST follow for ALL React application development.**
+
+### **Quick Reference Guide**
+1. **Parse Prompt** → Extract system name, description, color, App ID, Master Key
+2. **OS Detection** → Detect Windows vs Unix for proper command handling
+3. **Requirements & Setup** → Generate requirements.md, setup project, color palette
+4. **TODO & Compliance** → Create TODO list with MCP validation, initial compliance check
+5. **Project Structure** → Implement file organization and architecture
+6. **UI & Mobile** → Create components and implement responsive design (including large desktop 1920px+)
+7. **Core Pages** → Implement landing, auth, dashboard, and content pages
+8. **API & Database** → Connect to Innque API, setup credentials, manage schemas
+9. **Code Quality** → Run linting, build verification, development server
+10. **Testing & Validation** → End-to-end testing, requirements validation, authentication testing
+11. **Final Compliance** → Complete rule verification and git commit
+12. **Production Deployment** → Setup nginx, Docker, CI/CD pipeline
+13. **Provide Credentials** → Query database and provide working login credentials
+
+### **Workflow Decision Tree (LLM-FRIENDLY)**
+
+**Step 0: Analyze Human Prompt**
+1. **Extract Required Elements:**
+   - System name: [extract from prompt]
+   - System description: [extract from prompt]
+   - Color palette (hex): [extract from prompt]
+   - App ID: [extract from prompt]
+   - Master Key: [extract from prompt]
+
+2. **Determine Workflow Path:**
+   - **If system name OR description missing:** Ask human for missing information
+   - **If system name AND description present:** Continue to Step 1
+
+3. **Set Execution Flags:**
+   - `HAS_REQUIREMENTS = (requirements.md exists in project root)`
+
+**Execution Rules:**
+- **ALWAYS execute:** Steps 1, 2, 4, 5, 6, 7, 8-23 (these are mandatory regardless of conditions)
+- **CONDITIONALLY execute:** Step 3 (only if requirements.md doesn't exist from Step 2)
+- **NEVER skip:** Steps 1, 2, 4, 5, 6, 7, 8-23 (these are always required)
+
+### **Complete Enhanced Implementation State Analysis Workflow**
+
+#### **Phase 1: Planning & Setup (Steps 1-8)**
+1. **Parse Prompt Structure** (MANDATORY)
+   - Extract system name and description from the prompt (REQUIRED)
+   - Extract the base hex color code from the prompt
+   - Extract App ID from the prompt (replaces all "your-app-id" fields)
+   - Extract Master Key from the prompt (for Innque API authentication)
+   - Validate that system name and description are present
+
+2. **OS Detection** (MANDATORY)
+   - Detect operating system (Windows vs Unix/Linux/macOS)
+   - Set appropriate command patterns for the detected OS
+   - **Windows**: Use `echo 3 |` for automated input
+   - **Unix/Linux/macOS**: Use `printf "3\n" |` for automated input
+   - **Cross-platform fallback**: Use temporary subdirectory method if OS detection fails
+
+3. **Check Requirements File** (MANDATORY)
+- Check if `requirements.md` exists in project root
+- If exists, read and analyze existing requirements, then skip to Step 5
+- If not exists, proceed to Step 4 to generate new requirements
+
+4. **Generate Requirements** (MANDATORY - only if requirements.md doesn't exist from Step 3)
+- Use `@project-requirements.mdc` rule with system name and description
+- **MANDATORY**: Include "Landing Page Details" section with system-specific content
+- **MANDATORY**: Include "Signup Page Details" section with system-specific fields
+- Follow the exact format specified in `@project-requirements.mdc`
+- Save to `requirements.md` in project root
+
+5. **Project Setup** (MANDATORY - only if no React project exists)
+- **CHECK FIRST**: Determine if React project already exists
+- **IF EXISTS**: Skip this step and proceed to Step 6
+- **IF NOT EXISTS**: Execute the setup process below
+- **FOLLOW**: `@project-setup.mdc` for complete setup instructions
+- **OS DETECTION**: Detect operating system (Windows vs Unix) for proper command handling
+- **AUTOMATED INPUT HANDLING**: 
+  - **Windows**: Use `echo 3 | npm create vite@latest . -- --template react --force` to auto-select "Ignore files and continue" (option 3)
+  - **Unix/Linux/macOS**: Use `printf "3\n" | npm create vite@latest . -- --template react --force` to auto-select "Ignore files and continue" (option 3)
+- **NEVER ask user for input** - handle directory conflicts automatically with existing files
+- **COMPREHENSIVE DEPENDENCY INSTALLATION** (MANDATORY):
+  - **FOLLOW**: "Dependency Installation Commands" section in `@project-setup.mdc`
+  - **VALIDATE**: All packages installed correctly using verification commands
+  - **CONFIGURE**: Vite, Tailwind CSS v4, PWA, and all plugins properly
+  - **VERIFY**: File structure, configuration files, and asset files exist
+- **Compliance Check**: Verify project structure compliance before proceeding
+
+6. **Generate Color Palette** (MANDATORY)
+- Use `@color-palette-generation.mdc` rule to generate complete color palette from base hex
+- Create 11 shades (25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950)
+- Use color theory to ensure proper contrast and accessibility
+- **CRITICAL**: Update existing `src/index.css` file (DO NOT create new files)
+  - Replace primary color values in `@theme` section
+  - Replace primary color values in `:root` section
+  - Keep all other color palettes (gray, green, red, etc.) intact
+- **DO NOT** update `tailwind.config.js` (Tailwind v4 uses `@theme` in CSS)
+- Verify accessibility compliance of all generated colors
+
+7. **Create Comprehensive TODO List** (MANDATORY)
+- **MCP Schema Validation** (following `@mcp-schema-validation.mdc`)
+  - Check MCP database connection using `mcp_innque_find_schema`
+  - Audit existing database schemas
+  - Identify required schemas from requirements
+- Read `requirements.md` and create specific, actionable TODO items for:
+  - Project setup (if needed)
+  - Component creation
+  - Page implementation
+  - **Database Schema Management** (MANDATORY)
+    - Check existing schemas using MCP tools
+    - **Create/update required collection schemas based on requirements.md**
+    - **Identify select/multi-select fields and ensure they are properly defined as Relation or Pointer fields**
+    - **Create proper relationships between collections based on requirements**
+    - Validate schema permissions and ACL
+    - Test schema operations with sample data
+    - Verify frontend-backend data consistency
+  - API integration (if credentials provided)
+  - **Authentication Implementation** (MANDATORY - following `@rest-api-implementation.mdc`)
+    - **Authentication Logic Reference**: Login and signup implementation patterns, JWT handling, and user management logic are documented in `@rest-api-implementation.mdc`
+    - Implement MD5 password hashing for login validation
+    - Implement session persistence (browser refresh/restart)
+    - Implement proper login/logout flow with redirects
+    - Implement signup with email uniqueness validation
+    - Test authentication with real database users
+  - Testing implementation
+  - Compliance verification
+
+8. **Compliance Check** (MANDATORY)
+   - Use `@compliance-checking.mdc` rule to systematically verify all rules in `.cursor/rules/` are being followed
+   - **Step-by-step compliance verification** must be performed before proceeding
+   - **Blocking issues** must be resolved before continuing to next step
+   - **Component, layout, and page verification** must be completed
+
+#### **Phase 2: Project Implementation (Steps 9-16)**
+9. **Project Structure** (MANDATORY)
+   - Implement project structure following `@project-structure.mdc`
+   - **Compliance Check**: Verify project structure compliance before proceeding
+
+10. **Mobile Implementation** (MANDATORY - following `@mobile-implementation.mdc`)
+    - Implement mobile-first responsive design with touch interactions
+    - **Compliance Check**: Verify responsive behavior compliance before proceeding
+
+11. **UI Components** (MANDATORY - following multiple rule files)
+- **PRIMARY**: `@component-design.mdc` (component patterns and usage)
+- **SECONDARY**: `@design-system.mdc` (styling and colors)
+- **TERTIARY**: `@layout-structure.mdc` (layout positioning)
+- **SUPPORTING**: `@responsive-layout.mdc` (responsive behavior)
+    - Create all mandatory UI components with consistent design patterns
+    - **Compliance Check**: Verify component implementation compliance before proceeding
+
+12. **Core Pages** (MANDATORY - following `@page-layouts.mdc`)
+    - **MANDATORY**: Read landing page content from requirements.md "Landing Page Details" section
+    - **MANDATORY**: Read signup page fields from requirements.md "Signup Page Details" section
+    - Implement landing, auth, dashboard, and content pages with content from requirements.md
+    - **Compliance Check**: Verify page implementation uses requirements.md content
+
+13. **API Integration** (MANDATORY - following `@rest-api-implementation.mdc`)
+    - Connect to Innque API backend with proper error handling and resilience
+    - Implement CRUD operations for all data models
+    - Add error handling and resilience strategies
+    - **Compliance Check**: Verify API integration compliance before proceeding
+
+14. **Setup API Credentials** (MANDATORY - following `@rest-api-implementation.mdc`)
+    - Extract App ID and Master Key from human prompt
+    - **Auto-Configure App ID**: Replace "your-application-id" placeholder with provided App ID in api.js
+    - **Auto-Configure Master Key**: Replace master key placeholder with provided Master Key in api.js
+    - **Preserve Environment Priority**: Keep `import.meta.env.VITE_APP_ID` and `import.meta.env.VITE_MASTER_KEY` as primary source
+    - **Update Fallback**: Change fallback from "your-application-id" to actual App ID
+    - **Update Master Key Fallback**: Change fallback from undefined to actual Master Key
+    - **Create .env File**: Add `VITE_APP_ID=provided-app-id` and `VITE_MASTER_KEY=provided-master-key` to environment file
+    - **Syntax Preservation**: NEVER remove or modify `import.meta.env` syntax - only replace placeholder
+    - **Pattern**: `const APP_ID = import.meta.env.VITE_APP_ID || "user-provided-app-id";`
+    - **Pattern**: `const MASTER_KEY = import.meta.env.VITE_MASTER_KEY || "user-provided-master-key";`
+    - Create `src/usecases/api.js` following the complete implementation pattern from `@rest-api-implementation.mdc`
+    - **CRITICAL**: Use the exact code structure, function signatures, and error handling patterns specified in the rule
+    - Follow `@project-structure.mdc` for all file creation requirements
+    - **Compliance Check**: Verify API credentials setup before proceeding
+
+15. **MCP/Innque Database Connection** (MANDATORY - following multiple rule files)
+- **PRIMARY**: `@mcp-schema-validation.mdc` (schema checking protocol)
+- **SECONDARY**: `@mcp-tools.mdc` (tool usage patterns)
+- **TERTIARY**: `@schema-structure.mdc` (schema field definitions)
+    - Connect to Innque database using MCP tools
+    - **Audit existing schemas** using `mcp_innque_find_schema`
+    - **Create and manage database schemas** for all collections identified in requirements.md
+    - **Analyze requirements.md to determine required collections and their relationships**
+    - **Identify select/multi-select fields and create proper Relation/Pointer field definitions**
+    - **Create proper relationships between collections based on requirements**
+    - Use `mcp_innque_create_schema` for new collections
+    - Use `mcp_innque_update_schema` for existing collections
+    - **Validate schema permissions and ACL settings**
+    - **Test database connectivity and operations** with sample data
+    - **Verify schemas match frontend data models**
+    - **Compliance Check**: Verify database schema compliance before proceeding
+
+16. **Code Quality Check** (MANDATORY)
+    - Run `npm run lint` to ensure code quality and fix any linting issues
+    - Follow code quality standards from `@project-structure.mdc`
+    - **Compliance Check**: Verify code quality compliance before proceeding
+
+#### **Phase 3: Quality Assurance (Steps 17-21)**
+17. **Build Verification** (following `@project-structure.mdc`)
+    - Run `npm run build` to ensure successful compilation and production readiness
+    - **Compliance Check**: Verify build compliance before proceeding
+
+18. **Development Server** (following `@project-structure.mdc`)
+    - Start development server (runs in background) for runtime testing, ensure to close any existing dev server running on port 3000 first
+    - **Compliance Check**: Verify runtime compliance before proceeding
+
+19. **End-to-End Testing** (following `@project-testing.mdc`)
+    - Execute comprehensive Puppeteer test suite with actual data inputs and validations (runs in foreground)
+    - **Compliance Check**: Verify testing compliance before proceeding
+
+20. **Requirements Validation** (following `@project-requirements.mdc`)
+- **CRITICAL**: For each item in `requirements.md`, verify it has been implemented AND FUNCTIONAL
+- **Landing Page Button Navigation Validation**: 
+  - **DETECT**: Check if landing page buttons navigate to system pages (should NOT happen except for login)
+  - **INVESTIGATE**: If buttons go to system pages, identify incorrect navigation paths
+  - **FIX**: Update button navigation to go to public pages only (except login button)
+  - **VERIFY**: Test all landing page buttons navigate correctly (no system page access except login)
+- **Hero Illustration Section Validation**: 
+  - **DETECT**: Check if hero section has actual content/illustration (not blank container)
+  - **INVESTIGATE**: If hero section is empty, identify missing visual elements
+  - **FIX**: Add proper hero illustration with engaging visual content
+  - **VERIFY**: Confirm hero section has meaningful visual elements and content
+- **Page Navigation Validation**: 
+  - **DETECT**: Check if all pages are properly placed in sidenav navigation
+  - **INVESTIGATE**: If navigation fails, identify missing pages or broken links
+  - **FIX**: Add missing pages to sidenav, fix broken navigation links
+  - **VERIFY**: Test complete navigation flow from landing page through all authenticated pages
+- **Database Field Naming Consistency**: 
+  - **DETECT**: Check if frontend data calls use exact database field names
+  - **INVESTIGATE**: If field names don't match, identify mismatches between frontend and schema
+  - **FIX**: Update frontend code to use exact database field names (not UI labels)
+  - **VERIFY**: Confirm all data calls match database schema field naming
+- **CRITICAL: Real-time Data Validation**: 
+  - **DETECT**: Check if any data is hardcoded or mock data
+  - **INVESTIGATE**: Identify components using hardcoded data instead of database
+  - **FIX**: Replace hardcoded data with real database API calls
+  - **VERIFY**: Confirm all data is fetched in real-time from database
+  - **MANDATORY**: Check ALL existing pages for mock data before creating new pages (DELETE ANY MOCKDATA OR HARDCODED DATA)
+  - **MANDATORY**: Fix ALL mock data issues before proceeding with any new development
+  - **MANDATORY**: Verify dashboard metrics come from real database counts, not hardcoded values
+  - **MANDATORY**: Test real-time data fetching for all data pages during development
+  - **MANDATORY**: Ensure CRUD operations use real database endpoints, not mock responses
+  - **REFERENCE**: See `@page-layouts.mdc` Section 7 for comprehensive real-time database rules
+- **Functionality Testing**: 
+  - **DETECT**: Test each page's design and all functions for errors
+  - **INVESTIGATE**: Identify specific errors, broken functions, or design issues
+  - **FIX**: Fix all detected errors and implement missing functionality
+  - **VERIFY**: Re-test to ensure all functions work without errors
+- **Database Connectivity**: 
+  - **DETECT**: Check if any operations use hardcoded responses
+  - **INVESTIGATE**: Identify components not connected to real database
+  - **FIX**: Connect all components to real database endpoints
+  - **VERIFY**: Test all CRUD operations with real database
+- **Error Handling**: 
+  - **DETECT**: Check if proper error handling exists for database issues
+  - **INVESTIGATE**: Identify missing error handling scenarios
+  - **FIX**: Implement comprehensive error handling
+  - **VERIFY**: Test error scenarios to ensure proper handling
+- **Compliance Check**: **STOP** if any requirement fails validation - fix before proceeding
+
+21. **Authentication Testing** (MANDATORY - following `@rest-api-implementation.mdc`)
+    - **REFERENCE**: See `@rest-api-implementation.mdc` for complete authentication implementation details
+    - **Database Connectivity Validation**: Test real-time database queries for every login attempt
+    - **Session Management Testing**: Test JWT token persistence across browser refresh/restart
+    - **Password Hashing Testing**: Test MD5 password hashing with crypto-js library
+    - **Error Handling Testing**: Test error scenarios with toast notifications
+    - **Compliance Check**: **STOP** if authentication fails - fix before proceeding
+
+22. **Final Compliance Check & Git Commit**
+    - **DETECT**: Use `@compliance-checking.mdc` rule to check all rules in `.cursor/rules/`
+    - **INVESTIGATE**: If any rule is violated, identify specific violations and root causes
+    - **FIX**: Fix all detected violations before proceeding
+    - **VERIFY**: Re-check all rules to ensure compliance
+    - **DETECT**: Check if all requirements from `requirements.md` are implemented
+    - **INVESTIGATE**: If requirements missing, identify what needs to be implemented
+    - **FIX**: Implement all missing requirements
+    - **VERIFY**: Confirm all requirements are fully implemented and functional
+    - **DETECT**: Check if color palette is properly applied throughout application
+    - **INVESTIGATE**: If colors incorrect, identify components with wrong colors
+    - **FIX**: Apply correct color palette to all components
+    - **VERIFY**: Confirm color palette is consistent throughout application
+    - **DETECT**: Check if API credentials are correctly configured
+    - **INVESTIGATE**: If API fails, check credential configuration
+    - **FIX**: Fix API credential configuration
+    - **VERIFY**: Confirm API connectivity works correctly
+    - **DETECT**: Check if all tests are passing
+    - **INVESTIGATE**: If tests fail, identify specific test failures
+    - **FIX**: Fix all failing tests
+    - **VERIFY**: Confirm all tests pass
+    - **DETECT**: Check if any pages use mock data or hardcoded data
+    - **INVESTIGATE**: If mock data found, identify specific components and pages
+    - **FIX**: Replace all mock data with real database connections
+    - **VERIFY**: Confirm all data is fetched from real database
+    - **STOP**: If any compliance check fails, fix before proceeding
+    - **COMMIT**: Only commit when ALL compliance checks pass
+    - `git add -A && git commit -m "<concise summary of completed feature>"`
+
+23. **Production Deployment** (following `@project-deployment.mdc`)
+    - Create nginx configuration for production
+    - Setup Docker Compose for containerized deployment
+    - Configure GitHub Actions CI/CD pipeline
+    - Ensure production-ready deployment configuration
+
+24. **Provide Login Credentials** (MANDATORY - Final Step - following `@mcp-tools.mdc`)
+    - **Query users collection** to retrieve real user credentials from the database
+    - **Provide working login credentials** (email/username and password) from actual users in the users collection
+    - **Verify credentials work** by testing login functionality
+    - **Document credentials** for user testing:
+      - Email/Username: [actual user email from database]
+      - Password: [actual user password from database]
+      - Role: [user role from database]
+    - **Ensure user can successfully login** and access the dashboard
+    - **Confirm all authentication features work** with provided credentials
+
+### **Implementation Priority (MANDATORY)**
+
+**Parse Prompt** → **OS Detection** → **Requirements & Setup** → **TODO & Compliance** → **Project Structure** → **UI & Mobile** → **Core Pages** → **API & Database** → **Code Quality** → **Testing & Validation** → **Final Compliance** → **Production Deployment** → **Provide Credentials**
+
+### **Error Handling & Recovery (LLM-FRIENDLY)**
+
+**If any step fails:**
+1. **Identify the error:** Read error message carefully
+2. **Check dependencies:** Ensure all prerequisite steps completed successfully
+3. **Retry with fix:** Attempt to fix the issue and retry the step
+4. **If still failing:** Log the error and continue to next step (don't get stuck)
+5. **Report issues:** Include any unresolved errors in final compliance report
+
+**Common Recovery Actions:**
+- **Step 4 fails (Project Setup):** 
+  - **Windows**: Use `echo 3 | npm create vite@latest . -- --template react --force` to handle non-empty directory
+  - **Unix/Linux/macOS**: Use `printf "3\n" | npm create vite@latest . -- --template react --force` to handle non-empty directory
+  - Continue to Step 5
+- **Step 4 fails (Dependency Installation):** Retry with individual package installation, verify package.json, continue to Step 5
+- **Step 4 fails (Vite Configuration):** Check vite.config.js syntax, verify plugin imports, continue to Step 5
+- **Step 4 fails (File Structure):** Verify all required files exist, recreate missing files, continue to Step 5
+- **Step 5 fails (Color Palette):** Use default primary colors, continue to Step 6
+- **Step 12 fails (API Integration):** Implement basic API client structure, continue to Step 13
+- **Step 13 fails (API Credentials):** Use environment variables, continue to Step 14
+- **Step 14 fails (Database Connection):** Implement error handling and retry logic, continue to Step 15
+- **Step 16 fails (Build):** Fix linting errors, retry build
+- **Step 18 fails (Testing):** Fix critical issues, retry tests
+
+**Dependencies (Must Complete Before Next Step):**
+- **Step 1** → **Step 2** (system name/description required)
+a- **Step 2** → **Step 3** (OS detection required for proper command handling)
+- **Step 3** → **Step 4** (requirements check required)
+- **Step 4** → **Step 5** (requirements.md required for project setup)
+- **Step 5** → **Step 6** (React project required for color palette)
+- **Step 6** → **Step 7** (color palette required for TODO list)
+- **Step 7** → **Step 8** (TODO list required for compliance check)
+- **Step 8** → **Step 9** (compliance check required for project structure)
+- **Step 9** → **Step 10** (project structure required for mobile implementation)
+- **Step 10** → **Step 11** (mobile implementation required for UI components)
+- **Step 11** → **Step 12** (UI components required for pages)
+- **Step 12** → **Step 13** (pages required for API integration)
+- **Step 13** → **Step 14** (API integration required for API credentials)
+- **Step 14** → **Step 15** (API credentials required for database connection)
+- **Step 15** → **Step 16** (database connection required for code quality)
+- **Step 16** → **Step 17** (code quality required for build)
+- **Step 17** → **Step 18** (build required for development server)
+- **Step 18** → **Step 19** (development server required for testing)
+- **Step 19** → **Step 20** (testing required for validation)
+- **Step 20** → **Step 21** (validation required for authentication testing)
+- **Step 21** → **Step 22** (authentication testing required for final compliance)
+- **Step 22** → **Step 23** (final compliance required for production deployment)
+- **Step 23** → **Step 24** (production deployment required for credential provision)
+
+---
+
+## **Comprehensive Dependency Management (MANDATORY)**
+
+**For detailed dependency installation and validation procedures, AI agents MUST follow:**
+
+### **Reference Files for Detailed Instructions:**
+- **`@project-setup.mdc`** - Complete Vite project setup, dependency installation, and configuration
+- **`@design-system.mdc`** - Tailwind CSS v4 setup and color system configuration
+- **`@component-design.mdc`** - Icon system installation and component patterns
+
+### **Quick Validation Checklist:**
+✅ **All required packages installed** (see `@project-setup.mdc` for complete list)
+✅ **Vite configuration correct** (see `@project-setup.mdc` for exact configuration)
+✅ **Tailwind CSS v4 properly configured** (see `@design-system.mdc` for setup)
+✅ **PWA plugin configured** (see `@project-setup.mdc` for PWA setup)
+✅ **Project builds successfully** (`npm run build` - no errors)
+✅ **Development server starts** (`npm run dev` - server starts on port 3000)
+✅ **All required files exist** (see `@project-setup.mdc` for file structure)
+✅ **No dependency conflicts** (`npm audit` - no critical vulnerabilities)
+
+**ONLY proceed to Step 5 (Color Palette) after ALL validation criteria are met.**
+
+---
+
+## **Automated Workflow Sequence (non-blocking)**
+
+1. **Code Implementation**: Write/update application code per current requirement.
+2. **Lint Check**: Run `npm run lint`; fix all issues.
+3. **Build Verification**: Run `npm run build` and ensure a successful production build.
+4. **Development Server**: Start development server, ensure to close any existing dev server running on port 3000 first
+5. **End-to-End Testing**: Execute comprehensive Puppeteer test suite with actual data inputs and validations (runs in foreground) - follow @project-testing.mdc rule for comprehensive testing guidance
+6. **Error Detection**: Parse console output; collect and summarize errors/warnings.
+7. **Issue Resolution**: Fix detected issues and **repeat 2 → 5** until lint/build/tests pass.
+8. **Git Commit**: `git add -A && git commit -m "<concise summary of completed feature>"`.
+9. **DONE Output**: Print a concise DONE summary:
+   - files changed (paths),
+   - brief key diffs,
+   - Compliance Score based on requirements fulfillment,
+
+---
+
+## **Stop Conditions (the only times you pause)**
+
+1. **Credentials/ENV missing** and cannot proceed safely.
+2. **Ambiguous or unsafe fix** required for failing tests/build that needs a human decision.
+3. **Tool-call checkpoint reached** (agent often pauses around ~25 tool calls):
+   - When this happens, print exactly:
+     `PAUSED_AT_TOOLCALL_CHECKPOINT — say "continue" to resume`
+
+---
+
+## **Implementation Strategy**
+
+- **Production-Ready Focus**: Implement all features required for a deployable application
+- **Autonomous Decision Making**: AI analyzes current project state and decides next steps
+- **Innque API Integration**: Connect to existing Innque API backend when frontend is ready
+- **Design Rules**: Follow all mandatory design rules: `@component-design.mdc`, `@design-system.mdc`, `@layout-structure.mdc`, `@page-layouts.mdc`, `@responsive-layout.mdc`
+- **Project Structure**: Separation of concerns following `@project-structure.mdc`
+- **DRY Principle**: Create reusable components to avoid code duplication
+- **Single Responsibility**: Each component and function should have one clear purpose
+- **Continuous Progress**: AI proceeds through all stages without mandatory stops
+- **Real-Time Database Connections**: ALL data pages MUST use real-time database connections, NO mock data allowed
+- **Mandatory Database Validation**: Check ALL existing pages for mock data before creating new pages
+- **Stop Development**: If mock data is detected, STOP and fix before proceeding with any new development
+- **REFERENCE**: See `@page-layouts.mdc` Section 7 for comprehensive real-time database implementation rules
+- **Named Exports**: Use ESM named exports for better tree shaking and explicit imports
+- **Async/Await**: Prefer async/await for asynchronous code; handle errors with try/catch and avoid unhandled promise rejections
+- **Form Inputs**: Use `name` attribute instead of `id` for all form inputs to ensure proper form handling and accessibility
+- **Complete Feature Set**: Ensure all human requirements are fully implemented
+- **End-to-End Testing**: Comprehensive functional testing with actual data inputs and validations
+- **Quality Assurance**: Automated workflow with lint → build → development server → end-to-end testing
+
+---
+
+## **Quality Standards**
+
+- **Requirement Fulfillment**: All human requirements must be fully implemented
+- **Design Rule Compliance**: ALL implementations MUST follow the mandatory design rules (see Implementation Strategy above for complete list)
+- **Maintainability**: Clean, readable, and well-documented code
+- **Component Consistency**: Maintain consistent design patterns across all UI components
+- **Code Quality**: Run `npm run lint` and fix all linting issues before proceeding
+- **Build Verification**: Run `npm run build` to ensure successful compilation and production readiness
+- **Runtime Quality**: Use comprehensive Puppeteer end-to-end testing to validate all functionality with actual data
+- **Error-Free Deployment**: No console errors or warnings in production build
+
+---
+
+## **API Schema Error Handling**
+
+**When encountering API schema errors (e.g., key mismatches, missing fields, validation errors):**
+
+1. **Identify Schema Issues**: Detect schema-related errors during API integration or testing
+2. **Check Current Schema**: Use `mcp_innque_get_schema` or `mcp_innque_find_schema` to retrieve existing collection schema
+3. **Analyze Schema Structure**: Review schema against `@schema-structure.mdc` conventions:
+   - Verify field naming follows `snake_case` convention
+   - Check field types match expected data types (String, Number, Boolean, Date, Array, Pointer, Relation, ACL)
+   - Ensure required fields are properly defined
+   - Validate permission settings follow `@schema-structure.mdc` patterns
+4. **Fix Schema Mismatches**: Use `mcp_innque_update_schema` to correct schema issues:
+   - Add missing fields with proper types and properties
+   - Update field definitions to match frontend expectations
+   - Adjust permissions according to `@schema-structure.mdc` guidelines
+   - Ensure field names match frontend code expectations
+5. **Create Missing Schemas**: If schema doesn't exist, use `mcp_innque_create_schema` with proper structure
+6. **Validate Schema Changes**: Test API operations to ensure schema fixes resolve the errors
+7. **Update Frontend Code**: Adjust frontend code if needed to match corrected schema structure
+
+**Common Schema Error Patterns:**
+- **Key Mismatch**: Field names in frontend don't match schema field names
+- **Missing Fields**: Required fields not defined in schema
+- **Type Mismatch**: Frontend expects different data type than schema defines
+- **Permission Issues**: Access control rules prevent required operations
+- **Validation Errors**: Field constraints not met by data being sent
