@@ -7,6 +7,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import CollapsibleTable from '../components/CollapsibleTable';
 import SearchFilter from '../components/SearchFilter';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
+import Pagination from '../components/Pagination';
 import { toast } from 'react-hot-toast';
 import { ProgressiveLoader, TableSkeleton } from '../components/SkeletonLoader';
 import apiClient from '../usecases/api';
@@ -21,6 +22,10 @@ const FAQPage = () => {
   const [filters, setFilters] = useState({
     category: ''
   });
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Modal states
   const [showFormModal, setShowFormModal] = useState(false);
@@ -89,6 +94,8 @@ const FAQPage = () => {
     }
 
     setFilteredFaqs(filtered);
+    // Reset pagination when filtering
+    setCurrentPage(1);
   };
 
   const handleAddFAQ = () => {
@@ -459,7 +466,6 @@ const FAQPage = () => {
   );
 
   const categoryOptions = [
-    { value: '', label: 'All Categories' },
     { value: 'general', label: 'General' },
     { value: 'voting', label: 'Voting' },
     { value: 'technical', label: 'Technical' },
@@ -539,18 +545,31 @@ const FAQPage = () => {
         onRetry={refresh}
         skeleton={TableSkeleton}
       >
+        {/* Pagination Section - Upper Right */}
+        {filteredFaqs.length > 0 && (
+          <div className="mb-4 flex justify-end">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredFaqs.length / itemsPerPage)}
+              onPageChange={setCurrentPage}
+              totalItems={filteredFaqs.length}
+              showInfo={true}
+            />
+          </div>
+        )}
+
         {/* Table Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100">
           <CollapsibleTable
-            data={filteredFaqs}
+            data={filteredFaqs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
             columns={columns}
             onEdit={handleEditFAQ}
             onDelete={handleDeleteFAQ}
             loading={false}
             sortable={true}
             searchable={false}
-            pagination={true}
-            itemsPerPage={10}
+            pagination={false}
+            itemsPerPage={itemsPerPage}
             expandableContent={expandableContent}
             searchPlaceholder="Search FAQs..."
             emptyMessage="No FAQs found"
