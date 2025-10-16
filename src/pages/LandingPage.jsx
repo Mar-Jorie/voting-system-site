@@ -481,7 +481,7 @@ const LandingPage = () => {
                   }}
                   disabled={votingStatus && !votingStatus.isActive}
                 >
-                  {votingStatus && !votingStatus.isActive ? 'Voting Disabled' : 'Cast Vote'}
+                  {votingStatus && !votingStatus.isActive ? 'Voting Disabled' : 'Vote Now'}
                 </Button>
                 <a href="#how-it-works">
                   <Button variant="primaryOutline" size="lg" className="!w-auto min-w-[160px]">
@@ -566,7 +566,7 @@ const LandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 3xl:grid-cols-3 gap-8 3xl:gap-12">
             <div className="text-center">
               <div className="w-16 h-16 bg-primary-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">1</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">View Candidates</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Click "Vote Now"</h3>
               <p className="text-sm text-gray-600">Browse through all candidates in both male and female categories.</p>
             </div>
             <div className="text-center">

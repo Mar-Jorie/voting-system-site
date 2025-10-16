@@ -625,7 +625,7 @@ const VotingModal = ({ isOpen, onClose }) => {
                             <span className="text-sm font-medium text-gray-700">Male</span>
                             {selectedCandidates.male && (
                               <span className="ml-2 text-sm text-green-600 font-medium">
-                                ✓ {selectedCandidates.male.name}
+                                ✓
                               </span>
                             )}
                           </div>
@@ -634,17 +634,11 @@ const VotingModal = ({ isOpen, onClose }) => {
                             <span className="text-sm font-medium text-gray-700">Female</span>
                             {selectedCandidates.female && (
                               <span className="ml-2 text-sm text-green-600 font-medium">
-                                ✓ {selectedCandidates.female.name}
+                                ✓
                               </span>
                             )}
                           </div>
                         </div>
-                        {selectedCandidates.male && selectedCandidates.female && (
-                          <div className="flex items-center text-green-600">
-                            <CheckCircleIcon className="h-5 w-5 mr-2" />
-                            <span className="text-sm font-medium">Ready to vote!</span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
