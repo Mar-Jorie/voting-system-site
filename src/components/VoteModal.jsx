@@ -81,7 +81,7 @@ const VoteModal = ({
       // Trigger vote update event for real-time updates
       window.dispatchEvent(new CustomEvent('votesUpdated'));
     } catch (error) {
-      console.error('Error submitting vote:', error);
+      // Error submitting vote - handled silently
       toast.error('Failed to submit vote. Please try again.');
     } finally {
       setLoading(false);

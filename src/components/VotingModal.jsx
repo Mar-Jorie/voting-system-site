@@ -179,7 +179,7 @@ const VotingModal = ({ isOpen, onClose }) => {
       setCandidates(candidatesWithVotes);
       setFilteredCandidates(candidatesWithVotes);
     } catch (error) {
-      console.error('Error loading candidates:', error);
+      // Error loading candidates - handled silently
       toast.error('Failed to load candidates');
     }
   };
@@ -324,7 +324,7 @@ const VotingModal = ({ isOpen, onClose }) => {
       // Show success toast
       toast.success('Your vote has been submitted successfully!');
     } catch (error) {
-      console.error('Error submitting vote:', error);
+      // Error submitting vote - handled silently
       toast.error('Failed to submit vote. Please try again.');
       setShowConfirmationModal(false);
     } finally {

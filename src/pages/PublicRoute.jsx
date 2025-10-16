@@ -37,7 +37,7 @@ const PublicRoute = ({ children }) => {
             document.cookie = 'sessionToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
           }
         } catch (error) {
-          console.error('Error fetching user data:', error);
+          // Error fetching user data - handled silently
           document.cookie = 'sessionToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         }
       }

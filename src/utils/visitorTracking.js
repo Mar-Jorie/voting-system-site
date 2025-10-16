@@ -27,7 +27,7 @@ export const getVisitorStats = async () => {
     
     return stats;
   } catch (error) {
-    console.error('Error getting visitor stats:', error);
+    // Error getting visitor stats - handled silently
     return null;
   }
 };
@@ -45,7 +45,7 @@ export const getVisitorByFingerprint = async (deviceFingerprint) => {
     
     return visitors.length > 0 ? visitors[0] : null;
   } catch (error) {
-    console.error('Error getting visitor by fingerprint:', error);
+    // Error getting visitor by fingerprint - handled silently
     return null;
   }
 };
@@ -87,7 +87,7 @@ export const clearAllVisitors = async () => {
     
     return visitors.length;
   } catch (error) {
-    console.error('Error clearing visitors:', error);
+    // Error clearing visitors - handled silently
     return 0;
   }
 };
@@ -125,7 +125,7 @@ export const testVisitorTracking = async () => {
       existingVisitor
     };
   } catch (error) {
-    console.error('❌ Test failed:', error);
+    // Test failed - handled silently
     return {
       success: false,
       error: error.message

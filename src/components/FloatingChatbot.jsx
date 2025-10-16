@@ -32,7 +32,7 @@ const FloatingChatbot = () => {
         const faqData = await apiClient.findObjects('faqs', {});
         setFaqs(faqData || []);
       } catch (error) {
-        console.error('Error loading FAQs:', error);
+        // Error loading FAQs - handled silently
         setFaqs([]);
       } finally {
         setLoading(false);

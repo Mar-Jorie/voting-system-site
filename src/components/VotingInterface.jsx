@@ -52,7 +52,7 @@ const VotingInterface = () => {
       setCandidates(candidatesWithVotes);
       setVotes(votesData);
     } catch (error) {
-      console.error('Error loading data:', error);
+      // Error loading data - handled silently
       toast.error('Failed to load voting data');
     } finally {
       setLoading(false);
@@ -111,7 +111,7 @@ const VotingInterface = () => {
       // Trigger vote update event for real-time updates
       window.dispatchEvent(new CustomEvent('votesUpdated'));
     } catch (error) {
-      console.error('Error submitting vote:', error);
+      // Error submitting vote - handled silently
       toast.error('Failed to submit vote');
     }
   };

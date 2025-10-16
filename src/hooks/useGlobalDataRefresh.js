@@ -54,7 +54,7 @@ class GlobalDataRefreshManager {
       try {
         callback();
       } catch (error) {
-        console.error(`🔄 Error refreshing ${key}:`, error);
+        // Error refreshing data - handled silently
       }
     });
   }
@@ -66,7 +66,7 @@ class GlobalDataRefreshManager {
       try {
         callback();
       } catch (error) {
-        console.error(`🔄 Error in manual refresh for ${key}:`, error);
+        // Error in manual refresh - handled silently
       }
     }
   }

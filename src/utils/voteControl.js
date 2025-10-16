@@ -28,7 +28,7 @@ export const getVoteControl = () => {
       };
     }
   } catch (error) {
-    console.error('Error reading vote control:', error);
+    // Error reading vote control - handled silently
   }
   
   return {
@@ -46,7 +46,7 @@ export const setVoteControl = (settings) => {
     localStorage.setItem(VOTE_CONTROL_STORAGE_KEY, JSON.stringify(settings));
     return true;
   } catch (error) {
-    console.error('Error saving vote control:', error);
+    // Error saving vote control - handled silently
     return false;
   }
 };
@@ -149,7 +149,7 @@ export const getResultsVisibility = () => {
     const stored = localStorage.getItem('resultsVisibility');
     return stored || RESULTS_VISIBILITY.HIDDEN;
   } catch (error) {
-    console.error('Error getting results visibility:', error);
+    // Error getting results visibility - handled silently
     return RESULTS_VISIBILITY.HIDDEN;
   }
 };
@@ -160,7 +160,7 @@ export const setResultsVisibility = (visibility) => {
     window.dispatchEvent(new Event('resultsVisibilityChanged'));
     return true;
   } catch (error) {
-    console.error('Error setting results visibility:', error);
+    // Error setting results visibility - handled silently
     return false;
   }
 };

@@ -187,11 +187,11 @@ const LandingPage = () => {
         try {
           const newVisitor = await apiClient.createObject('site_visitors', visitorData);
         } catch (apiError) {
-          console.error('❌ Failed to create visitor:', apiError);
+          // Failed to create visitor - handled silently
           throw apiError; // Re-throw to be caught by outer try-catch
         }
       } catch (error) {
-        console.error('❌ Visitor tracking error:', error);
+        // Visitor tracking error - handled silently
         // If tracking fails, remove the page load flag so it can be retried
         trackingRef.current = false;
         const keys = Object.keys(sessionStorage);
@@ -238,7 +238,7 @@ const LandingPage = () => {
       setCandidates(candidatesWithVotes);
       setVotes(votesData);
     } catch (error) {
-      console.error('Error loading data:', error);
+      // Error loading data - handled silently
       setError(error.message || 'Failed to load voting data');
     } finally {
       setLoading(false);
@@ -255,7 +255,7 @@ const LandingPage = () => {
       const stats = await getVisitorStats();
       return stats;
     } catch (error) {
-      console.error('❌ Error getting visitor stats:', error);
+      // Error getting visitor stats - handled silently
     }
   };
 

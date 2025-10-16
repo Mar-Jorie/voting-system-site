@@ -65,7 +65,7 @@ const VotesListPage = () => {
         const candidatesData = await apiClient.findObjects('candidates', {});
         setCandidates(candidatesData);
       } catch (error) {
-        console.error('Error loading candidates:', error);
+        // Error loading candidates - handled silently
         toast.error('Failed to load candidates');
       }
     };

@@ -202,7 +202,7 @@ const DashboardPage = () => {
       setShowConfirmModal(false);
       setPendingFormData(null);
     } catch (error) {
-      console.error('Error creating candidate:', error);
+      // Error creating candidate - handled silently
       toast.error('Failed to create candidate');
       setShowConfirmModal(false);
       setPendingFormData(null);
@@ -492,7 +492,7 @@ const DashboardPage = () => {
       setShowExportModal(false);
       toast.success('Election results exported as CSV successfully');
     } catch (error) {
-      console.error('Error exporting results:', error);
+      // Error exporting results - handled silently
       toast.error('Failed to export results');
     }
   };
@@ -663,7 +663,7 @@ const DashboardPage = () => {
         try {
           window.print();
         } catch (printError) {
-          console.error('Print error:', printError);
+          // Print error - handled silently
           toast.error('Print dialog failed. Please try again or check browser settings.');
         } finally {
           // Clean up
@@ -694,7 +694,7 @@ const DashboardPage = () => {
       
       toast.success('Election results exported as PDF successfully');
     } catch (error) {
-      console.error('Error exporting PDF:', error);
+      // Error exporting PDF - handled silently
       toast.error('Failed to export PDF: ' + error.message);
     }
   };

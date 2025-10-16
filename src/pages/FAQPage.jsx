@@ -61,7 +61,7 @@ const FAQPage = () => {
       const faqsData = await apiClient.findObjects('faqs', {});
       setFaqs(faqsData);
     } catch (error) {
-      console.error('Error loading FAQs:', error);
+      // Error loading FAQs - handled silently
       setError(error.message || 'Failed to load FAQs');
       toast.error('Failed to load FAQs');
     } finally {
@@ -166,7 +166,7 @@ const FAQPage = () => {
       setShowConfirmModal(false);
       setPendingFormData(null);
     } catch (error) {
-      console.error('Error saving FAQ:', error);
+      // Error saving FAQ - handled silently
       toast.error('Failed to save FAQ');
       setShowConfirmModal(false);
       setPendingFormData(null);
@@ -194,7 +194,7 @@ const FAQPage = () => {
       // Reload FAQs from database
       await loadFAQs();
     } catch (error) {
-      console.error('Error deleting FAQ:', error);
+      // Error deleting FAQ - handled silently
       toast.error('Failed to delete FAQ');
     } finally {
       setDeleteLoading(false);
@@ -258,7 +258,7 @@ const FAQPage = () => {
       // Reload FAQs from database
       await loadFAQs();
     } catch (error) {
-      console.error('Error deleting FAQs:', error);
+      // Error deleting FAQs - handled silently
       toast.error('Failed to delete FAQs');
     } finally {
       setBulkDeleteLoading(false);

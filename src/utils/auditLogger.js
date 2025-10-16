@@ -12,7 +12,7 @@ class AuditLogger {
       const userData = localStorage.getItem('user');
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
-      console.error('Error parsing user data:', error);
+      // Error parsing user data - handled silently
       return null;
     }
   }
@@ -60,7 +60,7 @@ class AuditLogger {
       // Dispatch event to notify components of audit log updates
       window.dispatchEvent(new CustomEvent('auditLogsUpdated'));
     } catch (error) {
-      console.error('Failed to log audit event:', error);
+      // Failed to log audit event - handled silently
       // Don't throw error to avoid breaking the main functionality
     }
   }

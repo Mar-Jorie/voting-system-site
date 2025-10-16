@@ -160,7 +160,7 @@ const UsersPage = () => {
       }));
       setRoleOptions(options);
     } catch (error) {
-      console.error('Error loading roles:', error);
+      // Error loading roles - handled silently
       // Keep default role options if loading fails
     }
   };
@@ -294,7 +294,7 @@ const UsersPage = () => {
       setShowConfirmModal(false);
       setPendingFormData(null);
     } catch (error) {
-      console.error('Error saving user:', error);
+      // Error saving user - handled silently
       toast.error(error.message || 'Failed to save user');
       setShowConfirmModal(false);
       setPendingFormData(null);
@@ -328,7 +328,7 @@ const UsersPage = () => {
       setShowDeleteModal(false);
       setDeletingUser(null);
     } catch (error) {
-      console.error('Error deleting user:', error);
+      // Error deleting user - handled silently
       toast.error('Failed to delete user');
     } finally {
       setDeleteLoading(false);
@@ -473,7 +473,7 @@ const UsersPage = () => {
       // Reload users from database
       await refresh();
     } catch (error) {
-      console.error('Error deleting users:', error);
+      // Error deleting users - handled silently
       toast.error('Failed to delete users');
     } finally {
       setBulkDeleteLoading(false);
@@ -529,7 +529,7 @@ const UsersPage = () => {
       // Reload users from database
       await refresh();
     } catch (error) {
-      console.error('Error updating user status:', error);
+      // Error updating user status - handled silently
       toast.error('Failed to update user status');
     } finally {
       setBulkStatusLoading(false);
@@ -571,7 +571,7 @@ const UsersPage = () => {
       setShowExportModal(false);
       toast.success(`Exported ${usersToExport.length} users as CSV successfully`);
     } catch (error) {
-      console.error('Error exporting users:', error);
+      // Error exporting users - handled silently
       toast.error('Failed to export users');
     }
   };
@@ -684,7 +684,7 @@ const UsersPage = () => {
       setShowStatusToggleModal(false);
       setStatusToggleUser(null);
     } catch (error) {
-      console.error('Error updating user status:', error);
+      // Error updating user status - handled silently
       toast.error('Failed to update user status');
     } finally {
       setStatusToggleLoading(false);

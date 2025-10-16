@@ -1,6 +1,6 @@
 // InputFactory Component - MANDATORY PATTERN
 import { useState } from 'react';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import FileUpload from './FileUpload';
 
 export default function InputFactory({ fieldName, config, value, onChange, className = '' }) {
@@ -34,6 +34,18 @@ export default function InputFactory({ fieldName, config, value, onChange, class
     onChange(newValue);
   };
 
+  const handleClear = () => {
+    if (type === 'Boolean') {
+      onChange(false);
+    } else if (type === 'Number') {
+      onChange('');
+    } else if (type === 'Array') {
+      onChange('');
+    } else {
+      onChange('');
+    }
+  };
+
   const inputId = `field-${fieldName}`;
   
   // Filter out file-specific props that shouldn't be passed to DOM elements
@@ -58,6 +70,19 @@ export default function InputFactory({ fieldName, config, value, onChange, class
     ...domSafeProps
   };
 
+  // Check if input has value and should show clear button
+  const hasValue = () => {
+    if (type === 'Boolean') {
+      return value === true;
+    } else if (type === 'Number') {
+      return value !== '' && value !== null && value !== undefined;
+    } else if (type === 'Array') {
+      return value && value.trim() !== '';
+    } else {
+      return value && value.toString().trim() !== '';
+    }
+  };
+
   const renderInput = () => {
     switch (type) {
       case 'String':
@@ -67,13 +92,22 @@ export default function InputFactory({ fieldName, config, value, onChange, class
               <input
                 {...commonProps}
                 type={showPassword ? 'text' : 'password'}
-                className={`${commonProps.className} ${showPasswordToggle ? 'pr-10' : ''}`}
+                className={`${commonProps.className} ${showPasswordToggle ? 'pr-10' : ''} ${hasValue() ? 'pr-20' : ''}`}
               />
+              {hasValue() && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              )}
               {showPasswordToggle && (
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 ${hasValue() ? 'right-10' : 'right-3'}`}
                 >
                   {showPassword ? (
                     <EyeSlashIcon className="h-4 w-4" />
@@ -85,10 +119,44 @@ export default function InputFactory({ fieldName, config, value, onChange, class
             </div>
           );
         }
-        return <input {...commonProps} type="text" />;
+        return (
+          <div className="relative">
+            <input 
+              {...commonProps} 
+              type="text" 
+              className={`${commonProps.className} ${hasValue() ? 'pr-10' : ''}`}
+            />
+            {hasValue() && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        );
       
       case 'Number':
-        return <input {...commonProps} type="number" />;
+        return (
+          <div className="relative">
+            <input 
+              {...commonProps} 
+              type="number" 
+              className={`${commonProps.className} ${hasValue() ? 'pr-10' : ''}`}
+            />
+            {hasValue() && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        );
       
       case 'Boolean':
         return (
@@ -105,16 +173,44 @@ export default function InputFactory({ fieldName, config, value, onChange, class
         );
       
       case 'Date':
-        return <input {...commonProps} type="date" />;
+        return (
+          <div className="relative">
+            <input 
+              {...commonProps} 
+              type="date" 
+              className={`${commonProps.className} ${hasValue() ? 'pr-10' : ''}`}
+            />
+            {hasValue() && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        );
       
       case 'Array':
         return (
-          <textarea
-            {...commonProps}
-            rows={3}
-            className={`${commonProps.className} resize-none`}
-            placeholder={placeholder || `Enter ${label || fieldName} (one per line)`}
-          />
+          <div className="relative">
+            <textarea
+              {...commonProps}
+              rows={3}
+              className={`${commonProps.className} resize-none ${hasValue() ? 'pr-10' : ''}`}
+              placeholder={placeholder || `Enter ${label || fieldName} (one per line)`}
+            />
+            {hasValue() && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         );
       
       case 'Currency':
@@ -128,8 +224,17 @@ export default function InputFactory({ fieldName, config, value, onChange, class
               {...commonProps}
               type="number"
               step="0.01"
-              className={`${commonProps.className} pl-7`}
+              className={`${commonProps.className} pl-7 ${hasValue() ? 'pr-10' : ''}`}
             />
+            {hasValue() && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            )}
           </div>
         );
       
@@ -144,7 +249,9 @@ export default function InputFactory({ fieldName, config, value, onChange, class
             maxSize={config.maxSize || 5 * 1024 * 1024}
             value={value}
             onChange={onChange}
-            onError={(error) => console.error('File upload error:', error)}
+            onError={(error) => {
+              // File upload error handled silently
+            }}
             required={required}
             disabled={config.disabled || false}
             showPreview={config.showPreview !== false}
@@ -154,7 +261,24 @@ export default function InputFactory({ fieldName, config, value, onChange, class
         );
       
       default:
-        return <input {...commonProps} type="text" />;
+        return (
+          <div className="relative">
+            <input 
+              {...commonProps} 
+              type="text" 
+              className={`${commonProps.className} ${hasValue() ? 'pr-10' : ''}`}
+            />
+            {hasValue() && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        );
     }
   };
 

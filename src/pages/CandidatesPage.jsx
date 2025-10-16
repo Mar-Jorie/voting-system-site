@@ -97,7 +97,7 @@ const CandidatesPage = () => {
       
       setVoteCounts(counts);
     } catch (error) {
-      console.error('❌ Error loading vote counts:', error);
+      // Error loading vote counts - handled silently
       setVoteCounts({});
     }
   };
@@ -233,7 +233,7 @@ const CandidatesPage = () => {
       setShowConfirmModal(false);
       setPendingFormData(null);
     } catch (error) {
-      console.error('Error saving candidate:', error);
+      // Error saving candidate - handled silently
       toast.error('Failed to save candidate');
       setShowConfirmModal(false);
       setPendingFormData(null);
@@ -265,7 +265,7 @@ const CandidatesPage = () => {
       setShowDeleteModal(false);
       setDeletingCandidate(null);
     } catch (error) {
-      console.error('Error deleting candidate:', error);
+      // Error deleting candidate - handled silently
       toast.error('Failed to delete candidate');
     } finally {
       setDeleteLoading(false);
@@ -439,7 +439,7 @@ const CandidatesPage = () => {
       setSelectedCandidates(new Set());
       setShowBulkDeleteModal(false);
     } catch (error) {
-      console.error('Error deleting candidates:', error);
+      // Error deleting candidates - handled silently
       toast.error('Failed to delete candidates');
     } finally {
       setBulkDeleteLoading(false);

@@ -84,7 +84,7 @@ const Header = () => {
       await logout();
       setShowLogoutConfirm(false);
     } catch (error) {
-      console.error('Logout error:', error);
+      // Logout error - handled silently
       toast.error('Failed to sign out. Please try again.');
     } finally {
       setLogoutLoading(false);
@@ -122,13 +122,7 @@ const Header = () => {
       toast.success('Profile updated successfully!');
       
     } catch (error) {
-      console.error('Error updating profile:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        user: user,
-        pendingData: pendingProfileData
-      });
+      // Error updating profile - handled silently
       toast.error('Failed to update profile. Please try again.');
     } finally {
       setProfileUpdateLoading(false);

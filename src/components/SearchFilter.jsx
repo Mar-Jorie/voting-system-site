@@ -38,6 +38,11 @@ const SearchFilter = ({
     onSearch && onSearch(value);
   };
 
+  const handleClearSearch = () => {
+    onChange('');
+    onSearch && onSearch('');
+  };
+
   const handleFilterChange = (filterKey, filterValue) => {
     onFilterChange && onFilterChange(filterKey, filterValue);
   };
@@ -72,13 +77,24 @@ const SearchFilter = ({
             />
           ) : (
             <form onSubmit={handleSearch} className="w-full">
-              <input
-                type="text"
-                placeholder={placeholder}
-                value={value}
-                onChange={handleSearchChange}
-                className={`w-full h-10 px-3 border rounded-md text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${className}`}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder={placeholder}
+                  value={value}
+                  onChange={handleSearchChange}
+                  className={`w-full h-10 px-3 border rounded-md text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${className} ${value ? 'pr-10' : ''}`}
+                />
+                {value && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </form>
           )}
         </div>

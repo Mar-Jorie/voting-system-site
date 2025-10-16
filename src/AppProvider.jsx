@@ -41,7 +41,7 @@ function AppProvider({ children }) {
           }
         }
       } catch (error) {
-        console.error('Error loading user from database:', error);
+        // Error loading user from database - handled silently
         // Clear any invalid session data
         document.cookie = 'sessionToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       }
@@ -108,7 +108,7 @@ function AppProvider({ children }) {
             window.location.replace('/signin');
           }
         } catch (error) {
-          console.error('Error validating session:', error);
+          // Error validating session - handled silently
           // If validation fails, logout
           setUser(null);
           document.cookie = 'sessionToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
@@ -176,7 +176,7 @@ function AppProvider({ children }) {
       window.location.replace('/signin');
       
     } catch (error) {
-      console.error('Error during logout:', error);
+      // Error during logout - handled silently
       // Even if there's an error, still clear the session
       setUser(null);
       document.cookie = 'sessionToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
@@ -226,7 +226,7 @@ function AppProvider({ children }) {
       setUser(freshUserData);
       return freshUserData;
     } catch (error) {
-      console.error('Error refreshing user data:', error);
+      // Error refreshing user data - handled silently
       throw error;
     }
   };

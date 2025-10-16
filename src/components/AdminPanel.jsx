@@ -51,7 +51,7 @@ const AdminPanel = () => {
       setCandidates(candidatesData);
       setVotes(votesData);
     } catch (error) {
-      console.error('Error loading data:', error);
+      // Error loading data - handled silently
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
@@ -118,7 +118,7 @@ const AdminPanel = () => {
       setShowConfirmModal(false);
       setPendingFormData(null);
     } catch (error) {
-      console.error('Error saving candidate:', error);
+      // Error saving candidate - handled silently
       toast.error('Failed to save candidate');
       setShowConfirmModal(false);
       setPendingFormData(null);
@@ -143,7 +143,7 @@ const AdminPanel = () => {
       // Reload data to get updated candidates
       await loadData();
     } catch (error) {
-      console.error('Error deleting candidate:', error);
+      // Error deleting candidate - handled silently
       toast.error('Failed to delete candidate');
     } finally {
       setDeleteLoading(false);

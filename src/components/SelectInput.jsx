@@ -1,6 +1,6 @@
 // SelectInput Component - MANDATORY PATTERN
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDownIcon, CheckIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, CheckIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const SelectInput = ({
   label,
@@ -69,6 +69,16 @@ const SelectInput = ({
     }
   };
 
+  const handleClear = () => {
+    if (multiple) {
+      onChange([]);
+    } else {
+      onChange(null);
+    }
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
   const isSelected = (option) => {
     if (multiple && Array.isArray(value)) {
       return value.some(v => v.value === option.value);
@@ -83,6 +93,13 @@ const SelectInput = ({
       return `${value.length} items selected`;
     }
     return value ? value.label : placeholder;
+  };
+
+  const hasValue = () => {
+    if (multiple && Array.isArray(value)) {
+      return value.length > 0;
+    }
+    return value !== null && value !== undefined;
   };
 
   return (
@@ -117,7 +134,21 @@ const SelectInput = ({
           <span className={`truncate ${!value || (multiple && Array.isArray(value) && value.length === 0) ? 'text-gray-500' : 'text-gray-900'}`}>
             {getDisplayValue()}
           </span>
-          <ChevronDownIcon className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          <div className="flex items-center space-x-1">
+            {hasValue() && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClear();
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            )}
+            <ChevronDownIcon className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          </div>
         </button>
 
         {/* Selected Items (for multiple select) */}

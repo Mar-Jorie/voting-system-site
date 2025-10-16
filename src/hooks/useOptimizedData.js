@@ -127,7 +127,7 @@ export const useOptimizedData = (collection, options = {}) => {
       return result;
     } catch (err) {
       const errorMessage = err.message || 'Failed to load data';
-      console.error('❌ Error loading data for', collection, ':', err);
+      // Error loading data - handled silently
       setError(errorMessage);
       
       // Call error callback
@@ -376,7 +376,7 @@ export const useDataPrefetch = () => {
       dataCache.set(cacheKey, new CacheEntry(result));
       return result;
     } catch (err) {
-      console.warn(`Failed to prefetch ${collection}:`, err);
+      // Failed to prefetch - handled silently
     }
   }, []);
 
