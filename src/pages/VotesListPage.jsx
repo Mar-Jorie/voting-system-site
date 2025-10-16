@@ -561,7 +561,7 @@ const VotesListPage = () => {
           onChange={handleSearchChange}
           onSearch={handleSearch}
           onFilterChange={handleFilterChange}
-          filters={filters}
+          filters={{}} // Don't pass dateRange to SearchFilter since we handle it separately
           useSelectForSearch={false}
           statusOptions={[]}
           getUniqueCompanies={() => []}
