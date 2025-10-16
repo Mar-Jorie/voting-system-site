@@ -1,0 +1,168 @@
+---
+description: Production deployment configurations including nginx configuration, Docker Compose setup, and GitHub Actions CI/CD pipeline for automated deployment.
+globs:
+alwaysApply: false
+---
+
+# Project Deployment
+
+## Overview
+
+This rule provides instructions for creating production deployment configurations including nginx configuration, Docker Compose setup, and GitHub Actions CI/CD pipeline for automated deployment.
+
+## Deployment Components
+
+### 1. Nginx Configuration
+
+Create `nginx.conf` in the project root with the following structure:
+
+```nginx
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Handle React Router
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Static assets caching
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+}
+```
+
+### 2. Docker Compose Configuration
+
+Create `docker-compose.yml` in the project root:
+
+**Agent Instructions**: Write the docker-compose.yml with actual values:
+1. Replace `${CONTAINER_NAME}` with the project name from package.json (using kebab-case)
+2. Replace `${DOMAIN_NAME}` with the actual domain name
+3. If domain name is not provided in the user task, ask the user for their domain name
+
+Example (using placeholders):
+```yaml
+version: '3'
+services:
+  nginx:
+    image: nginx:alpine3.18
+    container_name: ${CONTAINER_NAME}
+    volumes:
+      - ./dist:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${CONTAINER_NAME}.loadbalancer.server.port=80
+      - traefik.http.routers.${CONTAINER_NAME}.rule=Host("${DOMAIN_NAME}")
+      - traefik.http.routers.${CONTAINER_NAME}.entrypoints=web
+      - traefik.http.routers.${CONTAINER_NAME}_secured.rule=Host("${DOMAIN_NAME}")
+      - traefik.http.routers.${CONTAINER_NAME}_secured.entrypoints=websecure
+      - traefik.http.routers.${CONTAINER_NAME}_secured.tls.certresolver=myhttpchallenge
+      - traefik.http.routers.${CONTAINER_NAME}.middlewares=redirect@file
+```
+
+### 3. GitHub Actions Workflow
+
+Create `.github/workflows/deploy.yml` with the provided deployment script:
+
+```yaml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main, master ]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Start ssh-agent and add key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add SSH host to known_hosts
+        run: |
+          : "${SSH_HOST?Missing SSH_HOST}"
+          mkdir -p ~/.ssh
+          ssh-keyscan "$SSH_HOST" >> ~/.ssh/known_hosts
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+
+      - name: Deploy with git pull/clone using HTTPS
+        run: |
+          DEPLOY_PATH="/$SSH_USER/$GITHUB_REPOSITORY_NAME"
+          ssh -A "$SSH_USER@$SSH_HOST" "set -e
+            if [ ! -d '$DEPLOY_PATH/.git' ]; then
+              echo '📥 Cloning fresh repo...'
+              git clone -b $BRANCH https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY_OWNER}/${GITHUB_REPOSITORY_NAME}.git '$DEPLOY_PATH'
+            else
+              echo '🔄 Pulling latest changes...'
+              cd '$DEPLOY_PATH'
+              git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY_OWNER}/${GITHUB_REPOSITORY_NAME}.git
+              git fetch origin $BRANCH
+              git reset --hard origin/$BRANCH
+            fi
+            echo '🚀 Deployment finished on' \$(hostname)
+          "
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ vars.SSH_USER || 'root' }}
+          GITHUB_REPOSITORY_NAME: ${{github.event.repository.name}}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
+```
+
+## Required GitHub Secrets
+
+Configure the following secrets in your GitHub repository:
+
+- `SSH_PRIVATE_KEY`: Private SSH key for server access
+- `SSH_HOST`: IP address or hostname of your production server
+
+Configure the following variables:
+
+- `SSH_USER`: SSH username (defaults to 'root' if not set)
+
+## Deployment Process
+
+1. **Build Process**: The workflow automatically triggers on push to main/master branches
+2. **Server Access**: Uses SSH key authentication for secure server access
+3. **Repository Sync**: Clones or pulls latest changes to production server
+4. **Container Management**: Docker Compose handles nginx container lifecycle
+5. **Static Serving**: Nginx serves the built React application
+
+## Production Server Requirements
+- Docker and Docker Compose installed
+- Traefik proxy running for load balancing and SSL termination
+- SSH access configured
+- Domain name pointing to server IP
+
+## Implementation Steps
+1. Create nginx configuration file
+2. Create Docker Compose file with actual container name and domain name
+3. Create GitHub Actions workflow directory and file
+4. Configure GitHub repository secrets and variables
+5. Test deployment with a push to main branch
+6. Verify application is accessible on production domain

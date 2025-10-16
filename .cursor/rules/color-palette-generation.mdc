@@ -1,0 +1,209 @@
+---
+description: Generate complete color palettes from a base hex color using color theory principles for consistent design systems.
+alwaysApply: false
+---
+
+# 🎨 Color Palette Generation Rules
+
+## ⚠️ CRITICAL: AI AGENTS MUST FOLLOW THESE COLOR GENERATION RULES
+
+**These color palette generation specifications are MANDATORY for all implementations. Deviating from these rules is NOT ALLOWED.**
+
+---
+
+## 🎯 Color Palette Generation (MANDATORY)
+
+### ⚠️ CRITICAL RULE: Base Color is ALWAYS 600 Shade
+**The provided hex color is ALWAYS the 600 shade (main brand color), NOT the 500 shade.**
+- **600 shade**: The provided hex color (main brand color)
+- **500 and below**: Generated lighter shades
+- **700 and above**: Generated darker shades
+
+### Example:
+- **Input**: `#1e1f48`
+- **Result**: `#1e1f48` becomes `--color-primary-600` (main brand color)
+- **Lighter shades**: 25, 50, 100, 200, 300, 400, 500 (generated)
+- **Darker shades**: 700, 800, 900, 950 (generated)
+
+### Base Color Processing (MUST FOLLOW)
+```javascript
+// Color Palette Generation - MANDATORY PATTERN
+// CRITICAL: The provided hex color is ALWAYS the 600 shade (main brand color)
+function generateColorPalette(baseHex) {
+  // Convert hex to HSL for better color manipulation
+  const hsl = hexToHsl(baseHex);
+  
+  // Generate 11 shades using HSL adjustments
+  // The baseHex provided is ALWAYS the 600 shade
+  const palette = {
+    25: hslToHex({ ...hsl, l: 98 }),   // Very light
+    50: hslToHex({ ...hsl, l: 95 }),   // Light
+    100: hslToHex({ ...hsl, l: 90 }),  // Lighter
+    200: hslToHex({ ...hsl, l: 80 }),  // Light
+    300: hslToHex({ ...hsl, l: 70 }),  // Medium light
+    400: hslToHex({ ...hsl, l: 60 }),  // Medium
+    500: hslToHex({ ...hsl, l: 50 }),  // Medium
+    600: baseHex,                      // Main brand color (provided hex)
+    700: hslToHex({ ...hsl, l: 30 }),  // Dark
+    800: hslToHex({ ...hsl, l: 20 }),  // Darker
+    900: hslToHex({ ...hsl, l: 10 }),  // Very dark
+    950: hslToHex({ ...hsl, l: 5 })    // Darkest
+  };
+  
+  return palette;
+}
+```
+
+### Color Theory Implementation (MANDATORY)
+```javascript
+// HSL Color Conversion - MANDATORY
+function hexToHsl(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  
+  if (max === min) {
+    h = s = 0; // achromatic
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  
+  return { h: h * 360, s: s * 100, l: l * 100 };
+}
+
+function hslToHex(hsl) {
+  const { h, s, l } = hsl;
+  const c = (1 - Math.abs(2 * l / 100 - 1)) * s / 100;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l / 100 - c / 2;
+  
+  let r, g, b;
+  if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+  else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+  else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+  else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+  else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+  else { r = c; g = 0; b = x; }
+  
+  r = Math.round((r + m) * 255);
+  g = Math.round((g + m) * 255);
+  b = Math.round((b + m) * 255);
+  
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+```
+
+### CSS Integration (MANDATORY)
+```css
+/* CRITICAL: Update existing src/index.css file - DO NOT create new files */
+/* Replace primary color values in @theme section (lines 6-17) */
+/* CRITICAL: The provided hex color is ALWAYS the 600 shade */
+@theme {
+  --color-primary-25: #ffffff;
+  --color-primary-50: #f8f9ff;
+  --color-primary-100: #f1f3ff;
+  --color-primary-200: #e3e7ff;
+  --color-primary-300: #d1d8ff;
+  --color-primary-400: #b8c2ff;
+  --color-primary-500: #9aa7ff;
+  --color-primary-600: #1e1f48; /* Main brand color - provided hex */
+  --color-primary-700: #17183a;
+  --color-primary-800: #10112c;
+  --color-primary-900: #23577d;
+  --color-primary-950: #1a4566;
+}
+
+/* Replace primary color values in :root section (lines 152-163) */
+:root {
+  /* CSS Variables for backwards compatibility */
+  --color-primary-25: #ffffff;
+  --color-primary-50: #e9eef2;
+  --color-primary-100: #d3dde5;
+  --color-primary-200: #bdcdd8;
+  --color-primary-300: #a7bccb;
+  --color-primary-400: #91abbe;
+  --color-primary-500: #7b9ab1;
+  --color-primary-600: #6589a4; /* Main brand color */
+  --color-primary-700: #4f7897;
+  --color-primary-800: #39678a;
+  --color-primary-900: #23577d;
+  --color-primary-950: #1a4566;
+}
+```
+
+### Tailwind Configuration (MANDATORY)
+```javascript
+// CRITICAL: DO NOT update tailwind.config.js for Tailwind v4
+// Tailwind v4 uses @theme in CSS file, not config file
+// The colors are automatically available via CSS custom properties
+// No configuration changes needed - colors work via @theme section
+```
+
+---
+
+## 🎨 Color Palette Generation Rules (MANDATORY)
+
+### 1. Base Color Processing (MANDATORY)
+- ✅ ALWAYS convert hex to HSL for better color manipulation
+- ✅ ALWAYS generate 11 shades (25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950)
+- ✅ ALWAYS use the base color as the 500 shade
+- ✅ ALWAYS ensure proper contrast ratios for accessibility
+- ❌ NEVER use arbitrary color values
+- ❌ NEVER skip any of the 11 required shades
+
+### 2. Color Theory Implementation (MANDATORY)
+- ✅ ALWAYS use HSL color space for calculations
+- ✅ ALWAYS maintain hue and saturation consistency
+- ✅ ALWAYS adjust lightness for proper shade progression
+- ✅ ALWAYS ensure colors are valid hex values
+- ❌ NEVER use RGB for color calculations
+- ❌ NEVER create colors that are too similar
+
+### 3. CSS Integration (MANDATORY)
+- ✅ ALWAYS update existing src/index.css file (DO NOT create new files)
+- ✅ ALWAYS update both @theme and :root sections
+- ✅ ALWAYS use CSS custom properties for all colors
+- ✅ ALWAYS maintain backwards compatibility
+- ✅ ALWAYS keep all other color palettes (gray, green, red, etc.) intact
+- ❌ NEVER create new CSS files for color palette
+- ❌ NEVER update tailwind.config.js (Tailwind v4 uses @theme in CSS)
+- ❌ NEVER hardcode colors in components
+- ❌ NEVER skip CSS variable definitions
+
+### 4. Accessibility Compliance (MANDATORY)
+- ✅ ALWAYS ensure sufficient contrast ratios
+- ✅ ALWAYS test colors against WCAG guidelines
+- ✅ ALWAYS provide alternative colors for accessibility
+- ✅ ALWAYS maintain readability across all shades
+- ❌ NEVER use colors that fail accessibility tests
+- ❌ NEVER ignore contrast requirements
+
+---
+
+## 🚨 COMPLIANCE ENFORCEMENT
+
+**AI AGENTS MUST:**
+1. **Generate complete color palette** from base hex color
+2. **Update CSS files** with new color definitions
+3. **Update Tailwind configuration** with new colors
+4. **Verify accessibility** of all generated colors
+5. **Test color application** throughout the application
+6. **Ensure consistency** across all components
+
+**NON-COMPLIANCE WILL RESULT IN:**
+- ❌ Rejection of implementation
+- ❌ Mandatory correction before proceeding
+- ❌ Color palette generation violation warnings
+
+**THESE COLOR PALETTE GENERATION RULES ARE NON-NEGOTIABLE AND MUST BE FOLLOWED IN ALL IMPLEMENTATIONS.**

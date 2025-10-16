@@ -1,0 +1,216 @@
+---
+description: Use component-based architecture with clear separation of concerns and organized directory structure.
+globs:
+alwaysApply: false
+---
+
+## Project Structure
+
+### Directory Organization - MANDATORY STRUCTURE
+
+```
+src/
+├── App.jsx               # MANDATORY: Main application entry point with Router setup
+├── AppProvider.jsx       # MANDATORY: Global state provider with user and schemas
+├── AppContext.jsx        # MANDATORY: React context for authentication state
+├── portal.js             # MANDATORY: Portal system for modals/toasts (exact implementation)
+├── index.css             # MANDATORY: Tailwind v4 setup with color palette
+├── main.jsx              # MANDATORY: React root with AppProvider wrapper
+├── hooks/                # MANDATORY: Custom hooks directory
+│   ├── useScreenSize.js  # MANDATORY: Responsive screen size detection
+│   └── useApp.js         # MANDATORY: App context hook for authentication
+├── usecases/             # MANDATORY: API client and hooks following @rest-api-implementation.mdc
+│   ├── api.js            # MANDATORY: Complete API client with MD5 authentication
+│   ├── object/           # MANDATORY: Object CRUD hooks
+│   │   ├── useCreateObject.js
+│   │   ├── useDeleteObject.js
+│   │   ├── useFindObjects.js
+│   │   ├── useGetObject.js
+│   │   └── useUpsertObject.js
+│   ├── user/             # MANDATORY: User authentication hooks
+│   │   ├── useSignUp.js  # MANDATORY: Signup hook (see @rest-api-implementation.mdc for details)
+│   │   ├── useSignIn.js  # MANDATORY: Signin hook (see @rest-api-implementation.mdc for details)
+│   │   └── useCheckUsername.js  # MANDATORY: Username validation hook
+│   └── file/             # MANDATORY: File upload hooks
+├── pages/                # MANDATORY: Page components following @page-layouts.mdc
+│   ├── MainPage.jsx      # MANDATORY: Main page with MainLayout
+│   ├── SigninPage.jsx    # MANDATORY: Authentication page (see @rest-api-implementation.mdc for details)
+│   ├── SignupPage.jsx    # MANDATORY: Registration page (see @rest-api-implementation.mdc for details)
+│   ├── DashboardPage.jsx # MANDATORY: Dashboard page following dashboard layout
+│   ├── CollectionListPage.jsx  # MANDATORY: Generic list page for any collection
+│   ├── CollectionFormPage.jsx  # MANDATORY: Generic form page for any collection
+│   └── [feature]/        # Feature-specific pages following @page-layouts.mdc
+├── components/           # MANDATORY: Reusable components following @component-design.mdc
+│   ├── Button.jsx        # MANDATORY: Button component with all variants
+│   ├── InputFactory.jsx  # MANDATORY: Dynamic input generator with password fix
+│   ├── SelectInput.jsx   # MANDATORY: Dropdown select component
+│   ├── FormFactory.jsx   # MANDATORY: Dynamic form generator
+│   ├── Toast.jsx         # MANDATORY: Toast notification component
+│   ├── MainLayout.jsx    # MANDATORY: Main layout with Header/Sidebar
+│   ├── Header.jsx        # MANDATORY: Top navigation header with user display
+│   ├── NavSidebar.jsx    # MANDATORY: Collapsible sidebar navigation
+│   ├── Sidebar.jsx       # MANDATORY: Sidebar wrapper component
+│   ├── SearchFilter.jsx  # MANDATORY: Search and filter component
+│   ├── Filters.jsx       # MANDATORY: Advanced filter panel
+│   ├── CollapsibleTable.jsx  # MANDATORY: Collapsible table with actions
+│   ├── SmartFloatingActionButton.jsx  # MANDATORY: FAB component
+│   ├── FloatingChatbot.jsx            # MANDATORY: Chatbot component
+│   └── Modals/
+│       └── ConfirmationModal.jsx  # MANDATORY: Confirmation dialog
+├── utils/                # MANDATORY: Utility functions
+│   ├── cookies.js        # MANDATORY: Cookie management for JWT tokens
+│   ├── pointerUtils.js   # MANDATORY: Pointer utility functions
+│   ├── progressCalculator.js  # MANDATORY: Progress calculation utilities
+│   └── roleBasedAccess.js     # MANDATORY: Role-based access control utilities
+```
+
+### **File Creation Requirements**
+- **MUST** follow `@rest-api-implementation.mdc` for API client implementation
+- **MUST** follow `@component-design.mdc` for all UI components
+- **MUST** follow `@layout-structure.mdc` for layout components
+- **MUST** follow `@page-layouts.mdc` for page structures
+- **MUST** follow `@mcp-schema-validation.mdc` for database schema management
+
+#### ⚠️ CRITICAL: Navigation and Data Validation (MANDATORY)
+
+**Navigation Requirements:**
+- **ALL PAGES MUST** be properly placed in sidenav navigation
+- **ALL PAGES MUST** be navigatable without errors
+- **Navigation flow MUST** work from landing page through all authenticated pages
+- **Sidenav MUST** include all required pages from requirements.md
+
+**Real-time Data Requirements:**
+- **ALL DATA MUST** be fetched in real-time from database
+- **NO HARDCODED DATA** allowed in any component or page
+- **NO MOCK DATA** allowed for display purposes
+- **ALL TABLES, FORMS, DISPLAYS** must show real database data
+- **PROPER LOADING STATES** must be implemented for all data fetching
+- **ERROR HANDLING** must be implemented for database connection issues
+
+**Functionality Validation:**
+- **ALL FUNCTIONS MUST** work without errors or issues
+- **ALL PAGES MUST** have proper design implementation
+- **ALL INTERACTIONS MUST** be functional and responsive
+- **ALL FORMS MUST** submit to real database endpoints
+
+#### ⚠️ CRITICAL: API Client Requirements (MANDATORY)
+
+**The `src/usecases/api.js` file MUST:**
+1. **Connect to real Innque database** at `https://api.innque.com/v1`
+2. **Use Collections API** for all database operations (`/collections/users`, `/collections/roles`)
+3. **Implement authentication** following @rest-api-implementation.mdc
+4. **Use email-based authentication** (not username-based)
+5. **Validate against real database users** (no hardcoded credentials)
+6. **Create real users in database** during signup
+7. **Handle JWT token management** with cookie storage
+8. **Follow exact patterns** from `@rest-api-implementation.mdc`
+
+**PROHIBITED in API client:**
+- ❌ Hardcoded user credentials
+- ❌ Mock authentication responses
+- ❌ Local storage authentication
+- ❌ Static user data arrays
+- ❌ Fake JWT tokens
+- ❌ Simulated database responses
+
+
+```javascript
+//src/portal.js
+class Portal {
+  constructor() {
+    this.nodes = [];
+    this.roots = [];
+  }
+  open(component, props = {}) {
+    const node = document.createElement("div");
+    node.setAttribute("tabindex", "-1");
+    node.style.position = "relative";
+    document.body.appendChild(node);
+    this.nodes.push(node);
+    const root = ReactDOM.createRoot(node);
+    this.roots.push(root);
+    // Clone the component and pass props
+    const ComponentToRender = React.cloneElement(component, {
+      ...props,
+      onClose: () => this.close(root, node),
+    });
+    root.render(ComponentToRender);
+    return {
+      close: () => this.close(root, node),
+      update: (newProps) => {
+        const UpdatedComponent = React.cloneElement(component, {
+          ...newProps,
+          onClose: () => this.close(root, node),
+        });
+        root.render(UpdatedComponent);
+      },
+    };
+  }
+
+  close(root, node) {
+    if (root && node) {
+      root.unmount();
+      node.remove();
+      // Remove from arrays
+      const rootIndex = this.roots.indexOf(root);
+      const nodeIndex = this.nodes.indexOf(node);
+      if (rootIndex > -1) {
+        this.roots.splice(rootIndex, 1);
+      }
+      if (nodeIndex > -1) {
+        this.nodes.splice(nodeIndex, 1);
+      }
+      // Remove body class if no more portals
+      if (this.nodes.length === 0) {
+        document.body.classList.remove("portal-open");
+      }
+    }
+  }
+  closeAll() {
+    // implement it
+  }
+}
+const portal = new Portal();
+export { portal };
+```
+
+```javascript
+//src/App.jsx
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/*" element={<MainPage />} />
+      </Routes>
+    </Router>
+  );
+}
+```
+
+```javascript
+//src/AppProvider.jsx
+import React, { useState } from "react";
+import { AppContext } from "./AppContext";
+function AppProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [schemas, setSchemas] = useState([]);
+  const value = {
+    user,
+    setUser,
+    schemas,
+    setSchemas,
+  };
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
+```
+
+```javascript
+//src/main.jsx
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <AppProvider>
+    <App />
+  </AppProvider>
+);
+```
