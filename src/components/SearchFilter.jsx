@@ -15,6 +15,8 @@ const SearchFilter = ({
   searchSelectValue,
   onSearchSelectChange,
   statusOptions = [],
+  statusLabel = "Status",
+  statusFilterKey = "status",
   getUniqueCompanies = () => [],
   additionalFilters = [],
   className = "bg-gray-50 border-gray-200",
@@ -124,9 +126,9 @@ const SearchFilter = ({
             {/* Status Filter */}
             {statusOptions.length > 0 && (
               <SelectInput
-                label="Status"
-                value={statusOptions.find(option => option.value === filters.status) || null}
-                onChange={(option) => handleFilterChange('status', option?.value || '')}
+                label={statusLabel}
+                value={statusOptions.find(option => option.value === filters[statusFilterKey]) || null}
+                onChange={(option) => handleFilterChange(statusFilterKey, option?.value || '')}
                 options={statusOptions}
                 className="filter-select-input"
               />

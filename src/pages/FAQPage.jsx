@@ -525,6 +525,8 @@ const FAQPage = () => {
           filters={filters}
           useSelectForSearch={false}
           statusOptions={categoryOptions}
+          statusLabel="Category"
+          statusFilterKey="category"
           getUniqueCompanies={() => []}
           className="bg-gray-50 border-gray-200"
         />
