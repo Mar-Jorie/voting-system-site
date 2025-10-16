@@ -210,7 +210,6 @@ const CandidatesPage = () => {
         throw new Error('Name and category are required');
       }
       
-      console.log('Form data being submitted:', pendingFormData);
       
       candidateData = {
         name: pendingFormData.name,
@@ -220,7 +219,6 @@ const CandidatesPage = () => {
         is_active: true
       };
       
-      console.log('Candidate data to be sent:', candidateData);
 
       if (editingCandidate) {
         // Update existing candidate

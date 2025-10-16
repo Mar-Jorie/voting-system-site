@@ -35,11 +35,7 @@ const DashboardPage = () => {
   // Load voting status
   useEffect(() => {
     const loadVotingStatus = async () => {
-      console.log('🔄 DashboardPage: Loading voting status...');
       const status = await getVotingStatusInfo();
-      console.log('🔄 DashboardPage: Loaded voting status:', status);
-      console.log('🔄 DashboardPage: status.isActive =', status.isActive);
-      console.log('🔄 DashboardPage: status.status =', status.status);
       setVotingStatus(status);
     };
 
@@ -50,13 +46,11 @@ const DashboardPage = () => {
     
     // Listen for real-time voting status changes
     const handleVotingStatusChanged = () => {
-      console.log('🔄 DashboardPage: Received votingStatusChanged event');
       loadVotingStatus();
     };
     
     // Listen for detailed voting status updates
     const handleVotingStatusUpdated = (event) => {
-      console.log('🔄 DashboardPage: Received votingStatusUpdated event with detail:', event.detail);
     };
     
     window.addEventListener('votingStatusChanged', handleVotingStatusChanged);
@@ -158,10 +152,7 @@ const DashboardPage = () => {
   
   // Debug votingStatus changes
   useEffect(() => {
-    console.log('🔄 DashboardPage: votingStatus state changed:', votingStatus);
     if (votingStatus) {
-      console.log('🔄 DashboardPage: votingStatus.isActive =', votingStatus.isActive);
-      console.log('🔄 DashboardPage: votingStatus.status =', votingStatus.status);
     }
   }, [votingStatus]);
   const [showVoteControlModal, setShowVoteControlModal] = useState(false);
@@ -298,9 +289,7 @@ const DashboardPage = () => {
         });
         
         // Force refresh the voting status immediately
-        console.log('🔄 DashboardPage: Force refreshing voting status after start...');
         const newStatus = await getVotingStatusInfo();
-        console.log('🔄 DashboardPage: New status after start:', newStatus);
         setVotingStatus(newStatus);
         
         toast.success('Voting has been resumed');

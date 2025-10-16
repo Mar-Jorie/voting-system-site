@@ -138,7 +138,6 @@ const FileUpload = ({
         const totalOriginalSize = compressedFiles.reduce((sum, file) => sum + file.originalSize, 0);
         const savingsPercentage = Math.round((totalSavings / totalOriginalSize) * 100);
         
-        console.log(`Compression Summary: ${compressedFiles.length} files compressed, ${formatFileSize(totalSavings)} saved (${savingsPercentage}% reduction)`);
       }
       
       if (multiple) {
