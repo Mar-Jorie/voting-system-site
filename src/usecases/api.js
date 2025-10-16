@@ -1,6 +1,9 @@
 // api.js
 
-const API_BASE = "https://api.innque.com/v1";
+// Use CORS proxy for production deployment to avoid CORS issues
+const API_BASE = window.location.hostname === 'mar-jorie.github.io' 
+  ? "https://corsproxy.io/?https://api.innque.com/v1"
+  : "https://api.innque.com/v1";
 const APP_ID = "votes";
 const MASTER_KEY = "cbd9e198-8f76-4d8f-93b1-04201de94e5d";
 const DEFAULT_RETRIES = 3; // Number of retry attempts
