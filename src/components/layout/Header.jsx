@@ -266,11 +266,11 @@ const Header = () => {
               {/* Notification Dropdown */}
               {showNotificationDropdown && (
                 <div 
-                  className="absolute mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50" 
+                  className="mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50" 
                   style={{
                     ...(window.innerWidth < 768 
-                      ? { left: '50%', top: '4rem', transform: 'translateX(-50%)' }
-                      : { right: '0', top: 'auto' }
+                      ? { position: 'fixed', left: '50%', top: '4rem', transform: 'translateX(-50%)' }
+                      : { position: 'absolute', right: '0', top: 'auto' }
                     )
                   }}
                 >
