@@ -459,13 +459,13 @@ const LandingPage = () => {
           <div className="grid lg:grid-cols-2 3xl:grid-cols-3 gap-8 lg:gap-12 3xl:gap-16 items-center">
             <div className="text-left 3xl:col-span-2">
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight">
-                Corporate Party 2025
+              Corporate Party 2025 – 
                 <span className="block bg-gradient-to-r from-primary-600 to-indigo-600 bg-clip-text text-transparent">
-                  Outstanding Guest Awards
+                Star of the Night Awards
                 </span>
               </h1>
               <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed">
-                Join us in celebrating our Corporate Party 2025 Outstanding Guest Awards! 🌟 Select one male and one female guest who made the biggest impact during our special event on October 18, 2025 at ICCT Main Campus.
+              Join us in celebrating our Corporate Party 2025 Star of the Night Awards! 🌟 Choose one male and one female guest who shined the brightest and stood out during our special event on October 18, 2025, at ICCT Main Campus.
               </p>
               <div className="flex flex-row sm:flex-row items-start space-x-4 sm:space-x-4 mb-6 sm:mb-8">
                 <Button 

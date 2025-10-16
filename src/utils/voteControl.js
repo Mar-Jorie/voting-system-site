@@ -14,39 +14,38 @@ export const RESULTS_VISIBILITY = {
   PUBLIC: 'public'
 };
 
-// Get current vote control settings from database
+// Get current vote control settings from database using voting_sessions
 export const getVoteControl = async () => {
   try {
-    // Try to get from database first
-    const controls = await apiClient.findObjects('vote_control', {});
+    // Get the current voting session
+    const sessions = await apiClient.findObjects('voting_sessions', {});
     
-    if (controls && controls.length > 0) {
-      const control = controls[0]; // Get the first (and should be only) control record
+    if (sessions && sessions.length > 0) {
+      const session = sessions[0]; // Get the first (and should be only) session
       return {
-        id: control.id,
-        status: control.status || VOTE_STATUS.ACTIVE,
-        autoStopDate: control.auto_stop_date ? new Date(control.auto_stop_date) : null,
-        stoppedAt: control.stopped_at ? new Date(control.stopped_at) : null,
-        stoppedBy: control.stopped_by || null,
-        reason: control.reason || null,
-        resultsVisibility: control.results_visibility || RESULTS_VISIBILITY.HIDDEN,
-        updatedAt: control.updated ? new Date(control.updated) : new Date()
+        id: session.id,
+        status: session.is_active ? VOTE_STATUS.ACTIVE : VOTE_STATUS.STOPPED,
+        autoStopDate: session.end_date ? new Date(session.end_date) : null,
+        stoppedAt: session.is_active ? null : new Date(session.updated),
+        stoppedBy: session.is_active ? null : 'admin',
+        reason: session.is_active ? null : 'Voting session deactivated',
+        resultsVisibility: RESULTS_VISIBILITY.HIDDEN, // We'll handle this separately
+        updatedAt: new Date(session.updated)
       };
     }
     
-    // If no control record exists, create default one
-    const defaultControl = {
-      status: VOTE_STATUS.ACTIVE,
-      auto_stop_date: null,
-      stopped_at: null,
-      stopped_by: null,
-      reason: null,
-      results_visibility: RESULTS_VISIBILITY.HIDDEN
+    // If no session exists, create default one
+    const defaultSession = {
+      title: 'Corporate Party 2025 - Star of the Night Awards',
+      description: 'Voting for outstanding guests at Corporate Party 2025',
+      start_date: new Date().toISOString(),
+      end_date: null,
+      is_active: true
     };
     
-    const newControl = await apiClient.createObject('vote_control', defaultControl);
+    const newSession = await apiClient.createObject('voting_sessions', defaultSession);
     return {
-      id: newControl.id,
+      id: newSession.id,
       status: VOTE_STATUS.ACTIVE,
       autoStopDate: null,
       stoppedAt: null,
@@ -71,33 +70,28 @@ export const getVoteControl = async () => {
   }
 };
 
-// Set vote control settings in database
+// Set vote control settings in database using voting_sessions
 export const setVoteControl = async (control) => {
   try {
     if (control.id) {
-      // Update existing control
+      // Update existing voting session
       const updateData = {
-        status: control.status,
-        auto_stop_date: control.autoStopDate ? control.autoStopDate.toISOString() : null,
-        stopped_at: control.stoppedAt ? control.stoppedAt.toISOString() : null,
-        stopped_by: control.stoppedBy,
-        reason: control.reason,
-        results_visibility: control.resultsVisibility || RESULTS_VISIBILITY.HIDDEN
+        is_active: control.status === VOTE_STATUS.ACTIVE,
+        end_date: control.autoStopDate ? control.autoStopDate.toISOString() : null
       };
       
-      await apiClient.updateObject('vote_control', control.id, updateData);
+      await apiClient.updateObject('voting_sessions', control.id, updateData);
     } else {
-      // Create new control
+      // Create new voting session
       const createData = {
-        status: control.status,
-        auto_stop_date: control.autoStopDate ? control.autoStopDate.toISOString() : null,
-        stopped_at: control.stoppedAt ? control.stoppedAt.toISOString() : null,
-        stopped_by: control.stoppedBy,
-        reason: control.reason,
-        results_visibility: control.resultsVisibility || RESULTS_VISIBILITY.HIDDEN
+        title: 'Corporate Party 2025 - Star of the Night Awards',
+        description: 'Voting for outstanding guests at Corporate Party 2025',
+        start_date: new Date().toISOString(),
+        end_date: control.autoStopDate ? control.autoStopDate.toISOString() : null,
+        is_active: control.status === VOTE_STATUS.ACTIVE
       };
       
-      await apiClient.createObject('vote_control', createData);
+      await apiClient.createObject('voting_sessions', createData);
     }
     
     // Dispatch event to notify all devices of the change
@@ -121,7 +115,7 @@ export const isVotingActive = async () => {
   
   // Check if auto-stop date has passed
   if (control.autoStopDate && new Date() >= control.autoStopDate) {
-    // Auto-stop voting
+    // Auto-stop voting by updating the session
     await setVoteControl({
       ...control,
       status: VOTE_STATUS.STOPPED,
