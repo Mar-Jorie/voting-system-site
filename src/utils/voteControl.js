@@ -1,5 +1,8 @@
 // Vote Control Utility
 // Manages voting status (active/stopped) and automatic stop scheduling
+// NOW USES DATABASE FOR REAL-TIME SYNCHRONIZATION ACROSS ALL DEVICES
+
+import apiClient from '../usecases/api';
 
 export const VOTE_STATUS = {
   ACTIVE: 'active',
@@ -11,49 +14,105 @@ export const RESULTS_VISIBILITY = {
   PUBLIC: 'public'
 };
 
-export const VOTE_CONTROL_STORAGE_KEY = 'voteControl';
-
-// Get current vote control settings
-export const getVoteControl = () => {
+// Get current vote control settings from database
+export const getVoteControl = async () => {
   try {
-    const stored = localStorage.getItem(VOTE_CONTROL_STORAGE_KEY);
-    if (stored) {
-      const data = JSON.parse(stored);
+    // Try to get from database first
+    const controls = await apiClient.findObjects('vote_control', {});
+    
+    if (controls && controls.length > 0) {
+      const control = controls[0]; // Get the first (and should be only) control record
       return {
-        status: data.status || VOTE_STATUS.ACTIVE,
-        autoStopDate: data.autoStopDate ? new Date(data.autoStopDate) : null,
-        stoppedAt: data.stoppedAt ? new Date(data.stoppedAt) : null,
-        stoppedBy: data.stoppedBy || null,
-        reason: data.reason || null
+        id: control.id,
+        status: control.status || VOTE_STATUS.ACTIVE,
+        autoStopDate: control.auto_stop_date ? new Date(control.auto_stop_date) : null,
+        stoppedAt: control.stopped_at ? new Date(control.stopped_at) : null,
+        stoppedBy: control.stopped_by || null,
+        reason: control.reason || null,
+        resultsVisibility: control.results_visibility || RESULTS_VISIBILITY.HIDDEN,
+        updatedAt: control.updated ? new Date(control.updated) : new Date()
       };
     }
+    
+    // If no control record exists, create default one
+    const defaultControl = {
+      status: VOTE_STATUS.ACTIVE,
+      auto_stop_date: null,
+      stopped_at: null,
+      stopped_by: null,
+      reason: null,
+      results_visibility: RESULTS_VISIBILITY.HIDDEN
+    };
+    
+    const newControl = await apiClient.createObject('vote_control', defaultControl);
+    return {
+      id: newControl.id,
+      status: VOTE_STATUS.ACTIVE,
+      autoStopDate: null,
+      stoppedAt: null,
+      stoppedBy: null,
+      reason: null,
+      resultsVisibility: RESULTS_VISIBILITY.HIDDEN,
+      updatedAt: new Date()
+    };
   } catch (error) {
-    // Error reading vote control - handled silently
+    console.error('Error getting vote control from database:', error);
+    // Fallback to default values
+    return {
+      id: null,
+      status: VOTE_STATUS.ACTIVE,
+      autoStopDate: null,
+      stoppedAt: null,
+      stoppedBy: null,
+      reason: null,
+      resultsVisibility: RESULTS_VISIBILITY.HIDDEN,
+      updatedAt: new Date()
+    };
   }
-  
-  return {
-    status: VOTE_STATUS.ACTIVE,
-    autoStopDate: null,
-    stoppedAt: null,
-    stoppedBy: null,
-    reason: null
-  };
 };
 
-// Set vote control settings
-export const setVoteControl = (settings) => {
+// Set vote control settings in database
+export const setVoteControl = async (control) => {
   try {
-    localStorage.setItem(VOTE_CONTROL_STORAGE_KEY, JSON.stringify(settings));
+    if (control.id) {
+      // Update existing control
+      const updateData = {
+        status: control.status,
+        auto_stop_date: control.autoStopDate ? control.autoStopDate.toISOString() : null,
+        stopped_at: control.stoppedAt ? control.stoppedAt.toISOString() : null,
+        stopped_by: control.stoppedBy,
+        reason: control.reason,
+        results_visibility: control.resultsVisibility || RESULTS_VISIBILITY.HIDDEN
+      };
+      
+      await apiClient.updateObject('vote_control', control.id, updateData);
+    } else {
+      // Create new control
+      const createData = {
+        status: control.status,
+        auto_stop_date: control.autoStopDate ? control.autoStopDate.toISOString() : null,
+        stopped_at: control.stoppedAt ? control.stoppedAt.toISOString() : null,
+        stopped_by: control.stoppedBy,
+        reason: control.reason,
+        results_visibility: control.resultsVisibility || RESULTS_VISIBILITY.HIDDEN
+      };
+      
+      await apiClient.createObject('vote_control', createData);
+    }
+    
+    // Dispatch event to notify all devices of the change
+    window.dispatchEvent(new CustomEvent('votingStatusChanged'));
+    
     return true;
   } catch (error) {
-    // Error saving vote control - handled silently
+    console.error('Error setting vote control in database:', error);
     return false;
   }
 };
 
-// Check if voting is currently active
-export const isVotingActive = () => {
-  const control = getVoteControl();
+// Check if voting is currently active (async version)
+export const isVotingActive = async () => {
+  const control = await getVoteControl();
   
   // If manually stopped, voting is not active
   if (control.status === VOTE_STATUS.STOPPED) {
@@ -63,7 +122,7 @@ export const isVotingActive = () => {
   // Check if auto-stop date has passed
   if (control.autoStopDate && new Date() >= control.autoStopDate) {
     // Auto-stop voting
-    setVoteControl({
+    await setVoteControl({
       ...control,
       status: VOTE_STATUS.STOPPED,
       stoppedAt: new Date(),
@@ -76,10 +135,10 @@ export const isVotingActive = () => {
   return true;
 };
 
-// Manually stop voting
-export const stopVoting = (stoppedBy = 'admin', reason = 'Manually stopped by administrator', clearAutoStop = false) => {
-  const control = getVoteControl();
-  return setVoteControl({
+// Manually stop voting (async version)
+export const stopVoting = async (stoppedBy = 'admin', reason = 'Manually stopped by administrator', clearAutoStop = false) => {
+  const control = await getVoteControl();
+  return await setVoteControl({
     ...control,
     status: VOTE_STATUS.STOPPED,
     stoppedAt: new Date(),
@@ -89,10 +148,10 @@ export const stopVoting = (stoppedBy = 'admin', reason = 'Manually stopped by ad
   });
 };
 
-// Start voting (resume)
-export const startVoting = () => {
-  const control = getVoteControl();
-  return setVoteControl({
+// Start voting (resume) (async version)
+export const startVoting = async () => {
+  const control = await getVoteControl();
+  return await setVoteControl({
     ...control,
     status: VOTE_STATUS.ACTIVE,
     stoppedAt: null,
@@ -101,19 +160,19 @@ export const startVoting = () => {
   });
 };
 
-// Set automatic stop date
-export const setAutoStopDate = (date) => {
-  const control = getVoteControl();
-  return setVoteControl({
+// Set automatic stop date (async version)
+export const setAutoStopDate = async (date) => {
+  const control = await getVoteControl();
+  return await setVoteControl({
     ...control,
     autoStopDate: date
   });
 };
 
-// Get voting status info for display
-export const getVotingStatusInfo = () => {
-  const control = getVoteControl();
-  const isActive = isVotingActive();
+// Get voting status info for display (async version)
+export const getVotingStatusInfo = async () => {
+  const control = await getVoteControl();
+  const isActive = await isVotingActive();
   
   return {
     isActive,
@@ -143,36 +202,76 @@ export const formatTimeRemaining = (milliseconds) => {
   }
 };
 
-// Results Visibility Functions
-export const getResultsVisibility = () => {
+// Results Visibility Functions (now using database)
+export const getResultsVisibility = async () => {
   try {
-    const stored = localStorage.getItem('resultsVisibility');
-    return stored || RESULTS_VISIBILITY.HIDDEN;
+    const control = await getVoteControl();
+    return control.resultsVisibility || RESULTS_VISIBILITY.HIDDEN;
   } catch (error) {
-    // Error getting results visibility - handled silently
+    console.error('Error getting results visibility:', error);
     return RESULTS_VISIBILITY.HIDDEN;
   }
 };
 
-export const setResultsVisibility = (visibility) => {
+export const setResultsVisibility = async (visibility) => {
   try {
-    localStorage.setItem('resultsVisibility', visibility);
-    window.dispatchEvent(new Event('resultsVisibilityChanged'));
+    const control = await getVoteControl();
+    await setVoteControl({
+      ...control,
+      resultsVisibility: visibility
+    });
+    
+    // Dispatch event to notify all devices
+    window.dispatchEvent(new CustomEvent('resultsVisibilityChanged'));
     return true;
   } catch (error) {
-    // Error setting results visibility - handled silently
+    console.error('Error setting results visibility:', error);
     return false;
   }
 };
 
-export const isResultsPublic = () => {
-  return getResultsVisibility() === RESULTS_VISIBILITY.PUBLIC;
+export const isResultsPublic = async () => {
+  const visibility = await getResultsVisibility();
+  return visibility === RESULTS_VISIBILITY.PUBLIC;
 };
 
-export const hideResults = () => {
-  return setResultsVisibility(RESULTS_VISIBILITY.HIDDEN);
+export const hideResults = async () => {
+  return await setResultsVisibility(RESULTS_VISIBILITY.HIDDEN);
 };
 
-export const showResults = () => {
-  return setResultsVisibility(RESULTS_VISIBILITY.PUBLIC);
+export const showResults = async () => {
+  return await setResultsVisibility(RESULTS_VISIBILITY.PUBLIC);
+};
+
+// Real-time synchronization functions
+export const startVotingStatusSync = (callback) => {
+  // Listen for voting status changes
+  const handleVotingStatusChanged = () => {
+    if (callback) {
+      callback();
+    }
+  };
+  
+  window.addEventListener('votingStatusChanged', handleVotingStatusChanged);
+  
+  // Return cleanup function
+  return () => {
+    window.removeEventListener('votingStatusChanged', handleVotingStatusChanged);
+  };
+};
+
+export const startResultsVisibilitySync = (callback) => {
+  // Listen for results visibility changes
+  const handleResultsVisibilityChanged = () => {
+    if (callback) {
+      callback();
+    }
+  };
+  
+  window.addEventListener('resultsVisibilityChanged', handleResultsVisibilityChanged);
+  
+  // Return cleanup function
+  return () => {
+    window.removeEventListener('resultsVisibilityChanged', handleResultsVisibilityChanged);
+  };
 };

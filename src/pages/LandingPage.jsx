@@ -59,14 +59,14 @@ const LandingPage = () => {
     loadData();
     
     // Check voting status
-    const checkVotingStatus = () => {
-      const status = getVotingStatusInfo();
+    const checkVotingStatus = async () => {
+      const status = await getVotingStatusInfo();
       setVotingStatus(status);
     };
 
     // Check results visibility
-    const checkResultsVisibility = () => {
-      const visibility = getResultsVisibility();
+    const checkResultsVisibility = async () => {
+      const visibility = await getResultsVisibility();
       setResultsVisibility(visibility);
     };
 
@@ -84,8 +84,14 @@ const LandingPage = () => {
       checkResultsVisibility();
     };
     
+    // Listen for voting status changes
+    const handleVotingStatusChanged = () => {
+      checkVotingStatus();
+    };
+    
     window.addEventListener('votesUpdated', handleVotesUpdated);
     window.addEventListener('resultsVisibilityChanged', handleResultsVisibilityChanged);
+    window.addEventListener('votingStatusChanged', handleVotingStatusChanged);
     
     // Check voting status every minute
     const interval = setInterval(checkVotingStatus, 60000);
@@ -93,6 +99,7 @@ const LandingPage = () => {
     return () => {
       window.removeEventListener('votesUpdated', handleVotesUpdated);
       window.removeEventListener('resultsVisibilityChanged', handleResultsVisibilityChanged);
+      window.removeEventListener('votingStatusChanged', handleVotingStatusChanged);
       clearInterval(interval);
       // Clean up tracking timeout
       if (trackingTimeoutRef.current) {

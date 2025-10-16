@@ -33,8 +33,8 @@ const DashboardPage = () => {
 
   // Load voting status
   useEffect(() => {
-    const loadVotingStatus = () => {
-      const status = getVotingStatusInfo();
+    const loadVotingStatus = async () => {
+      const status = await getVotingStatusInfo();
       setVotingStatus(status);
     };
 
@@ -43,13 +43,23 @@ const DashboardPage = () => {
     // Update voting status every minute to check for auto-stop
     const interval = setInterval(loadVotingStatus, 60000);
     
-    return () => clearInterval(interval);
+    // Listen for real-time voting status changes
+    const handleVotingStatusChanged = () => {
+      loadVotingStatus();
+    };
+    
+    window.addEventListener('votingStatusChanged', handleVotingStatusChanged);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('votingStatusChanged', handleVotingStatusChanged);
+    };
   }, []);
 
   // Load results visibility
   useEffect(() => {
-    const loadResultsVisibility = () => {
-      const visibility = getResultsVisibility();
+    const loadResultsVisibility = async () => {
+      const visibility = await getResultsVisibility();
       setResultsVisibilityState(visibility);
     };
 
@@ -224,7 +234,7 @@ const DashboardPage = () => {
   const confirmStopVoting = async () => {
     setVotingControlLoading(true);
     try {
-      if (stopVoting('admin', 'Manually stopped by administrator', true)) {
+      if (await stopVoting('admin', 'Manually stopped by administrator', true)) {
         // Log voting stop operation
         await auditLogger.log({
           action: 'voting_stopped',
@@ -238,7 +248,7 @@ const DashboardPage = () => {
           severity: 'warning'
         });
         
-        setVotingStatus(getVotingStatusInfo());
+        setVotingStatus(await getVotingStatusInfo());
         setShowStopConfirmationModal(false);
         toast.success('Voting has been stopped and auto-stop schedule cleared');
       } else {
@@ -252,7 +262,7 @@ const DashboardPage = () => {
   const handleStartVoting = async () => {
     setVotingControlLoading(true);
     try {
-      if (startVoting()) {
+      if (await startVoting()) {
         // Log voting start operation
         await auditLogger.log({
           action: 'voting_started',
@@ -265,7 +275,7 @@ const DashboardPage = () => {
           severity: 'info'
         });
         
-        setVotingStatus(getVotingStatusInfo());
+        setVotingStatus(await getVotingStatusInfo());
         toast.success('Voting has been resumed');
       } else {
         toast.error('Failed to start voting');
@@ -289,7 +299,7 @@ const DashboardPage = () => {
 
     setAutoStopLoading(true);
     try {
-      if (setAutoStopDate(stopDateTime)) {
+      if (await setAutoStopDate(stopDateTime)) {
         // Log auto-stop operation
         await auditLogger.log({
           action: 'auto_stop_set',
@@ -312,7 +322,7 @@ const DashboardPage = () => {
           severity: 'info'
         });
         
-        setVotingStatus(getVotingStatusInfo());
+        setVotingStatus(await getVotingStatusInfo());
         setShowVoteControlModal(false);
         setSelectedDate('');
         setSelectedTime('');
