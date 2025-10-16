@@ -11,6 +11,7 @@ import SearchFilter from '../components/SearchFilter';
 import CollapsibleTable from '../components/CollapsibleTable';
 import { ProgressiveLoader, TableSkeleton } from '../components/SkeletonLoader';
 import { useOptimizedData } from '../hooks/useOptimizedData';
+import Pagination from '../components/Pagination';
 import { toast } from 'react-hot-toast';
 import useApp from '../hooks/useApp';
 import apiClient from '../usecases/api';
@@ -47,10 +48,13 @@ const UsersPage = () => {
   const [errors, setErrors] = useState({});
   const [searchValue, setSearchValue] = useState('');
   const [filters, setFilters] = useState({
-    status: '',
-    role: ''
+    status: ''
   });
   const [selectedRows, setSelectedRows] = useState(new Set());
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   
   // Loading states for confirmation modals
   const [saveLoading, setSaveLoading] = useState(false);
@@ -179,20 +183,9 @@ const UsersPage = () => {
       filtered = filtered.filter(user => user.status === filters.status);
     }
 
-    // Role filter - handle Relation objects
-    if (filters.role) {
-      filtered = filtered.filter(user => {
-        if (Array.isArray(user.roles) && user.roles.length > 0) {
-          return user.roles[0].name === filters.role;
-        }
-        if (typeof user.role === 'string') {
-          return user.role === filters.role; // fallback for string roles
-        }
-        return false; // No role assigned
-      });
-    }
-
     setFilteredUsers(filtered);
+    // Reset pagination when filtering
+    setCurrentPage(1);
   };
 
   const handleSearchChange = (value) => {
@@ -765,13 +758,6 @@ const UsersPage = () => {
           useSelectForSearch={false}
           statusOptions={statusOptions}
           getUniqueCompanies={() => []}
-          additionalFilters={[
-            {
-              key: 'role',
-              label: 'Role',
-              options: roleOptions
-            }
-          ]}
         />
       </div>
 
@@ -782,18 +768,37 @@ const UsersPage = () => {
         onRetry={refresh}
         skeleton={TableSkeleton}
       >
+        {/* Pagination - Upper Right */}
+        {filteredUsers.length > 0 && (
+          <div className="mb-4 flex justify-end">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredUsers.length / itemsPerPage)}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredUsers.length}
+              showInfo={true}
+            />
+          </div>
+        )}
+
         {/* Users Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100">
           <CollapsibleTable
-          data={filteredUsers}
+          data={(() => {
+            // Calculate pagination
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            return filteredUsers.slice(startIndex, endIndex);
+          })()}
           columns={columns}
           onEdit={handleEditUser}
           onDelete={handleDeleteUser}
           loading={loading}
           sortable={true}
-          searchable={true}
-          pagination={true}
-          itemsPerPage={10}
+          searchable={false}
+          pagination={false}
+          itemsPerPage={itemsPerPage}
           enableSelection={true}
           selectedRows={selectedRows}
           onSelectionChange={handleSelectionChange}
