@@ -1,0 +1,1317 @@
+---
+description: MANDATORY page-specific design rules that AI agents MUST follow for Landing Page, Authentication Pages, Dashboard Pages, and all page layouts with specific positioning and styling patterns.
+alwaysApply: true
+---
+
+# 📄 Page Layout Rules (MANDATORY)
+
+## ⚠️ CRITICAL: AI AGENTS MUST FOLLOW THESE PAGE LAYOUT RULES
+
+**These page layout specifications are MANDATORY for all implementations. Deviating from these rules is NOT ALLOWED.**
+
+---
+
+## 🏠 Landing Page Layout (MANDATORY)
+
+### Content Reading Protocol (MANDATORY)
+```jsx
+// Content Reading - MANDATORY WORKFLOW
+1. Read requirements.md file completely
+2. Extract content from specific sections:
+   - "Landing Page Details" section for landing page content
+   - "Signup Page Details" section for signup page content
+   - "Title & Purpose" section for system branding
+   - "Core Domain Concepts" section for feature descriptions
+   - "Data Concepts" section for user roles and fields
+3. Use extracted content in implementation
+4. NEVER use hardcoded or generic content
+```
+
+### Landing Page Content Requirements (MUST FOLLOW)
+```jsx
+// Landing Page Content - MANDATORY PATTERN
+// Content MUST be derived from requirements.md "Landing Page Details" section
+
+// Hero Section Content - MANDATORY
+- Title: Use system-specific title from requirements.md
+- Subtitle: Use system-specific value proposition from requirements.md
+- CTA Buttons: Use buttons specified in requirements.md landing page details
+- Features: Use features listed in requirements.md landing page details
+- Hero Illustration: MUST have actual visual content, not blank container
+
+// Features Section - MANDATORY
+- Features: Read from requirements.md "Landing Page Details" section
+- Feature descriptions: Use system-specific descriptions from requirements.md
+- Icons: Choose appropriate icons based on feature descriptions
+
+// CTA Section - MANDATORY
+- CTA content: Use system-specific messaging from requirements.md
+- Button actions: Use actions specified in requirements.md landing page details
+
+// Navigation Content - MANDATORY
+- Navigation items: Use navigation items from requirements.md landing page details
+- Brand name: Use system name from requirements.md
+- CTA buttons: Use authentication buttons from requirements.md landing page details
+
+// Button Navigation Rules - MANDATORY
+- Login Button: ONLY button that can navigate to system pages (signin page)
+- All Other Buttons: MUST navigate to public pages only (no system page access)
+- Public Pages: Landing page, public services, contact, about, etc.
+- System Pages: Dashboard, authenticated user pages, admin pages, etc.
+```
+
+### Landing Page Structure (MUST FOLLOW)
+```jsx
+// Landing Page - MANDATORY PATTERN
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Bars3Icon } from '@heroicons/react/24/outline';
+import Button from '../components/Button';
+import FloatingChatbot from '../components/FloatingChatbot';
+
+const LandingPage = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  return (
+<div className="min-h-screen bg-white overflow-y-auto">
+  {/* Navigation */}
+  <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="flex items-center justify-between h-16 sm:h-20">
+        {/* Logo */}
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+            <img src="/vite.svg" alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
+          </div>
+          <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Brand Name</span>
+        </div>
+        
+        {/* Navigation Links - Hidden on Mobile */}
+        <div className="hidden md:flex items-center space-x-10">
+          <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Features</a>
+          <a href="#benefits" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Benefits</a>
+          <a href="#testimonials" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Testimonials</a>
+        </div>
+        
+        {/* Mobile Hamburger Menu - Right Corner */}
+        <div className="md:hidden">
+          <button
+            onClick={toggleMobileMenu}
+            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px]"
+            aria-label="Toggle menu"
+          >
+            <Bars3Icon className="h-6 w-6" />
+          </button>
+        </div>
+        
+        {/* Desktop CTA Buttons - Hidden on Mobile */}
+        <div className="hidden md:flex items-center space-x-4">
+          <Link to="/signin">
+            <Button variant="ghost" size="md" className="!w-auto">Sign In</Button>
+          </Link>
+          <Link to="/signup">
+            <Button variant="primaryOutline" size="md">Get Started</Button>
+          </Link>
+        </div>
+      </div>
+      
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-gray-100 bg-white">
+          <div className="px-4 py-4 space-y-4">
+            {/* Mobile Navigation Links */}
+            <div className="space-y-3">
+              <a href="#features" className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Features</a>
+              <a href="#benefits" className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Benefits</a>
+              <a href="#testimonials" className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Testimonials</a>
+            </div>
+            
+            {/* Mobile CTA Buttons */}
+            <div className="flex flex-col space-y-3 pt-4 border-t border-gray-100">
+              <Link to="/signin" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button variant="ghost" size="md" className="w-full">Sign In</Button>
+              </Link>
+              <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button variant="primaryOutline" size="md" className="w-full">Get Started</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  </nav>
+
+  {/* Hero Section */}
+  <section className="relative py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 lg:px-10 bg-gradient-to-br from-gray-50 to-white">
+    <div className="max-w-7xl mx-auto">
+      <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+        <div className="text-left">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight">
+            Transform Your
+            <span className="block bg-gradient-to-r from-primary-600 to-indigo-600 bg-clip-text text-transparent">
+              Project Management
+            </span>
+          </h1>
+          <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed">
+            Streamline project workflows, enhance team collaboration, and deliver results faster with our comprehensive project management platform.
+          </p>
+          <div className="flex flex-row sm:flex-row items-start space-x-4 sm:space-x-4 mb-6 sm:mb-8">
+            <Link to="/signup">
+              <Button variant="primary" size="lg" className="!w-auto min-w-[160px]">
+                Start Free Trial
+              </Button>
+            </Link>
+            <Link to="/demo">
+              <Button variant="primaryOutline" size="lg" className="!w-auto min-w-[160px]">
+                View Demo
+              </Button>
+            </Link>
+          </div>
+        </div>
+        <div className="relative order-last lg:order-last">
+          {/* Hero Image/Illustration */}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* Features Section */}
+  <section id="features" className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 bg-white">
+    <div className="max-w-7xl mx-auto">
+      <div className="text-center mb-12 sm:mb-16">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight">
+          Everything You Need to Succeed
+        </h2>
+        <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto font-medium">
+          Comprehensive tools designed to streamline your project management workflow.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+        {/* Feature Cards */}
+      </div>
+    </div>
+  </section>
+
+  {/* CTA Section */}
+  <section className="py-8 sm:py-10 px-4 sm:px-6 bg-gradient-to-r from-primary-400 to-indigo-600 opacity-90">
+    <div className="max-w-4xl mx-auto text-center">
+      <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 tracking-tight">
+        Ready to Transform Your Workflow?
+      </h2>
+      <p className="text-base sm:text-lg text-primary-100 mb-8 sm:mb-10 font-medium">
+        Join thousands of teams already using our platform to manage their projects more effectively.
+      </p>
+      <div className="flex flex-row sm:flex-row items-center justify-center space-x-4 sm:space-x-6">
+        <Link to="/signup">
+          <Button variant="light" size="lg" className="!w-auto min-w-[160px]">
+            Get Started Free
+          </Button>
+        </Link>
+        <Button variant="secondaryOutline" size="lg" className="!w-auto min-w-[160px] !border-white !text-white hover:!bg-white hover:!text-primary-600">
+          Contact Sales
+        </Button>
+      </div>
+    </div>
+  </section>
+
+  {/* Footer */}
+  <footer className="bg-gray-900 text-center text-gray-400 py-6 px-4 sm:px-6">
+    <p className="text-xs sm:text-sm">&copy; 2024 Brand Name. All rights reserved.</p>
+  </footer>
+
+  {/* Floating Elements */}
+  <FloatingChatbot />
+</div>
+  );
+};
+
+export default LandingPage;
+```
+
+### FloatingChatbot Usage in Pages (MANDATORY)
+```jsx
+// FloatingChatbot Placement - MANDATORY
+- ALWAYS place at the end of page components (before closing div)
+- ALWAYS use in LandingPage and other public pages
+- NO additional props required
+- NO customization needed - use as-is
+
+// Import Pattern - MANDATORY
+import FloatingChatbot from '../components/FloatingChatbot';
+
+// Usage Pattern - MANDATORY
+<FloatingChatbot />
+```
+
+### Landing Page Rules (MANDATORY)
+```jsx
+// Navigation - MANDATORY
+- Height: h-16 sm:h-20 (64px mobile, 80px desktop)
+- Background: bg-white/95 backdrop-blur-sm
+- Logo: w-8 h-8 sm:w-10 sm:h-10 container, w-6 h-6 sm:w-8 sm:h-8 image
+- Logo Source: /vite.svg (Vite logo for all logos)
+- Links: hidden lg:flex, space-x-10 (hamburger on mobile AND tablet)
+- Mobile Menu: Hamburger positioned on right corner (lg:hidden)
+- Desktop CTA Buttons: hidden lg:flex, space-x-4 (hamburger on mobile AND tablet)
+- Mobile CTA Buttons: Inside hamburger dropdown menu
+- Container: w-full px-4 sm:px-6 lg:px-6 (NO max-width containers)
+
+// Hero Section - MANDATORY
+- Padding: py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 lg:px-6
+- Background: bg-gradient-to-br from-gray-50 to-white
+- Grid: lg:grid-cols-2 gap-8 lg:gap-12
+- Heading: text-3xl sm:text-4xl md:text-5xl font-bold (NO 3xl: prefixes)
+- Subheading: text-base sm:text-lg text-gray-600
+- Button Layout: flex-row sm:flex-row (buttons in one row on mobile AND desktop)
+- Button Order: Start Free Trial first, View Demo second (same on mobile and desktop)
+- CTA: min-w-[160px] for both buttons
+- Mobile Behavior: Buttons stay in one row, fit width of container
+- Hero Image: order-last lg:order-last (image appears BELOW text on mobile, RIGHT side on desktop)
+- Container: w-full (NO max-width containers)
+
+// Features Section - MANDATORY
+- Padding: py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 lg:px-6
+- Background: bg-white
+- Grid: grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8
+- Title: text-2xl sm:text-3xl font-bold text-center mb-12 sm:mb-16 (NO 3xl: prefixes)
+- Description: text-sm sm:text-base w-full
+- Container: w-full (NO max-width containers)
+
+// CTA Section - MANDATORY
+- Padding: py-8 sm:py-10 px-4 sm:px-6 lg:px-6
+- Background: bg-gradient-to-r from-primary-400 to-indigo-600
+- Text: text-white, text-primary-100
+- Title: text-2xl sm:text-3xl font-bold (NO 3xl: prefixes)
+- Description: text-base sm:text-lg
+- Buttons: space-x-4 sm:space-x-6 (buttons in one row on mobile AND desktop)
+- Mobile Behavior: Buttons stay in one row, fit width of container
+- Container: w-full (NO max-width containers)
+
+// Footer - MANDATORY
+- Padding: py-6 px-4 sm:px-6 lg:px-6
+- Text: text-xs sm:text-sm
+- Background: bg-gray-900
+- Container: w-full (NO max-width containers)
+```
+
+### Mobile Hero Image Behavior Rules (MANDATORY)
+```jsx
+// CRITICAL: Hero image must appear BELOW hero text content on mobile
+
+// Hero Section Layout - MANDATORY
+<div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+  <div className="text-left">
+    {/* Hero text content - appears FIRST on mobile */}
+  </div>
+  <div className="relative order-last lg:order-last">
+    {/* Hero image - appears BELOW text on mobile, RIGHT side on desktop */}
+  </div>
+</div>
+
+// Mobile Hero Image Rules - MANDATORY
+- ALWAYS use: order-last lg:order-last for hero image container
+- Mobile: Hero image appears BELOW hero text content (natural flow)
+- Desktop: Hero image appears on RIGHT side of hero text (lg:order-last)
+- NEVER use: order-first for hero image (would put image above text on mobile)
+- NEVER use: order-first lg:order-last (inconsistent mobile behavior)
+```
+
+### Mobile Button Behavior Rules (MANDATORY)
+```jsx
+// CRITICAL: Mobile buttons must stay in one row, not stack vertically
+
+// Hero Section Buttons - MANDATORY
+<div className="flex flex-row sm:flex-row items-start space-x-4 sm:space-x-4 mb-6 sm:mb-8">
+  {/* Buttons stay in one row on mobile AND desktop */}
+</div>
+
+// CTA Section Buttons - MANDATORY  
+<div className="flex flex-row sm:flex-row items-center justify-center space-x-4 sm:space-x-6">
+  {/* Buttons stay in one row on mobile AND desktop */}
+</div>
+
+// Mobile Button Rules - MANDATORY
+- ALWAYS use: flex-row (not flex-col) for mobile
+- ALWAYS use: space-x-* (not space-y-*) for mobile
+- ALWAYS ensure: buttons fit width of container
+- NEVER stack: buttons vertically on mobile
+- NEVER use: flex-col for button containers on mobile
+```
+
+### No Horizontal Scroll Page Rules (MANDATORY)
+```jsx
+// Page Container - MANDATORY
+- Always use: w-full max-w-full overflow-x-hidden
+- Never use: fixed widths that exceed viewport
+- Always use: responsive padding (px-4 sm:px-6 lg:px-8)
+
+// Content Sections - MANDATORY
+- Always use: responsive grid classes
+- Mobile: single column layouts
+- Tablet: two column layouts
+- Desktop: multi-column layouts
+- Always use: flex-wrap for button groups
+
+// Navigation - MANDATORY
+- Always use: flex-wrap for navigation items
+- Never use: fixed navigation widths
+- Always use: responsive text sizing
+
+// Forms - MANDATORY
+- Always use: w-full max-w-md mx-auto
+- Never use: fixed form widths
+- Always use: responsive form layouts
+```
+
+---
+
+**Note: For complete icon system rules and usage patterns, see `@component-design.mdc`**
+
+---
+
+## 🔐 Authentication Pages Layout (MANDATORY)
+
+### Signup Page Content Requirements (MUST FOLLOW)
+```jsx
+// Signup Page Fields - MANDATORY PATTERN
+// Fields MUST be derived from requirements.md "Signup Page Details" section
+
+// Form Fields - MANDATORY
+- Base fields: firstName, lastName, email, password, confirmPassword (always required)
+- Additional fields: Read from requirements.md "Signup Page Details" section
+- Role-specific fields: Implement conditional fields based on role selection
+- Validation rules: Use validation rules from requirements.md signup page details
+
+// Role Options - MANDATORY
+- Roles: Use roles specified in requirements.md signup page details
+- Role-specific forms: Implement based on requirements.md specifications
+
+// Form Behavior - MANDATORY
+- Multi-step forms: Implement if specified in requirements.md
+- Field dependencies: Implement conditional logic from requirements.md
+- Error handling: Use error handling specifications from requirements.md
+
+// User Onboarding - MANDATORY
+- Post-signup flow: Implement based on requirements.md specifications
+- Account verification: Implement if specified in requirements.md
+- Role-specific onboarding: Implement based on requirements.md specifications
+```
+
+### Signin Page Structure (MUST FOLLOW)
+```jsx
+// Signin Page - MANDATORY PATTERN
+<div className="min-h-screen bg-gray-50 flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8 overflow-y-auto">
+  {/* Back to Home Button */}
+  <div className="absolute top-6 left-6">
+    <Link to="/" className="inline-flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200">
+      <ArrowLeftIcon className="h-4 w-4 mr-2" />
+      Back to Home
+    </Link>
+  </div>
+
+  <div className="max-w-sm w-full space-y-6">
+    {/* Sign In Form */}
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      {/* Header */}
+      <div className="text-center">
+        <div className="flex justify-center mb-4">
+          <div className="w-12 h-12 flex items-center justify-center">
+            <img src="/vite.svg" alt="Logo" className="w-10 h-10 object-contain" />
+          </div>
+        </div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Welcome back</h2>
+        <p className="text-sm text-gray-600 mb-4">Sign in to your account</p>
+      </div>
+      
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        {/* Email Field */}
+        <InputFactory
+          fieldName="email"
+          config={{
+            type: 'String',
+            label: 'Email address',
+            placeholder: 'juan@example.com',
+            required: true,
+            format: 'email'
+          }}
+          value={email}
+          onChange={handleChange}
+          error={error}
+        />
+
+        {/* Password Field */}
+        <InputFactory
+          fieldName="password"
+          config={{
+            type: 'String',
+            label: 'Password',
+            placeholder: 'Enter your password',
+            required: true,
+            format: 'password',
+            showPasswordToggle: true
+          }}
+          value={password}
+          onChange={handleChange}
+          error={error}
+        />
+
+        {/* Remember Me & Forgot Password */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <input
+              id="remember-me"
+              name="remember-me"
+              type="checkbox"
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+              Remember me
+            </label>
+          </div>
+          <a href="#" className="text-sm font-medium text-primary-600 hover:text-primary-500">
+            Forgot password?
+          </a>
+        </div>
+
+        {/* Sign In Button */}
+        <Button type="submit" variant="primary" fullWidth disabled={loading}>
+          {loading ? (
+            <div className="flex items-center justify-center">
+                  <ArrowPathIcon className="h-4 w-4 animate-spin mr-2" />
+              Signing in...
+            </div>
+          ) : (
+            'Sign in'
+          )}
+        </Button>
+      </form>
+
+      {/* Social Sign In */}
+      <div className="mt-4">
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">Or continue with</span>
+          </div>
+        </div>
+        <div className="mt-4">
+          <Button variant="secondaryOutline" size="md" className="w-full">
+            <GlobeAltIcon className="h-4 w-4 mr-2" />
+            Google
+          </Button>
+        </div>
+      </div>
+    </div>
+
+    {/* Sign Up Link */}
+    <div className="text-center">
+      <p className="text-sm text-gray-600">
+        Don't have an account?{' '}
+        <Link to="/signup" className="font-medium text-primary-600 hover:text-primary-500">
+          Sign up for free
+        </Link>
+      </p>
+    </div>
+  </div>
+</div>
+```
+
+### Authentication Page Rules (MANDATORY)
+- **Container**: min-h-screen bg-gray-50 flex items-center justify-center
+- **Form Container**: bg-white rounded-lg shadow-sm border border-gray-200 p-6
+- **Header**: Logo w-12 h-12, title text-xl font-semibold
+- **Form Fields**: Use InputFactory with proper validation
+- **Buttons**: Use Button component with loading states
+- **Social Auth**: Single Google button with secondaryOutline variant
+- **Links**: Primary color with hover states
+
+### Signup Page Structure (MUST FOLLOW)
+```jsx
+// Signup Page - MANDATORY PATTERN
+<div className="min-h-screen bg-gray-50 flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8 overflow-y-auto">
+  {/* Back to Home Button */}
+  <div className="absolute top-6 left-6">
+    <Link to="/" className="inline-flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200">
+      <ArrowLeftIcon className="h-4 w-4 mr-2" />
+      Back to Home
+    </Link>
+  </div>
+
+  <div className="max-w-md w-full space-y-6">
+    {/* Sign Up Form */}
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      {/* Header */}
+      <div className="text-center">
+        <div className="flex justify-center mb-4">
+          <div className="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center">
+            <img src="/vite.svg" alt="Logo" className="w-8 h-8 object-contain" />
+          </div>
+        </div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Create your account</h2>
+        <p className="text-sm text-gray-600 mb-4">Join us and start managing your projects effectively</p>
+      </div>
+
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        {/* Name Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InputFactory fieldName="firstName" config={firstNameConfig} />
+          <InputFactory fieldName="lastName" config={lastNameConfig} />
+        </div>
+
+        {/* Email Field */}
+        <InputFactory fieldName="email" config={emailConfig} />
+
+        {/* Username Field */}
+        <InputFactory fieldName="username" config={usernameConfig} />
+
+        {/* Role Selection */}
+        <SelectInput
+          label="Your role"
+          options={roles}
+          value={role}
+          onChange={handleChange}
+          placeholder="Select your role"
+          required
+        />
+
+        {/* Password Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InputFactory fieldName="password" config={passwordConfig} />
+          <InputFactory fieldName="confirmPassword" config={confirmPasswordConfig} />
+        </div>
+
+        {/* Terms and Conditions */}
+        <div className="flex items-start">
+          <div className="flex items-center h-5">
+            <input
+              id="terms"
+              name="terms"
+              type="checkbox"
+              required
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+          </div>
+          <div className="ml-3 text-sm">
+            <label htmlFor="terms" className="text-gray-700">
+              I agree to the{' '}
+              <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
+                Terms of Service
+              </a>{' '}
+              and{' '}
+              <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
+                Privacy Policy
+              </a>
+            </label>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <Button type="submit" variant="primary" fullWidth disabled={loading}>
+          {loading ? (
+            <div className="flex items-center justify-center">
+                  <ArrowPathIcon className="h-4 w-4 animate-spin mr-2" />
+              Creating account...
+            </div>
+          ) : (
+            'Create account'
+          )}
+        </Button>
+      </form>
+    </div>
+
+    {/* Sign In Link */}
+    <div className="text-center">
+      <p className="text-sm text-gray-600">
+        Already have an account?{' '}
+        <Link to="/signin" className="font-medium text-primary-600 hover:text-primary-500">
+          Sign in here
+        </Link>
+      </p>
+    </div>
+  </div>
+</div>
+```
+
+### Authentication Page Rules (MANDATORY)
+```jsx
+// Container - MANDATORY
+- Background: bg-gray-50
+- Layout: min-h-screen flex items-center justify-center
+- Padding: py-8 px-4 sm:px-6 lg:px-6
+
+// Form Container - MANDATORY
+- Background: bg-white
+- Border: rounded-lg shadow-sm border border-gray-200
+- Padding: p-6
+- Width: w-full max-w-sm mx-auto (signin) / w-full max-w-md mx-auto (signup)
+
+// Header - MANDATORY
+- Logo: w-12 h-12 container, w-10 h-10 image
+- Title: text-xl font-semibold text-gray-900
+- Subtitle: text-sm text-gray-600
+
+// Form Fields - MANDATORY
+- Spacing: space-y-4
+- Grid: grid-cols-1 md:grid-cols-2 for name fields
+- Validation: Always include error handling
+
+// Buttons - MANDATORY
+- Primary: fullWidth, loading states
+- Social: Single Google button with full width (no grid layout)
+- Links: text-primary-600 hover:text-primary-500
+```
+
+### Social Authentication Rules (MANDATORY)
+```jsx
+// Social Authentication - MANDATORY PATTERN
+// ONLY Google authentication is supported - NO Twitter or other social providers
+
+// Social Sign-In Section - MANDATORY
+- Divider: "Or continue with" text with border line
+- Single Button: Google only with GlobeAltIcon
+- Layout: Full width button (no grid layout)
+- Styling: secondaryOutline variant with proper spacing
+
+// Prohibited Social Providers - MANDATORY
+- ❌ Twitter: ChatBubbleLeftRightIcon and Twitter button are NOT allowed
+- ❌ Facebook: Facebook authentication is NOT allowed
+- ❌ Other Providers: No additional social authentication providers
+
+// Required Implementation - MANDATORY
+- ✅ Google Only: Single Google button with GlobeAltIcon
+- ✅ Full Width: Button takes full width of container
+- ✅ Proper Icon: GlobeAltIcon for Google authentication
+- ✅ Clean Layout: No grid layout, single button design
+```
+
+---
+
+## 📊 Dashboard Page Layout (MANDATORY)
+
+### Dashboard Page Structure (MUST FOLLOW)
+```jsx
+// Dashboard Page - MANDATORY PATTERN
+<div className="min-h-screen bg-gray-50">
+  {/* Page Header */}
+  <div className="mb-8">
+    <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
+      Welcome back, Admin!
+    </h1>
+    <p className="text-gray-600">
+      Here's what's happening with your projects today.
+    </p>
+  </div>
+
+  <div className="space-y-6">
+    {/* Key Metrics Cards */}
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Metric Cards */}
+    </div>
+
+    {/* Progress & Timeline */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Project Progress Overview */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Project Progress</h3>
+          <div className="w-6 h-6 bg-primary-50 rounded-lg flex items-center justify-center">
+            <ChartBarIcon className="h-6 w-6 text-primary-600" />
+          </div>
+        </div>
+        {/* Progress content */}
+      </div>
+
+      {/* Milestone Timeline */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Milestone Timeline</h3>
+          <div className="w-6 h-6 bg-emerald-50 rounded-lg flex items-center justify-center">
+            <CalendarDaysIcon className="h-6 w-6 text-green-800" />
+          </div>
+        </div>
+        {/* Timeline content */}
+      </div>
+    </div>
+
+    {/* Task Management */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* My Tasks */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">My Tasks</h3>
+          <button className="text-primary-600 hover:text-primary-700 text-sm font-medium hover:underline">
+            View All
+          </button>
+        </div>
+        {/* Tasks content */}
+      </div>
+
+      {/* Team Tasks */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Team Tasks</h3>
+          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:underline">
+            View All
+          </button>
+        </div>
+        {/* Team tasks content */}
+      </div>
+    </div>
+
+    {/* Activity Feed */}
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+        <button className="text-green-800 hover:text-emerald-700 text-sm font-medium hover:underline">
+          View All
+        </button>
+      </div>
+      {/* Activity content */}
+    </div>
+  </div>
+
+  {/* Floating Action Button - MANDATORY for all pages */}
+  <SmartFloatingActionButton 
+    variant="dots"
+    icon="EllipsisVerticalIcon"
+    label="Toggle quick actions"
+    quickActions={[
+      { name: 'Add New', icon: 'PlusIcon', action: handleAdd, color: 'bg-primary-600' },
+      { name: 'Import', icon: 'ArrowUpTrayIcon', action: handleImport, color: 'bg-green-600' },
+      { name: 'Export', icon: 'ArrowDownTrayIcon', action: handleExport, color: 'bg-blue-600' }
+    ]}
+  />
+</div>
+```
+
+### Dashboard Page Rules (MANDATORY)
+```jsx
+// Page Container - MANDATORY
+- Background: bg-gray-50
+- Layout: min-h-screen
+
+// Page Header - MANDATORY
+- Title: text-2xl lg:text-3xl font-semibold text-gray-900
+- Subtitle: text-gray-600
+- Margin: mb-8
+
+// Content Layout - MANDATORY
+- Spacing: space-y-6
+- Grid: grid-cols-2 lg:grid-cols-4 for metrics
+- Grid: grid-cols-1 lg:grid-cols-2 for content sections
+
+// Card Headers - MANDATORY
+- Title: text-lg font-semibold text-gray-900
+- Icon: w-6 h-6 bg-color-50 rounded-lg
+- Action: text-color-600 hover:text-color-700 text-sm font-medium
+
+// Floating Elements - MANDATORY
+- FAB: SmartFloatingActionButton with variant="dots" for multiple actions
+- FAB: SmartFloatingActionButton with variant="single" for single actions
+- NO Quick Actions section (use FAB only). Any separate "Quick Actions" cards or grids on Dashboard are NOT allowed.
+- FAB position: fixed bottom-6 right-6 on all pages, independent of content scroll.
+- ALL PAGES MUST use SmartFloatingActionButton
+```
+
+### SmartFloatingActionButton Rules (MANDATORY)
+```jsx
+// ALL PAGES MUST use SmartFloatingActionButton
+// Single Action Logic - MANDATORY
+// If 1 action button: display the specific icon (e.g., plus icon) on the FAB
+<SmartFloatingActionButton 
+  variant="single"
+  icon="PlusIcon" // Specific action icon
+  label="Add new item"
+  action={handleAddAction}
+/>
+
+// Multiple Actions Logic - MANDATORY  
+// If 2+ action buttons: use 3 vertical dots icon and expand to show button choices
+<SmartFloatingActionButton 
+  variant="dots"
+  icon="EllipsisVerticalIcon" // Always vertical 3-dots icon for multiple actions
+  label="Toggle quick actions"
+  quickActions={[
+    { name: 'Add New', icon: 'PlusIcon', action: handleAdd, color: 'bg-primary-600' },
+    { name: 'Import', icon: 'ArrowUpTrayIcon', action: handleImport, color: 'bg-green-600' },
+    { name: 'Export', icon: 'ArrowDownTrayIcon', action: handleExport, color: 'bg-blue-600' }
+  ]}
+/>
+```
+
+### Data Pages with Tables and Filters (MANDATORY)
+```jsx
+// Data Page Structure - MANDATORY PATTERN
+<div className="min-h-screen bg-gray-50">
+  {/* Page Header */}
+  <div className="mb-8">
+    <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
+      Page Title
+    </h1>
+    <p className="text-gray-600">
+      Page description or subtitle.
+    </p>
+  </div>
+
+  {/* Filters Section */}
+  <div className="mb-6">
+    <SearchFilter
+      placeholder="Search..."
+      value={searchValue}
+      onChange={handleSearchChange}
+      onSearch={handleSearch}
+      onFilterChange={handleFilterChange}
+      filters={filters}
+      useSelectForSearch={false} // true for select, false for search
+      searchSelectOptions={searchSelectOptions}
+      searchSelectValue={searchSelectValue}
+      onSearchSelectChange={onSearchSelectChange}
+      statusOptions={statusOptions}
+      getUniqueCompanies={getUniqueCompanies}
+    />
+  </div>
+
+  {/* Table Section */}
+  <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+    <CollapsibleTable
+      data={tableData}
+      columns={columns}
+      onEdit={handleEdit}
+      onDelete={handleDelete}
+      loading={loading}
+      sortable={true}
+      searchable={true}
+      pagination={true}
+      itemsPerPage={10}
+      expandableContent={(item) => (
+        <div className="space-y-2">
+          <p className="text-sm text-gray-600">Additional details...</p>
+        </div>
+      )}
+      additionalActions={[
+        { label: 'View Details', icon: 'eye', variant: 'secondaryOutline' },
+        { label: 'Export', icon: 'download', variant: 'primaryOutline' }
+      ]}
+      searchPlaceholder="Search..."
+      emptyMessage="No data found"
+    />
+  </div>
+</div>
+```
+
+### Data Page Rules (MANDATORY)
+```jsx
+// Page Structure - MANDATORY
+- Container: min-h-screen bg-gray-50 p-6
+- Header: text-2xl lg:text-3xl font-semibold text-gray-900 mb-2
+- Description: text-gray-600 mb-8
+
+// Filters Section - MANDATORY
+- Position: mb-6 (before table)
+- Component: SearchFilter or Filters
+- Layout: flex items-center gap-2 sm:gap-1
+- Primary: SearchInput OR SelectInput (configurable)
+- Secondary: Filter icon button
+
+// Table Section - MANDATORY
+- Container: bg-white rounded-lg shadow-sm border border-gray-100
+- Component: CollapsibleTable
+- Features: sortable, searchable, pagination
+- Actions: Edit, Delete, Additional actions in expanded content
+- Mobile: Hide columns 3+ on mobile, show in expanded view
+
+// Responsive Behavior - MANDATORY
+- Mobile: Single column layout, hidden columns in expanded view
+- Tablet: Two column layout, more visible columns
+- Desktop: Full layout with all features
+- Touch: Proper touch targets for mobile interactions
+```
+
+---
+
+## 📋 Content Pages Layout (MANDATORY)
+
+### Standard Content Page Structure (MUST FOLLOW)
+```jsx
+// Content Page - MANDATORY PATTERN
+<div className="min-h-screen bg-gray-50">
+  {/* Page Header */}
+  <div className="mb-8">
+    <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
+      Page Title
+    </h1>
+    <p className="text-gray-600">
+      Page description or subtitle.
+    </p>
+  </div>
+
+  {/* Page Content */}
+  <div className="space-y-6">
+    {/* Content Sections */}
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">Section Title</h2>
+      <p className="text-sm text-gray-600">Section content...</p>
+    </div>
+  </div>
+</div>
+```
+
+### Content Page Rules (MANDATORY)
+```jsx
+// Page Container - MANDATORY
+- Background: bg-gray-50
+- Layout: min-h-screen
+
+// Page Header - MANDATORY
+- Title: text-2xl lg:text-3xl font-semibold text-gray-900
+- Subtitle: text-gray-600
+- Margin: mb-8
+
+// Content Sections - MANDATORY
+- Spacing: space-y-6
+- Cards: bg-white rounded-lg p-6 shadow-sm border border-gray-100
+- Titles: text-lg font-semibold text-gray-900 mb-4
+- Content: text-sm text-gray-600
+```
+
+---
+
+## ⚠️ MANDATORY IMPLEMENTATION RULES
+
+### 1. Content Source Rules (MANDATORY)
+- ✅ ALWAYS read content from requirements.md
+- ✅ ALWAYS use system-specific content from requirements.md
+- ✅ ALWAYS extract content from specific sections of requirements.md
+- ✅ ALWAYS implement content reading protocol before implementation
+- ❌ NEVER use hardcoded or generic content
+- ❌ NEVER skip reading requirements.md for content
+
+### 2. Landing Page Content Rules (MANDATORY)
+- ✅ ALWAYS read content from requirements.md "Landing Page Details" section
+- ✅ ALWAYS use system-specific messaging and features from requirements.md
+- ✅ ALWAYS implement CTA buttons as specified in requirements.md
+- ✅ ALWAYS use navigation items from requirements.md landing page details
+- ✅ ALWAYS use system name from requirements.md for branding
+- ❌ NEVER use generic or hardcoded content
+- ❌ NEVER skip reading requirements.md for content
+
+### 2. Landing Page Structure Rules (MANDATORY)
+- ✅ ALWAYS use the specified navigation structure
+- ✅ ALWAYS implement hero section with gradient background
+- ✅ ALWAYS use the specified grid layouts for features
+- ✅ ALWAYS include CTA section with gradient background
+- ❌ NEVER skip the navigation or hero sections
+- ❌ NEVER use different spacing or typography
+
+### 3. Signup Page Content Rules (MANDATORY)
+- ✅ ALWAYS read fields from requirements.md "Signup Page Details" section
+- ✅ ALWAYS implement role-specific fields as specified in requirements.md
+- ✅ ALWAYS use validation rules from requirements.md signup page details
+- ✅ ALWAYS implement role options from requirements.md signup page details
+- ✅ ALWAYS implement conditional field logic from requirements.md
+- ❌ NEVER use generic form fields
+- ❌ NEVER skip reading requirements.md for fields
+
+### 4. Authentication Page Structure Rules (MANDATORY)
+- ✅ ALWAYS center forms vertically and horizontally
+- ✅ ALWAYS include back to home button
+- ✅ ALWAYS use the specified form container styling
+- ✅ ALWAYS implement proper form validation
+- ❌ NEVER skip the form container or header styling
+- ❌ NEVER use different form layouts
+
+### 3. Dashboard Page Rules (MANDATORY)
+- ✅ ALWAYS use the specified page header structure
+- ✅ ALWAYS implement metric cards grid layout
+- ✅ ALWAYS use the specified content section layouts
+- ✅ ALWAYS include floating action button
+- ❌ NEVER skip the page header or metric cards
+- ❌ NEVER use different grid layouts
+
+### 4. Content Page Rules (MANDATORY)
+- ✅ ALWAYS use the specified page header structure
+- ✅ ALWAYS implement consistent card layouts
+- ✅ ALWAYS use the specified spacing and typography
+- ✅ ALWAYS maintain visual hierarchy
+- ❌ NEVER skip the page header or card structure
+- ❌ NEVER use different spacing patterns
+
+### 5. Responsive Behavior Rules (MANDATORY)
+- ✅ ALWAYS implement mobile-first responsive design
+- ✅ ALWAYS use the specified breakpoint patterns
+- ✅ ALWAYS maintain consistent spacing across devices
+- ✅ ALWAYS implement proper touch targets
+- ❌ NEVER skip responsive considerations
+- ❌ NEVER use fixed layouts without responsive alternatives
+
+### 6. Navigation Validation Rules (MANDATORY)
+- ✅ ALWAYS ensure all pages are properly placed in sidenav navigation
+- ✅ ALWAYS verify all pages are navigatable without errors
+- ✅ ALWAYS test complete navigation flow from landing page through all authenticated pages
+- ✅ ALWAYS include all required pages from requirements.md in sidenav
+- ✅ ALWAYS implement proper current page highlighting
+- ✅ ALWAYS ensure navigation state persists across page refreshes
+- ✅ ALWAYS verify landing page buttons navigate correctly (no system page access except login)
+- ✅ ALWAYS ensure hero section has actual visual content (not blank container)
+- ❌ NEVER skip navigation validation
+- ❌ NEVER leave pages inaccessible through navigation
+- ❌ NEVER allow landing page buttons to access system pages (except login)
+
+### 7. Real-Time Database Connection Rules (MANDATORY)
+- ✅ ALWAYS use real-time database connections for ALL data pages
+- ✅ ALWAYS fetch data from database using MCP tools or API calls
+- ✅ ALWAYS display "No Record Found" when database has no data
+- ✅ ALWAYS implement proper loading states for database operations
+- ✅ ALWAYS handle database connection errors gracefully
+- ✅ ALWAYS use real database field names and data structures
+- ✅ ALWAYS implement CRUD operations with real database endpoints
+- ✅ ALWAYS validate database connectivity before page implementation
+- ✅ ALWAYS test real-time data fetching during development
+- ❌ NEVER use mock data, hardcoded data, or static arrays
+- ❌ NEVER create fake data for display purposes
+- ❌ NEVER use placeholder data in production
+- ❌ NEVER skip database connectivity validation
+- ❌ NEVER proceed with page creation if mock data is detected
+- ❌ NEVER implement pages without real database connections
+
+### 8. Database Field Naming Consistency Rules (MANDATORY)
+- ✅ ALWAYS use exact database field names when calling data from database
+- ✅ ALWAYS match frontend data calls with backend schema field names
+- ✅ ALWAYS use database field names for API operations (create, read, update, delete)
+- ✅ ALWAYS use UI labels only for display purposes (not for data operations)
+- ✅ ALWAYS verify field names match between frontend and database schema
+- ❌ NEVER use UI labels for database operations
+- ❌ NEVER use different field names in frontend than in database schema
+- ❌ NEVER hardcode field names without verifying against schema
+
+#### ⚠️ CRITICAL: Real-Time Database Implementation (MANDATORY)
+
+**Real-Time Data Requirements:**
+- **ALL Data Pages MUST** use real-time database connections
+- **NO Mock Data**: Never use hardcoded arrays, static data, or placeholder content
+- **Database-First**: All data must come from actual database queries
+- **Error Handling**: Proper handling of database connection failures
+- **Loading States**: Show loading indicators during database operations
+- **Empty States**: Display "No Record Found" when database is empty
+- **CRUD Operations**: All create, read, update, delete operations must use real database
+- **Field Validation**: All field names must match database schema exactly
+
+**Implementation Pattern:**
+```javascript
+// ✅ CORRECT: Real-time database data fetching
+import { mcp_innque_mcp_find_objects } from './mcp-tools';
+
+const [data, setData] = useState([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(null);
+
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const result = await mcp_innque_mcp_find_objects({
+        collection: "appointments",
+        limit: 100
+      });
+      setData(result || []);
+    } catch (err) {
+      setError(err.message);
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  fetchData();
+}, []);
+
+// Display data or empty state
+{loading ? (
+  <div>Loading...</div>
+) : data.length === 0 ? (
+  <div>No Record Found</div>
+) : (
+  <CollapsibleTable data={data} />
+)}
+```
+
+**Dashboard Metrics Implementation:**
+```javascript
+// ✅ CORRECT: Real-time dashboard metrics
+const [metrics, setMetrics] = useState({
+  totalAppointments: 0,
+  totalPatients: 0,
+  totalProviders: 0,
+  activeSessions: 0
+});
+
+useEffect(() => {
+  const fetchMetrics = async () => {
+    try {
+      const [appointments, patients, providers, sessions] = await Promise.all([
+        mcp_innque_mcp_count_objects({ collection: "appointments" }),
+        mcp_innque_mcp_count_objects({ collection: "patients" }),
+        mcp_innque_mcp_count_objects({ collection: "providers" }),
+        mcp_innque_mcp_count_objects({ collection: "video_sessions", where: { status: "active" } })
+      ]);
+      
+      setMetrics({
+        totalAppointments: appointments,
+        totalPatients: patients,
+        totalProviders: providers,
+        activeSessions: sessions
+      });
+    } catch (err) {
+      toast.error('Failed to load dashboard metrics');
+    }
+  };
+  
+  fetchMetrics();
+}, []);
+```
+
+**Prohibited Patterns:**
+```javascript
+// ❌ WRONG: Mock data arrays
+const mockData = [
+  { id: 1, name: "John Doe", status: "active" },
+  { id: 2, name: "Jane Smith", status: "inactive" }
+];
+
+// ❌ WRONG: Hardcoded data
+const hardcodedData = [
+  { id: 1, title: "Sample Appointment", date: "2024-01-01" }
+];
+
+// ❌ WRONG: Static placeholder data
+const placeholderData = Array.from({ length: 10 }, (_, i) => ({
+  id: i + 1,
+  name: `Placeholder ${i + 1}`
+}));
+
+// ❌ WRONG: Hardcoded dashboard metrics
+const hardcodedMetrics = {
+  totalAppointments: 25,
+  totalPatients: 150,
+  totalProviders: 12,
+  activeSessions: 3
+};
+```
+
+**Real-Time Data Validation Checklist:**
+- [ ] All data pages use real database connections
+- [ ] No mock data arrays or hardcoded content
+- [ ] Proper loading states implemented
+- [ ] Error handling for database failures
+- [ ] Empty state displays "No Record Found"
+- [ ] All CRUD operations use real database
+- [ ] Data refreshes automatically when database changes
+- [ ] Field names match database schema exactly
+- [ ] Dashboard metrics come from real database counts
+- [ ] All tables display real database records
+- [ ] No placeholder or sample data in production
+
+#### ⚠️ CRITICAL: Database Field Naming Implementation (MANDATORY)
+
+**Field Naming Requirements:**
+- **Database Operations**: Use exact database field names (e.g., `firstName`, `lastName`, `email`)
+- **UI Display**: Use user-friendly labels (e.g., "First Name", "Last Name", "Email Address")
+- **API Calls**: Use database field names in all API operations
+- **Form Handling**: Use database field names for form data submission
+
+**Implementation Pattern:**
+```javascript
+// ✅ CORRECT: Use database field names for API operations
+const userData = {
+  firstName: formData.firstName,    // Database field name
+  lastName: formData.lastName,      // Database field name
+  email: formData.email,           // Database field name
+  username: formData.username      // Database field name
+};
+
+// ✅ CORRECT: Use UI labels for display only
+<label htmlFor="firstName">First Name</label>  // UI label
+<InputFactory 
+  fieldName="firstName"  // Database field name
+  config={{ label: "First Name" }}  // UI label
+/>
+
+// ❌ WRONG: Using UI labels for database operations
+const userData = {
+  "First Name": formData.firstName,  // Wrong - UI label
+  "Last Name": formData.lastName     // Wrong - UI label
+};
+```
+
+**Field Naming Validation Checklist:**
+- [ ] All API calls use exact database field names
+- [ ] All form submissions use database field names
+- [ ] All data operations match schema field names
+- [ ] UI labels are used only for display purposes
+- [ ] No mismatches between frontend and database field names
+- [ ] All CRUD operations use consistent field naming
+
+#### ⚠️ CRITICAL: Navigation Implementation Checklist (MANDATORY)
+
+**Navigation Requirements:**
+- **ALL PAGES MUST** be properly placed in sidenav navigation
+- **ALL PAGES MUST** be navigatable without errors
+- **Navigation flow MUST** work from landing page through all authenticated pages
+- **Sidenav MUST** include all required pages from requirements.md
+- **Landing page buttons MUST** navigate to public pages only (except login button)
+- **Hero section MUST** have actual visual content, not blank container
+
+**Navigation Implementation Checklist:**
+- [ ] All pages from requirements.md are included in sidenav
+- [ ] All navigation links work without errors
+- [ ] Current page highlighting works correctly
+- [ ] Navigation state persists across page refreshes
+- [ ] Mobile navigation auto-closes on page selection
+- [ ] Desktop navigation maintains state
+- [ ] All pages are accessible through navigation
+- [ ] No broken links or navigation errors
+- [ ] Landing page buttons navigate to public pages only (except login)
+- [ ] Hero section has engaging visual content (not blank)
+- [ ] Database field naming matches frontend data calls exactly
+
+---
+
+## 🚨 COMPLIANCE ENFORCEMENT
+
+**AI AGENTS MUST:**
+1. **Validate page structure** in every implementation
+2. **Check landing page** navigation and hero sections
+3. **Verify authentication** form layouts and styling
+4. **Confirm dashboard** metric cards and content sections
+5. **Validate content pages** header and card structures
+6. **Ensure responsive** behavior across all page types
+7. **Validate navigation** - all pages properly placed in sidenav and navigatable without errors
+8. **Test navigation flow** - complete flow from landing page through all authenticated pages
+9. **CRITICAL: Verify real-time database connections** - ALL data pages MUST use real database data, NO mock data allowed
+10. **Validate database connectivity** - ensure all pages connect to actual database collections
+11. **Check empty state handling** - verify "No Record Found" displays when database is empty
+12. **Validate loading states** - ensure proper loading indicators for database operations
+13. **Verify error handling** - ensure graceful handling of database connection failures
+14. **Validate landing page buttons** - ensure no system page access except login button
+15. **Verify hero illustrations** - ensure actual visual content, not blank containers
+16. **Check database field naming** - ensure frontend uses exact database field names
+17. **Validate session implementation** - ensure proper session management and persistence
+18. **STOP implementation** if any page uses mock data - fix before proceeding
+19. **MANDATORY: Check all existing pages** for mock data before creating new pages
+20. **MANDATORY: Fix all mock data issues** before proceeding with any new development
+21. **MANDATORY: Verify dashboard metrics** come from real database counts, not hardcoded values
+22. **MANDATORY: Test real-time data fetching** for all data pages during development
+23. **MANDATORY: Ensure CRUD operations** use real database endpoints, not mock responses
+
+**NON-COMPLIANCE WILL RESULT IN:**
+- ❌ Rejection of implementation
+- ❌ Mandatory correction before proceeding
+- ❌ Page layout violation warnings
+
+**THESE PAGE LAYOUT RULES ARE NON-NEGOTIABLE AND MUST BE FOLLOWED IN ALL IMPLEMENTATIONS.**
