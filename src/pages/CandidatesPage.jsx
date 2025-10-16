@@ -607,7 +607,7 @@ const CandidatesPage = () => {
           filters={filters}
           statusOptions={categoryOptions}
           showFilterIcon={true}
-          className="bg-white border-gray-200"
+          className="bg-gray-50 border-gray-200"
         />
         
         {/* Filter Status Indicator */}
