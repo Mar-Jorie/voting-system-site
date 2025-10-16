@@ -73,6 +73,8 @@ export const getVoteControl = async () => {
 // Set vote control settings in database using voting_sessions
 export const setVoteControl = async (control) => {
   try {
+    console.log('🔄 setVoteControl: Starting with control:', control);
+    
     if (control.id) {
       // Update existing voting session
       const updateData = {
@@ -81,7 +83,10 @@ export const setVoteControl = async (control) => {
         results_visibility: control.resultsVisibility || RESULTS_VISIBILITY.HIDDEN
       };
       
+      console.log('🔄 setVoteControl: Updating with data:', updateData);
       const result = await apiClient.updateObject('voting_sessions', control.id, updateData);
+      console.log('🔄 setVoteControl: Update result:', result);
+      
       if (!result) {
         throw new Error('Failed to update voting session');
       }
@@ -96,18 +101,22 @@ export const setVoteControl = async (control) => {
         results_visibility: control.resultsVisibility || RESULTS_VISIBILITY.HIDDEN
       };
       
+      console.log('🔄 setVoteControl: Creating with data:', createData);
       const result = await apiClient.createObject('voting_sessions', createData);
+      console.log('🔄 setVoteControl: Create result:', result);
+      
       if (!result) {
         throw new Error('Failed to create voting session');
       }
     }
     
     // Dispatch event to notify all devices of the change
+    console.log('🔄 setVoteControl: Dispatching votingStatusChanged event');
     window.dispatchEvent(new CustomEvent('votingStatusChanged'));
     
     return true;
   } catch (error) {
-    console.error('Error setting vote control in database:', error);
+    console.error('❌ setVoteControl: Error setting vote control in database:', error);
     // Show error toast to user if available
     if (typeof window !== 'undefined' && window.toast) {
       window.toast.error(`Failed to update voting status: ${error.message}`);
@@ -156,14 +165,23 @@ export const stopVoting = async (stoppedBy = 'admin', reason = 'Manually stopped
 
 // Start voting (resume) (async version)
 export const startVoting = async () => {
+  console.log('🔄 startVoting: Getting current control...');
   const control = await getVoteControl();
-  return await setVoteControl({
+  console.log('🔄 startVoting: Current control:', control);
+  
+  const newControl = {
     ...control,
     status: VOTE_STATUS.ACTIVE,
     stoppedAt: null,
     stoppedBy: null,
     reason: null
-  });
+  };
+  console.log('🔄 startVoting: Setting new control:', newControl);
+  
+  const result = await setVoteControl(newControl);
+  console.log('🔄 startVoting: setVoteControl result:', result);
+  
+  return result;
 };
 
 // Set automatic stop date (async version)
@@ -177,10 +195,14 @@ export const setAutoStopDate = async (date) => {
 
 // Get voting status info for display (async version)
 export const getVotingStatusInfo = async () => {
+  console.log('🔄 getVotingStatusInfo: Getting control...');
   const control = await getVoteControl();
-  const isActive = await isVotingActive();
+  console.log('🔄 getVotingStatusInfo: Control:', control);
   
-  return {
+  const isActive = await isVotingActive();
+  console.log('🔄 getVotingStatusInfo: isActive:', isActive);
+  
+  const statusInfo = {
     isActive,
     status: control.status,
     autoStopDate: control.autoStopDate,
@@ -189,6 +211,9 @@ export const getVotingStatusInfo = async () => {
     reason: control.reason,
     timeUntilStop: control.autoStopDate ? Math.max(0, control.autoStopDate.getTime() - new Date().getTime()) : null
   };
+  
+  console.log('🔄 getVotingStatusInfo: Returning status info:', statusInfo);
+  return statusInfo;
 };
 
 // Format time remaining until auto-stop
