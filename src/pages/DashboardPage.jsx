@@ -346,7 +346,7 @@ const DashboardPage = () => {
   const handleShowResults = async () => {
     setResultsVisibilityLoading(true);
     try {
-      if (setResultsVisibility(RESULTS_VISIBILITY.PUBLIC)) {
+      if (await setResultsVisibility(RESULTS_VISIBILITY.PUBLIC)) {
         // Log results visibility change
         await auditLogger.log({
           action: 'results_shown',
@@ -372,7 +372,7 @@ const DashboardPage = () => {
   const handleHideResults = async () => {
     setResultsVisibilityLoading(true);
     try {
-      if (setResultsVisibility(RESULTS_VISIBILITY.HIDDEN)) {
+      if (await setResultsVisibility(RESULTS_VISIBILITY.HIDDEN)) {
         // Log results visibility change
         await auditLogger.log({
           action: 'results_hidden',

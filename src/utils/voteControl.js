@@ -29,7 +29,7 @@ export const getVoteControl = async () => {
         stoppedAt: session.is_active ? null : new Date(session.updated),
         stoppedBy: session.is_active ? null : 'admin',
         reason: session.is_active ? null : 'Voting session deactivated',
-        resultsVisibility: RESULTS_VISIBILITY.HIDDEN, // We'll handle this separately
+        resultsVisibility: session.results_visibility || RESULTS_VISIBILITY.HIDDEN,
         updatedAt: new Date(session.updated)
       };
     }
@@ -77,7 +77,8 @@ export const setVoteControl = async (control) => {
       // Update existing voting session
       const updateData = {
         is_active: control.status === VOTE_STATUS.ACTIVE,
-        end_date: control.autoStopDate ? control.autoStopDate.toISOString() : null
+        end_date: control.autoStopDate ? control.autoStopDate.toISOString() : null,
+        results_visibility: control.resultsVisibility || RESULTS_VISIBILITY.HIDDEN
       };
       
       await apiClient.updateObject('voting_sessions', control.id, updateData);
@@ -88,7 +89,8 @@ export const setVoteControl = async (control) => {
         description: 'Voting for outstanding guests at Corporate Party 2025',
         start_date: new Date().toISOString(),
         end_date: control.autoStopDate ? control.autoStopDate.toISOString() : null,
-        is_active: control.status === VOTE_STATUS.ACTIVE
+        is_active: control.status === VOTE_STATUS.ACTIVE,
+        results_visibility: control.resultsVisibility || RESULTS_VISIBILITY.HIDDEN
       };
       
       await apiClient.createObject('voting_sessions', createData);
