@@ -186,7 +186,6 @@ const LandingPage = () => {
 
         try {
           const newVisitor = await apiClient.createObject('site_visitors', visitorData);
-          console.log('✅ Created new visitor record:', newVisitor.id, 'Device fingerprint:', deviceFingerprint);
         } catch (apiError) {
           console.error('❌ Failed to create visitor:', apiError);
           throw apiError; // Re-throw to be caught by outer try-catch
@@ -254,7 +253,6 @@ const LandingPage = () => {
   const logVisitorStats = async () => {
     try {
       const stats = await getVisitorStats();
-      console.log('📊 Visitor Statistics:', stats);
       return stats;
     } catch (error) {
       console.error('❌ Error getting visitor stats:', error);

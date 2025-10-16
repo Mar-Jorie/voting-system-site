@@ -25,7 +25,6 @@ export function useCreateObject() {
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Create object hook was aborted");
         return null;
       }
       const errorMessage = `Create object failed: ${err.message}`;

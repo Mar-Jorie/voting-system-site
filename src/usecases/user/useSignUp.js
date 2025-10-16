@@ -25,7 +25,6 @@ export function useSignUp() {
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Sign up hook was aborted");
         return null;
       }
       const errorMessage = `Sign up failed: ${err.message}`;

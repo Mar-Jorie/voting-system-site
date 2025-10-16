@@ -1,5 +1,6 @@
 // Header Component - MANDATORY PATTERN
 import React, { useState, useContext, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Bars3Icon, 
   BellIcon, 
@@ -12,7 +13,8 @@ import {
   PhoneIcon,
   CalendarIcon,
   ShieldCheckIcon,
-  PencilIcon
+  PencilIcon,
+  CheckIcon
 } from '@heroicons/react/24/outline';
 import MainLayout from './MainLayout';
 import Button from '../Button';
@@ -23,8 +25,9 @@ import { toast } from 'react-hot-toast';
 import { updateObject } from '../../usecases/api';
 
 const Header = () => {
-  const { show, setShow, isMobile: _isMobile, isDesktop: _isDesktop } = useContext(MainLayout.Context);
+  const { show, setShow, isMobile: _isMobile, isTablet: _isTablet, isDesktop: _isDesktop } = useContext(MainLayout.Context);
   const { user, logout, refreshUser } = useApp();
+  const navigate = useNavigate();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -97,19 +100,15 @@ const Header = () => {
   const confirmProfileUpdate = async () => {
     setProfileUpdateLoading(true);
     try {
-      console.log('User object:', user);
-      console.log('User ID:', user?.id);
-      console.log('Pending profile data:', pendingProfileData);
       
       // Update user profile in database
-      const updatedUser = await updateObject('users', user.id, {
+      await updateObject('users', user.id, {
         firstName: pendingProfileData.firstName,
         lastName: pendingProfileData.lastName,
         email: pendingProfileData.email,
         username: pendingProfileData.username
       });
       
-      console.log('Update successful:', updatedUser);
       
       // Refresh user data from database to get the latest information
       await refreshUser();
@@ -148,30 +147,76 @@ const Header = () => {
     return user.role?.name || 'Admin';
   };
 
-  // Mock notifications data - in a real app, this would come from an API
-  const notifications = [
+  // Notification state management
+  const [notifications, setNotifications] = useState([
     {
       id: 1,
       title: "New vote submitted",
       message: "A new vote has been submitted for the current election",
       time: "2 minutes ago",
-      unread: true
+      unread: true,
+      type: "vote",
+      action: "view_votes"
     },
     {
       id: 2,
       title: "Election reminder",
       message: "Don't forget to cast your vote before the deadline",
       time: "1 hour ago",
-      unread: true
+      unread: true,
+      type: "reminder",
+      action: "view_candidates"
     },
     {
       id: 3,
       title: "System update",
       message: "The voting system has been updated with new features",
       time: "3 hours ago",
-      unread: true
+      unread: true,
+      type: "system",
+      action: "view_help"
     }
-  ];
+  ]);
+
+  // Mark all notifications as read
+  const markAllAsRead = () => {
+    setNotifications(prev => 
+      prev.map(notification => ({ ...notification, unread: false }))
+    );
+    toast.success('All notifications marked as read');
+  };
+
+  // Mark individual notification as read and handle action
+  const handleNotificationItemClick = (notification) => {
+    // Mark as read
+    setNotifications(prev => 
+      prev.map(n => 
+        n.id === notification.id ? { ...n, unread: false } : n
+      )
+    );
+
+    // Close notification dropdown
+    setShowNotificationDropdown(false);
+
+    // Handle different notification actions
+    switch (notification.action) {
+      case 'view_votes':
+        navigate('/votes');
+        break;
+      case 'view_candidates':
+        navigate('/candidates');
+        break;
+      case 'view_help':
+        setShowHelpModal(true);
+        break;
+      case 'view_dashboard':
+        navigate('/dashboard');
+        break;
+      default:
+        // Default action - could be a generic page
+        navigate('/dashboard');
+    }
+  };
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -219,40 +264,52 @@ const Header = () => {
               {/* Notification Dropdown */}
               {showNotificationDropdown && (
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  <div className="px-4 py-3 border-b border-gray-200">
+                  <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                    {notifications.some(n => n.unread) && (
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-1"
+                      >
+                        <CheckIcon className="h-3 w-3" />
+                        <span>Mark all read</span>
+                      </button>
+                    )}
                   </div>
                   <div className="max-h-64 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <div 
-                        key={notification.id}
-                        className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                          notification.unread ? 'bg-blue-50' : ''
-                        }`}
-                      >
-                        <div className="flex items-start space-x-3">
-                          <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                            notification.unread ? 'bg-blue-500' : 'bg-gray-300'
-                          }`}></div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">
-                              {notification.title}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {notification.time}
-                            </p>
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center">
+                        <BellIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">No notifications</p>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div 
+                          key={notification.id}
+                          onClick={() => handleNotificationItemClick(notification)}
+                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
+                            notification.unread ? 'bg-blue-50' : ''
+                          }`}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                              notification.unread ? 'bg-blue-500' : 'bg-gray-300'
+                            }`}></div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900">
+                                {notification.title}
+                              </p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {notification.message}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {notification.time}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="px-4 py-2 border-t border-gray-200">
-                    <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-                      View all notifications
-                    </button>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -300,7 +357,7 @@ const Header = () => {
                     </button>
                   </div>
                   
-                  {/* Mobile: View Profile + Help + Logout */}
+                  {/* Mobile/Tablet: View Profile + Help + Logout */}
                   <div className="lg:hidden">
                     <button 
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"

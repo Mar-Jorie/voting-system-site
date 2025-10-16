@@ -25,7 +25,6 @@ export function useUpdateObject() {
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Update object hook was aborted");
         return null;
       }
       const errorMessage = `Update object failed: ${err.message}`;

@@ -1,6 +1,6 @@
 // Dashboard Page - MANDATORY PATTERN
 import React, { useState, useEffect } from 'react';
-import { CalendarDaysIcon, UserGroupIcon, TrophyIcon, CheckCircleIcon, PlusIcon, ArrowDownTrayIcon, XMarkIcon, ClockIcon, StopIcon, PlayIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, UserGroupIcon, TrophyIcon, CheckCircleIcon, PlusIcon, ArrowDownTrayIcon, XMarkIcon, ClockIcon, StopIcon, PlayIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import SmartFloatingActionButton from '../components/SmartFloatingActionButton';
 import Button from '../components/Button';
 import FormModal from '../components/FormModal';
@@ -22,30 +22,14 @@ const DashboardPage = () => {
     auditLogs,
     loading,
     error,
+    lastUpdated,
+    isRefreshing,
     refresh
   } = useOptimizedDashboardData();
 
   const [resultsVisibility, setResultsVisibilityState] = useState(RESULTS_VISIBILITY.HIDDEN);
 
-  useEffect(() => {
-    // Listen for vote updates
-    const handleVotesUpdated = () => {
-      refresh(); // Call refresh from the optimized hook
-    };
-    
-    // Listen for candidate updates
-    const handleCandidatesUpdated = () => {
-      refresh(); // Call refresh from the optimized hook
-    };
-    
-    window.addEventListener('votesUpdated', handleVotesUpdated);
-    window.addEventListener('candidatesUpdated', handleCandidatesUpdated);
-    
-    return () => {
-      window.removeEventListener('votesUpdated', handleVotesUpdated);
-      window.removeEventListener('candidatesUpdated', handleCandidatesUpdated);
-    };
-  }, [refresh]); // Dependency array includes refresh
+  // Note: Real-time event listeners are now handled in the useOptimizedDashboardData hook
 
   // Load voting status
   useEffect(() => {
@@ -144,7 +128,6 @@ const DashboardPage = () => {
   };
 
   const handleViewResults = () => {
-    console.log('View voting results');
   };
 
   const [showExportModal, setShowExportModal] = useState(false);
@@ -153,6 +136,11 @@ const DashboardPage = () => {
   const [showStopConfirmationModal, setShowStopConfirmationModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  
+  // Loading states for voting control buttons
+  const [votingControlLoading, setVotingControlLoading] = useState(false);
+  const [resultsVisibilityLoading, setResultsVisibilityLoading] = useState(false);
+  const [autoStopLoading, setAutoStopLoading] = useState(false);
   
   // FormModal state for adding candidates
   const [showFormModal, setShowFormModal] = useState(false);
@@ -234,46 +222,56 @@ const DashboardPage = () => {
   };
 
   const confirmStopVoting = async () => {
-    if (stopVoting('admin', 'Manually stopped by administrator', true)) {
-      // Log voting stop operation
-      await auditLogger.log({
-        action: 'voting_stopped',
-        entity_type: 'system',
-        entity_name: 'Voting System',
-        details: {
-          reason: 'Manually stopped by administrator',
-          auto_stop_cleared: true
-        },
-        category: 'voting',
-        severity: 'warning'
-      });
-      
-      setVotingStatus(getVotingStatusInfo());
-      setShowStopConfirmationModal(false);
-      toast.success('Voting has been stopped and auto-stop schedule cleared');
-    } else {
-      toast.error('Failed to stop voting');
+    setVotingControlLoading(true);
+    try {
+      if (stopVoting('admin', 'Manually stopped by administrator', true)) {
+        // Log voting stop operation
+        await auditLogger.log({
+          action: 'voting_stopped',
+          entity_type: 'system',
+          entity_name: 'Voting System',
+          details: {
+            reason: 'Manually stopped by administrator',
+            auto_stop_cleared: true
+          },
+          category: 'voting',
+          severity: 'warning'
+        });
+        
+        setVotingStatus(getVotingStatusInfo());
+        setShowStopConfirmationModal(false);
+        toast.success('Voting has been stopped and auto-stop schedule cleared');
+      } else {
+        toast.error('Failed to stop voting');
+      }
+    } finally {
+      setVotingControlLoading(false);
     }
   };
 
   const handleStartVoting = async () => {
-    if (startVoting()) {
-      // Log voting start operation
-      await auditLogger.log({
-        action: 'voting_started',
-        entity_type: 'system',
-        entity_name: 'Voting System',
-        details: {
-          reason: 'Manually started by administrator'
-        },
-        category: 'voting',
-        severity: 'info'
-      });
-      
-      setVotingStatus(getVotingStatusInfo());
-      toast.success('Voting has been resumed');
-    } else {
-      toast.error('Failed to start voting');
+    setVotingControlLoading(true);
+    try {
+      if (startVoting()) {
+        // Log voting start operation
+        await auditLogger.log({
+          action: 'voting_started',
+          entity_type: 'system',
+          entity_name: 'Voting System',
+          details: {
+            reason: 'Manually started by administrator'
+          },
+          category: 'voting',
+          severity: 'info'
+        });
+        
+        setVotingStatus(getVotingStatusInfo());
+        toast.success('Voting has been resumed');
+      } else {
+        toast.error('Failed to start voting');
+      }
+    } finally {
+      setVotingControlLoading(false);
     }
   };
 
@@ -289,86 +287,101 @@ const DashboardPage = () => {
       return;
     }
 
-    if (setAutoStopDate(stopDateTime)) {
-      // Log auto-stop operation
-      await auditLogger.log({
-        action: 'auto_stop_set',
-        entity_type: 'system',
-        entity_name: 'Voting System',
-        details: {
-          stop_date: stopDateTime.toISOString(),
-          stop_date_formatted: stopDateTime.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: '2-digit' 
-          }),
-          stop_time_formatted: stopDateTime.toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit',
-            hour12: true 
-          })
-        },
-        category: 'voting',
-        severity: 'info'
-      });
-      
-      setVotingStatus(getVotingStatusInfo());
-      setShowVoteControlModal(false);
-      setSelectedDate('');
-      setSelectedTime('');
-      toast.success(`Auto-stop set for ${stopDateTime.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: '2-digit' 
-      })} at ${stopDateTime.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: true 
-      })}`);
-    } else {
-      toast.error('Failed to set auto-stop date');
+    setAutoStopLoading(true);
+    try {
+      if (setAutoStopDate(stopDateTime)) {
+        // Log auto-stop operation
+        await auditLogger.log({
+          action: 'auto_stop_set',
+          entity_type: 'system',
+          entity_name: 'Voting System',
+          details: {
+            stop_date: stopDateTime.toISOString(),
+            stop_date_formatted: stopDateTime.toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: '2-digit' 
+            }),
+            stop_time_formatted: stopDateTime.toLocaleTimeString('en-US', { 
+              hour: 'numeric', 
+              minute: '2-digit',
+              hour12: true 
+            })
+          },
+          category: 'voting',
+          severity: 'info'
+        });
+        
+        setVotingStatus(getVotingStatusInfo());
+        setShowVoteControlModal(false);
+        setSelectedDate('');
+        setSelectedTime('');
+        toast.success(`Auto-stop set for ${stopDateTime.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: '2-digit' 
+        })} at ${stopDateTime.toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: true 
+        })}`);
+      } else {
+        toast.error('Failed to set auto-stop date');
+      }
+    } finally {
+      setAutoStopLoading(false);
     }
   };
 
   const handleShowResults = async () => {
-    if (setResultsVisibility(RESULTS_VISIBILITY.PUBLIC)) {
-      // Log results visibility change
-      await auditLogger.log({
-        action: 'results_shown',
-        entity_type: 'system',
-        entity_name: 'Election Results',
-        details: {
-          visibility: 'public'
-        },
-        category: 'voting',
-        severity: 'info'
-      });
-      
-      setResultsVisibilityState(RESULTS_VISIBILITY.PUBLIC);
-      toast.success('Results are now publicly visible');
-    } else {
-      toast.error('Failed to show results');
+    setResultsVisibilityLoading(true);
+    try {
+      if (setResultsVisibility(RESULTS_VISIBILITY.PUBLIC)) {
+        // Log results visibility change
+        await auditLogger.log({
+          action: 'results_shown',
+          entity_type: 'system',
+          entity_name: 'Election Results',
+          details: {
+            visibility: 'public'
+          },
+          category: 'voting',
+          severity: 'info'
+        });
+        
+        setResultsVisibilityState(RESULTS_VISIBILITY.PUBLIC);
+        toast.success('Results are now publicly visible');
+      } else {
+        toast.error('Failed to show results');
+      }
+    } finally {
+      setResultsVisibilityLoading(false);
     }
   };
 
   const handleHideResults = async () => {
-    if (setResultsVisibility(RESULTS_VISIBILITY.HIDDEN)) {
-      // Log results visibility change
-      await auditLogger.log({
-        action: 'results_hidden',
-        entity_type: 'system',
-        entity_name: 'Election Results',
-        details: {
-          visibility: 'hidden'
-        },
-        category: 'voting',
-        severity: 'info'
-      });
-      
-      setResultsVisibilityState(RESULTS_VISIBILITY.HIDDEN);
-      toast.success('Results are now hidden from public view');
-    } else {
-      toast.error('Failed to hide results');
+    setResultsVisibilityLoading(true);
+    try {
+      if (setResultsVisibility(RESULTS_VISIBILITY.HIDDEN)) {
+        // Log results visibility change
+        await auditLogger.log({
+          action: 'results_hidden',
+          entity_type: 'system',
+          entity_name: 'Election Results',
+          details: {
+            visibility: 'hidden'
+          },
+          category: 'voting',
+          severity: 'info'
+        });
+        
+        setResultsVisibilityState(RESULTS_VISIBILITY.HIDDEN);
+        toast.success('Results are now hidden from public view');
+      } else {
+        toast.error('Failed to hide results');
+      }
+    } finally {
+      setResultsVisibilityLoading(false);
     }
   };
 
@@ -486,12 +499,10 @@ const DashboardPage = () => {
 
   const exportAsPDF = async () => {
     try {
-      console.log('PDF Export button clicked');
       // Use state data instead of localStorage
       const currentVotes = votes;
       const currentCandidates = candidates;
       
-      console.log('PDF Export - Votes:', currentVotes.length, 'Candidates:', currentCandidates.length);
       
       if (currentCandidates.length === 0) {
         toast.error('No candidates found to export');
@@ -651,7 +662,6 @@ const DashboardPage = () => {
       setTimeout(() => {
         try {
           window.print();
-          console.log('Print dialog triggered');
         } catch (printError) {
           console.error('Print error:', printError);
           toast.error('Print dialog failed. Please try again or check browser settings.');
@@ -690,15 +700,17 @@ const DashboardPage = () => {
   };
 
   return (
-    <div>
+    <div className="w-full max-w-full">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
-          Welcome back, Admin!
-        </h1>
-        <p className="text-gray-600">
-          Here's what's happening with your voting system today.
-        </p>
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
+            Welcome back, Admin!
+          </h1>
+          <p className="text-gray-600">
+            Here's what's happening with your voting system today.
+          </p>
+        </div>
       </div>
 
       {/* Progressive Loading with Skeleton */}
@@ -708,9 +720,9 @@ const DashboardPage = () => {
         skeleton={DashboardSkeleton}
         onRetry={refresh}
       >
-        <div className="space-y-6">
+        <div className="space-y-6 2xl:space-y-8">
         {/* Key Metrics Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-4 2xl:gap-6">
           {/* Total Voters */}
           <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-3">
@@ -796,7 +808,7 @@ const DashboardPage = () => {
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-900">Election Controls</h3>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 2xl:gap-8">
             {/* Voting Status Card */}
             {votingStatus && (
               <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 transition-all duration-200 hover:shadow-md">
@@ -823,9 +835,19 @@ const DashboardPage = () => {
                         variant="danger"
                         size="md"
                         className="flex-1"
+                        disabled={votingControlLoading}
                       >
-                        <StopIcon className="h-5 w-5 mr-2" />
-                        Stop Voting
+                        {votingControlLoading ? (
+                          <div className="flex items-center justify-center">
+                            <ArrowPathIcon className="h-4 w-4 animate-spin mr-2" />
+                            Stopping...
+                          </div>
+                        ) : (
+                          <>
+                            <StopIcon className="h-5 w-5 mr-2" />
+                            Stop Voting
+                          </>
+                        )}
                       </Button>
                     ) : (
                       <Button
@@ -833,9 +855,19 @@ const DashboardPage = () => {
                         variant="success"
                         size="md"
                         className="flex-1"
+                        disabled={votingControlLoading}
                       >
-                        <PlayIcon className="h-5 w-5 mr-2" />
-                        Start Voting
+                        {votingControlLoading ? (
+                          <div className="flex items-center justify-center">
+                            <ArrowPathIcon className="h-4 w-4 animate-spin mr-2" />
+                            Starting...
+                          </div>
+                        ) : (
+                          <>
+                            <PlayIcon className="h-5 w-5 mr-2" />
+                            Start Voting
+                          </>
+                        )}
                       </Button>
                     )}
                     
@@ -900,9 +932,19 @@ const DashboardPage = () => {
                     variant="success"
                     size="md"
                     className="w-full"
+                    disabled={resultsVisibilityLoading}
                   >
-                    <CheckCircleIcon className="h-5 w-5 mr-2" />
-                    Make Results Public
+                    {resultsVisibilityLoading ? (
+                      <div className="flex items-center justify-center">
+                        <ArrowPathIcon className="h-4 w-4 animate-spin mr-2" />
+                        Making Public...
+                      </div>
+                    ) : (
+                      <>
+                        <CheckCircleIcon className="h-5 w-5 mr-2" />
+                        Make Results Public
+                      </>
+                    )}
                   </Button>
                 ) : (
                   <Button
@@ -910,9 +952,19 @@ const DashboardPage = () => {
                     variant="danger"
                     size="md"
                     className="w-full"
+                    disabled={resultsVisibilityLoading}
                   >
-                    <XMarkIcon className="h-5 w-5 mr-2" />
-                    Hide Results
+                    {resultsVisibilityLoading ? (
+                      <div className="flex items-center justify-center">
+                        <ArrowPathIcon className="h-4 w-4 animate-spin mr-2" />
+                        Hiding...
+                      </div>
+                    ) : (
+                      <>
+                        <XMarkIcon className="h-5 w-5 mr-2" />
+                        Hide Results
+                      </>
+                    )}
                   </Button>
                 )}
                 
@@ -930,7 +982,7 @@ const DashboardPage = () => {
         </div>
 
         {/* Winners */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 2xl:gap-8">
           {/* Male Winner */}
           <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-6 shadow-sm border border-primary-200 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center justify-between mb-4">
@@ -999,7 +1051,7 @@ const DashboardPage = () => {
         </div>
 
         {/* Detailed Results */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
           {/* Male Category Results */}
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center mb-4">
@@ -1344,8 +1396,16 @@ const DashboardPage = () => {
                     onClick={handleSetAutoStop}
                     variant="primary"
                     className="flex-1"
+                    disabled={autoStopLoading}
                   >
-                    Set Auto-Stop
+                    {autoStopLoading ? (
+                      <div className="flex items-center justify-center">
+                        <ArrowPathIcon className="h-4 w-4 animate-spin mr-2" />
+                        Setting...
+                      </div>
+                    ) : (
+                      'Set Auto-Stop'
+                    )}
                   </Button>
                 </div>
               </div>

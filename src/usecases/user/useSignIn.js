@@ -30,7 +30,6 @@ export function useSignIn() {
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Sign in hook was aborted");
         return null;
       }
       const errorMessage = `Sign in failed: ${err.message}`;

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import apiClient from '../usecases/api';
+import { useGlobalDataRefresh, globalRefreshManager } from './useGlobalDataRefresh';
 
 // Cache for storing fetched data
 const dataCache = new Map();
@@ -29,6 +30,8 @@ export const useOptimizedData = (collection, options = {}) => {
     dependencies = [],
     enableCache = true,
     enableProgressiveLoading = true,
+    enableGlobalRefresh = true,
+    refreshKey = `${collection}_${JSON.stringify(where)}`,
     onSuccess,
     onError
   } = options;
@@ -38,6 +41,17 @@ export const useOptimizedData = (collection, options = {}) => {
   const [error, setError] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+
+
+  // Global refresh integration
+  const { isRefreshing: isGlobalRefreshing, manualRefresh } = useGlobalDataRefresh(
+    enableGlobalRefresh ? refreshKey : null,
+    null, // Will be set after loadData is defined
+    {
+      autoRegister: enableGlobalRefresh,
+      refreshRate: 5000 // Increased from 1000ms to 5000ms to reduce loop frequency
+    }
+  );
 
   // Generate cache key
   const cacheKey = useMemo(() => {
@@ -113,6 +127,7 @@ export const useOptimizedData = (collection, options = {}) => {
       return result;
     } catch (err) {
       const errorMessage = err.message || 'Failed to load data';
+      console.error('❌ Error loading data for', collection, ':', err);
       setError(errorMessage);
       
       // Call error callback
@@ -138,6 +153,21 @@ export const useOptimizedData = (collection, options = {}) => {
     onSuccess,
     onError
   ]);
+
+  // Update global refresh callback after loadData is defined
+  useEffect(() => {
+    if (enableGlobalRefresh && refreshKey) {
+      // Re-register with the actual loadData function
+      globalRefreshManager.unregister(refreshKey);
+      globalRefreshManager.register(refreshKey, () => loadData(true));
+    }
+    
+    return () => {
+      if (enableGlobalRefresh && refreshKey) {
+        globalRefreshManager.unregister(refreshKey);
+      }
+    };
+  }, [enableGlobalRefresh, refreshKey]); // Removed loadData from dependencies to prevent re-registration
 
   // Load more data (for pagination)
   const loadMore = useCallback(async () => {
@@ -179,7 +209,7 @@ export const useOptimizedData = (collection, options = {}) => {
   // Load data on mount and when dependencies change
   useEffect(() => {
     loadData();
-  }, dependencies);
+  }, [loadData, ...dependencies]);
 
   return {
     data,
@@ -189,11 +219,13 @@ export const useOptimizedData = (collection, options = {}) => {
     totalCount,
     loadMore,
     refresh,
-    clearCache
+    clearCache,
+    isGlobalRefreshing,
+    manualRefresh
   };
 };
 
-// Optimized dashboard data hook
+// Optimized dashboard data hook with real-time updates
 export const useOptimizedDashboardData = () => {
   const [metrics, setMetrics] = useState({
     totalVoters: 0,
@@ -206,11 +238,19 @@ export const useOptimizedDashboardData = () => {
   const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Load dashboard data progressively
-  const loadDashboardData = useCallback(async () => {
+  const loadDashboardData = useCallback(async (isRefresh = false) => {
     try {
-      setLoading(true);
+      // Only show loading spinner on initial load, not on refreshes
+      if (!isRefresh) {
+        setLoading(true);
+      } else {
+        // Show subtle refresh indicator for auto-refresh
+        setIsRefreshing(true);
+      }
       setError(null);
 
       // Load candidates first (most important)
@@ -244,17 +284,63 @@ export const useOptimizedDashboardData = () => {
         totalSiteVisitors
       });
 
+      // Update last updated timestamp
+      setLastUpdated(new Date());
+
     } catch (err) {
       setError(err.message || 'Failed to load dashboard data');
-      toast.error('Failed to load dashboard data');
+      // Only show toast error on initial load or manual refresh, not on auto-refresh
+      if (!isRefresh) {
+        toast.error('Failed to load dashboard data');
+      }
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
 
+  // Global refresh integration
+  const { isRefreshing: isGlobalRefreshing, manualRefresh } = useGlobalDataRefresh(
+    'dashboard_page',
+    useCallback(() => {
+      loadDashboardData(true); // true indicates this is a refresh
+    }, []), // Remove loadDashboardData from dependencies
+    {
+      autoRegister: true,
+      refreshRate: 5000 // Increased from 1000ms to 5000ms to reduce loop frequency
+    }
+  );
+
+  // Initial load
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, []); // Remove loadDashboardData from dependencies to prevent loop
+
+  // Listen for real-time events
+  useEffect(() => {
+    const handleVotesUpdated = () => {
+      loadDashboardData(true);
+    };
+    
+    const handleCandidatesUpdated = () => {
+      loadDashboardData(true);
+    };
+
+    const handleAuditLogsUpdated = () => {
+      loadDashboardData(true);
+    };
+
+    // Listen for custom events
+    window.addEventListener('votesUpdated', handleVotesUpdated);
+    window.addEventListener('candidatesUpdated', handleCandidatesUpdated);
+    window.addEventListener('auditLogsUpdated', handleAuditLogsUpdated);
+    
+    return () => {
+      window.removeEventListener('votesUpdated', handleVotesUpdated);
+      window.removeEventListener('candidatesUpdated', handleCandidatesUpdated);
+      window.removeEventListener('auditLogsUpdated', handleAuditLogsUpdated);
+    };
+  }, []); // Remove loadDashboardData from dependencies to prevent loop
 
   return {
     metrics,
@@ -263,85 +349,22 @@ export const useOptimizedDashboardData = () => {
     auditLogs,
     loading,
     error,
-    refresh: loadDashboardData
+    lastUpdated,
+    isRefreshing: isRefreshing || isGlobalRefreshing,
+    refresh: () => loadDashboardData(true),
+    manualRefresh
   };
 };
 
 // Optimized candidates data hook
-export const useOptimizedCandidatesData = (filters = {}) => {
-  const [candidates, setCandidates] = useState([]);
-  const [votes, setVotes] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Stabilize filters object to prevent infinite re-renders
-  const stableFilters = useMemo(() => filters, [JSON.stringify(filters)]);
-
-  // Load candidates with votes
-  const loadCandidatesData = useCallback(async () => {
-    try {
-      console.log('🔄 Starting to load candidates data...');
-      setLoading(true);
-      setError(null);
-
-      // Load candidates first
-      console.log('📡 Making API call to fetch candidates...');
-      const candidatesData = await apiClient.findObjects('candidates', stableFilters);
-      console.log('✅ API call successful, candidates data:', candidatesData);
-      setCandidates(candidatesData || []);
-
-      // Load votes for vote count calculation
-      const votesData = await apiClient.findObjects('votes', {});
-      setVotes(votesData || []);
-
-      // Calculate vote counts for each candidate
-      if (candidatesData && votesData) {
-        const candidatesWithVotes = candidatesData.map(candidate => {
-          const candidateVotes = votesData.filter(vote => vote.candidate_id === candidate.id);
-          return {
-            ...candidate,
-            voteCount: candidateVotes.length
-          };
-        });
-        setCandidates(candidatesWithVotes);
-      }
-
-    } catch (err) {
-      console.error('❌ Error loading candidates data:', err);
-      console.error('❌ Error type:', typeof err);
-      console.error('❌ Error message:', err.message);
-      const errorMessage = err.message || 'Failed to load candidates data';
-      console.log('🔧 Setting error state:', errorMessage);
-      setError(errorMessage);
-      
-      // Show more specific error messages
-      if (err.message?.includes('403') || err.message?.includes('Unauthorized')) {
-        console.log('🚫 403/Unauthorized error detected');
-        toast.error('API access denied. Please check your credentials.');
-      } else if (err.message?.includes('Network') || err.message?.includes('fetch')) {
-        console.log('🌐 Network error detected');
-        toast.error('Network error. Please check your connection.');
-      } else {
-        console.log('❓ Generic error detected');
-        toast.error('Failed to load candidates data');
-      }
-    } finally {
-      console.log('🏁 Setting loading to false');
-      setLoading(false);
-    }
-  }, [stableFilters]);
-
-  useEffect(() => {
-    loadCandidatesData();
-  }, [loadCandidatesData]);
-
-  return {
-    candidates,
-    votes,
-    loading,
-    error,
-    refresh: loadCandidatesData
-  };
+export const useOptimizedCandidatesData = (options = {}) => {
+  return useOptimizedData('candidates', {
+    enableGlobalRefresh: false, // Disabled to prevent loops
+    refreshKey: 'candidates_page',
+    enableCache: true, // Enable caching to reduce API calls
+    enableProgressiveLoading: false, // Disable progressive loading to prevent state issues
+    ...options
+  });
 };
 
 // Data prefetching hook

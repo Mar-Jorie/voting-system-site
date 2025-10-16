@@ -25,7 +25,6 @@ export function useFindObjects() {
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Find objects hook was aborted");
         return null;
       }
       const errorMessage = `Find objects failed: ${err.message}`;

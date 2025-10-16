@@ -25,7 +25,6 @@ export function useUploadFile() {
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Upload file hook was aborted");
         return null;
       }
       const errorMessage = `Upload file failed: ${err.message}`;

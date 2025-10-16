@@ -85,7 +85,6 @@ export const clearAllVisitors = async () => {
       await apiClient.deleteObject('site_visitors', visitor.id);
     }
     
-    console.log(`Cleared ${visitors.length} visitor records`);
     return visitors.length;
   } catch (error) {
     console.error('Error clearing visitors:', error);
@@ -98,30 +97,25 @@ export const clearAllVisitors = async () => {
  * This function simulates a visitor tracking scenario
  */
 export const testVisitorTracking = async () => {
-  console.log('🧪 Testing visitor tracking...');
   
   try {
     // Get initial stats
     const initialStats = await getVisitorStats();
-    console.log('📊 Initial stats:', initialStats);
     
     // Create a test fingerprint
     const testFingerprint = createTestFingerprint();
-    console.log('🔍 Test fingerprint:', testFingerprint);
     
     // Check if test visitor exists
     const existingVisitor = await getVisitorByFingerprint(testFingerprint);
     
     if (existingVisitor) {
-      console.log('👤 Test visitor exists:', existingVisitor);
-      console.log('📈 Current visit count:', existingVisitor.visit_count);
+      // Test visitor exists
     } else {
-      console.log('🆕 Test visitor does not exist - would create new record');
+      // Test visitor does not exist - would create new record
     }
     
     // Get final stats
     const finalStats = await getVisitorStats();
-    console.log('📊 Final stats:', finalStats);
     
     return {
       success: true,

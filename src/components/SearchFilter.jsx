@@ -16,6 +16,7 @@ const SearchFilter = ({
   onSearchSelectChange,
   statusOptions = [],
   getUniqueCompanies = () => [],
+  additionalFilters = [],
   className = "bg-gray-50 border-gray-200",
   showFilterIcon = true
 }) => {
@@ -124,8 +125,8 @@ const SearchFilter = ({
             {statusOptions.length > 0 && (
               <SelectInput
                 label="Status"
-                value={filters.status}
-                onChange={(value) => handleFilterChange('status', value)}
+                value={statusOptions.find(option => option.value === filters.status) || null}
+                onChange={(option) => handleFilterChange('status', option?.value || '')}
                 options={statusOptions}
                 className="filter-select-input"
               />
@@ -135,8 +136,8 @@ const SearchFilter = ({
             {companyOptions.length > 0 && (
               <SelectInput
                 label="Company"
-                value={filters.company}
-                onChange={(value) => handleFilterChange('company', value)}
+                value={companyOptions.find(option => option.value === filters.company) || null}
+                onChange={(option) => handleFilterChange('company', option?.value || '')}
                 options={companyOptions}
                 className="filter-select-input"
               />
@@ -162,6 +163,18 @@ const SearchFilter = ({
                 </div>
               </div>
             )}
+
+            {/* Additional Filters */}
+            {additionalFilters && additionalFilters.map((filter, index) => (
+              <SelectInput
+                key={index}
+                label={filter.label}
+                value={filter.options.find(option => option.value === filters[filter.key]) || null}
+                onChange={(option) => handleFilterChange(filter.key, option?.value || '')}
+                options={filter.options}
+                className="filter-select-input"
+              />
+            ))}
           </div>
 
           {/* Filter Actions */}

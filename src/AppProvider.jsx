@@ -222,7 +222,6 @@ function AppProvider({ children }) {
       if (!freshUserData || freshUserData.status !== 'active') {
         throw new Error('User not found or inactive');
       }
-      console.log('Refreshing user data from database:', freshUserData);
       
       setUser(freshUserData);
       return freshUserData;

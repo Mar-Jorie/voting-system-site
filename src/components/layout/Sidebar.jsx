@@ -4,7 +4,7 @@ import useScreenSize from '../../hooks/useScreenSize';
 import NavSidebar from './NavSidebar';
 
 const Sidebar = ({ show, onSetShow, position = "left" }) => {
-  const { isMobile, isDesktop } = useScreenSize();
+  const { isMobile, isTablet, isDesktop } = useScreenSize();
   const [isDragging, setIsDragging] = useState(false);
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchCurrentX, setTouchCurrentX] = useState(null);
@@ -86,7 +86,7 @@ const Sidebar = ({ show, onSetShow, position = "left" }) => {
     return position === "right" ? (show ? "translateX(0%)" : "translateX(100%)") : show ? "translateX(0%)" : "translateX(-100%)";
   };
 
-  const shouldShowDragHandle = touchSupported && !show && isMobile;
+  const shouldShowDragHandle = touchSupported && !show && (isMobile || isTablet);
   const isRight = position === "right";
 
   return (
@@ -99,10 +99,10 @@ const Sidebar = ({ show, onSetShow, position = "left" }) => {
         />
       )}
       
-      {/* Mobile Backdrop - MANDATORY (Mobile Only) */}
-      {isMobile && (
+      {/* Mobile Backdrop - MANDATORY (Mobile/Tablet Only) */}
+      {(isMobile || isTablet) && (
         <div
-          className={`fixed inset-0 z-40 transition-all duration-300 ease-in-out bg-black/50 ${
+          className={`fixed inset-0 z-[90] transition-all duration-300 ease-in-out bg-black/50 ${
             show ? 'opacity-100 visible' : 'opacity-0 invisible'
           }`}
           style={{
@@ -118,7 +118,7 @@ const Sidebar = ({ show, onSetShow, position = "left" }) => {
         className={`
           fixed top-0 h-full shadow-lg overflow-y-auto scrollbar-hide
           ${position === 'left' ? 'left-0' : 'right-0'}
-          ${isMobile ? 'w-80 max-w-[80vw] z-50' : 'lg:w-[270px] z-30'}
+          ${(isMobile || isTablet) ? 'w-80 max-w-[80vw] z-[100]' : 'lg:w-[270px] z-30'}
         `}
         style={{
           transform: getTransform(),

@@ -25,7 +25,6 @@ export function useCountObjects() {
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Count objects hook was aborted");
         return null;
       }
       const errorMessage = `Count objects failed: ${err.message}`;

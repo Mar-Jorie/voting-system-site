@@ -25,7 +25,9 @@ const UsersPage = () => {
     refresh
   } = useOptimizedData('users', {
     limit: 100,
-    sort: { created: -1 }
+    sort: { created: -1 },
+    enableGlobalRefresh: true,
+    refreshKey: 'users_page'
   });
   
   const [filteredUsers, setFilteredUsers] = useState([]);

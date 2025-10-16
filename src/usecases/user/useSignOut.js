@@ -23,7 +23,6 @@ export function useSignOut() {
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Sign out hook was aborted");
         return null;
       }
       const errorMessage = `Sign out failed: ${err.message}`;

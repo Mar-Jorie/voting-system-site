@@ -10,9 +10,9 @@ function useScreenSize() {
     const checkScreenSize = () => {
       const width = window.innerWidth;
       setIsMobile(width < 768);
-      setIsTablet(width >= 768 && width < 1024);
-      setIsDesktop(width >= 1024 && width < 1920);
-      setIsLargeDesktop(width >= 1920);
+      setIsTablet(width >= 768 && width < 1024); // Tablet range: 768px-1023px (hamburger menu)
+      setIsDesktop(width >= 1024 && width < 1920); // Desktop range: 1024px-1919px (full navigation)
+      setIsLargeDesktop(width >= 1920); // Large Desktop: 1920px+ (full navigation)
     };
 
     checkScreenSize();

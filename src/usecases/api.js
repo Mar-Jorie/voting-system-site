@@ -157,11 +157,6 @@ class APIClient {
 
   // Collections API methods
   async findObjects(collection, where = {}, options = {}) {
-    console.log('🔍 FIND OBJECTS:', {
-      collection: collection,
-      where: where,
-      options: options
-    });
     
     // Build query parameters
     const queryParams = new URLSearchParams();
@@ -181,10 +176,8 @@ class APIClient {
     const queryString = queryParams.toString();
     const path = queryString ? `/collections/${collection}?${queryString}` : `/collections/${collection}`;
     
-    console.log('📋 QUERY PATH:', path);
     
     const result = await this.request(path, { method: 'GET' });
-    console.log('📊 FIND RESULT:', result);
     
     return result;
   }

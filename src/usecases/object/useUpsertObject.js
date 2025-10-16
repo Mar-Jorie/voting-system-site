@@ -37,7 +37,6 @@ export function useUpsertObject() {
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Upsert object hook was aborted");
         return null;
       }
       const errorMessage = `Upsert object failed: ${err.message}`;

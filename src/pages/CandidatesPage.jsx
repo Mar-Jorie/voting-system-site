@@ -20,11 +20,15 @@ import auditLogger from '../utils/auditLogger.js';
 const CandidatesPage = () => {
   // Use optimized data loading
   const {
-    candidates,
+    data: candidates,
     loading,
     error,
     refresh
   } = useOptimizedCandidatesData();
+  
+  // State for vote counts
+  const [voteCounts, setVoteCounts] = useState({});
+  
   
   const [filteredCandidates, setFilteredCandidates] = useState([]);
   const [showFormModal, setShowFormModal] = useState(false);
@@ -60,10 +64,54 @@ const CandidatesPage = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
+  // Load vote counts for candidates
+  const loadVoteCounts = async () => {
+    try {
+      if (!candidates || candidates.length === 0) {
+        setVoteCounts({});
+        return;
+      }
+      
+      // Get all votes
+      const votes = await apiClient.findObjects('votes', {});
+      
+      // Calculate vote counts for each candidate
+      const counts = {};
+      candidates.forEach(candidate => {
+        counts[candidate.id] = 0;
+      });
+      
+      // Count votes for each candidate
+      if (votes && votes.length > 0) {
+        votes.forEach(vote => {
+          // Check if vote is for a male candidate
+          if (vote.male_candidate_id && counts.hasOwnProperty(vote.male_candidate_id)) {
+            counts[vote.male_candidate_id]++;
+          }
+          // Check if vote is for a female candidate
+          if (vote.female_candidate_id && counts.hasOwnProperty(vote.female_candidate_id)) {
+            counts[vote.female_candidate_id]++;
+          }
+        });
+      }
+      
+      setVoteCounts(counts);
+    } catch (error) {
+      console.error('❌ Error loading vote counts:', error);
+      setVoteCounts({});
+    }
+  };
+
+  useEffect(() => {
+    // Load vote counts when candidates change
+    loadVoteCounts();
+  }, [candidates]);
+
   useEffect(() => {
     // Listen for vote updates
     const handleVotesUpdated = () => {
       refresh(); // Use refresh from optimized hook
+      loadVoteCounts(); // Reload vote counts
     };
     
     // Listen for candidate updates
@@ -82,6 +130,12 @@ const CandidatesPage = () => {
 
   // Filter candidates based on search and filters
   useEffect(() => {
+    // Safety check: ensure candidates is an array
+    if (!candidates || !Array.isArray(candidates)) {
+      setFilteredCandidates([]);
+      return;
+    }
+    
     let filtered = candidates;
     
     // Search filter
@@ -92,9 +146,9 @@ const CandidatesPage = () => {
       );
     }
     
-    // Category filter
-    if (filters.category) {
-      filtered = filtered.filter(candidate => candidate.category === filters.category);
+    // Category filter (status in SearchFilter maps to category in candidates)
+    if (filters.status) {
+      filtered = filtered.filter(candidate => candidate.category === filters.status);
     }
     
     setFilteredCandidates(filtered);
@@ -246,6 +300,10 @@ const CandidatesPage = () => {
   };
 
   const getCandidatesByCategory = (category) => {
+    // Safety check: ensure filteredCandidates is an array
+    if (!filteredCandidates || !Array.isArray(filteredCandidates)) {
+      return [];
+    }
     return filteredCandidates.filter(candidate => candidate.category === category);
   };
 
@@ -253,18 +311,22 @@ const CandidatesPage = () => {
   const maleCandidates = getCandidatesByCategory('male');
   const femaleCandidates = getCandidatesByCategory('female');
   
+  // Check if we're filtering by category
+  const isFilteringByCategory = filters.status && (filters.status === 'male' || filters.status === 'female');
+  
   // Calculate pagination for each category
   const candidatesPerPage = 3; // Show 3 candidates per category per page
   const maleTotalPages = Math.ceil(maleCandidates.length / candidatesPerPage);
   const femaleTotalPages = Math.ceil(femaleCandidates.length / candidatesPerPage);
   
   // Get paginated candidates for each category
-  const maleStartIndex = (maleCurrentPage - 1) * candidatesPerPage;
-  const maleEndIndex = maleStartIndex + candidatesPerPage;
+  // When filtering by category, show all candidates of that category (no pagination)
+  const maleStartIndex = isFilteringByCategory ? 0 : (maleCurrentPage - 1) * candidatesPerPage;
+  const maleEndIndex = isFilteringByCategory ? maleCandidates.length : maleStartIndex + candidatesPerPage;
   const paginatedMaleCandidates = maleCandidates.slice(maleStartIndex, maleEndIndex);
   
-  const femaleStartIndex = (femaleCurrentPage - 1) * candidatesPerPage;
-  const femaleEndIndex = femaleStartIndex + candidatesPerPage;
+  const femaleStartIndex = isFilteringByCategory ? 0 : (femaleCurrentPage - 1) * candidatesPerPage;
+  const femaleEndIndex = isFilteringByCategory ? femaleCandidates.length : femaleStartIndex + candidatesPerPage;
   const paginatedFemaleCandidates = femaleCandidates.slice(femaleStartIndex, femaleEndIndex);
 
   // Image carousel helpers
@@ -326,6 +388,11 @@ const CandidatesPage = () => {
   };
 
   const handleSelectAll = () => {
+    // Safety check: ensure filteredCandidates is an array
+    if (!filteredCandidates || !Array.isArray(filteredCandidates)) {
+      return;
+    }
+    
     if (selectedCandidates.size === filteredCandidates.length) {
       setSelectedCandidates(new Set());
     } else {
@@ -346,6 +413,12 @@ const CandidatesPage = () => {
   const confirmBulkDelete = async () => {
     setBulkDeleteLoading(true);
     try {
+      // Safety check: ensure filteredCandidates is an array
+      if (!filteredCandidates || !Array.isArray(filteredCandidates)) {
+        toast.error('No candidates available for deletion');
+        return;
+      }
+      
       const candidatesToDelete = filteredCandidates.filter(c => selectedCandidates.has(c.id));
       
       // Delete each candidate from database
@@ -380,13 +453,19 @@ const CandidatesPage = () => {
 
 
   const exportAsCSV = () => {
+    // Safety check: ensure filteredCandidates is an array
+    if (!filteredCandidates || !Array.isArray(filteredCandidates)) {
+      toast.error('No candidates available for export');
+      return;
+    }
+    
     const candidatesToExport = filteredCandidates.filter(c => selectedCandidates.has(c.id));
     const csvHeaders = ['Name', 'Category', 'Description', 'Votes'];
     const csvData = candidatesToExport.map(candidate => [
       candidate.name,
       candidate.category,
       candidate.description || '',
-      candidate.votes || 0
+      voteCounts[candidate.id] || 0
     ]);
     
     const csvContent = [csvHeaders, ...csvData]
@@ -405,6 +484,12 @@ const CandidatesPage = () => {
   };
 
   const exportAsPDF = () => {
+    // Safety check: ensure filteredCandidates is an array
+    if (!filteredCandidates || !Array.isArray(filteredCandidates)) {
+      toast.error('No candidates available for export');
+      return;
+    }
+    
     const candidatesToExport = filteredCandidates.filter(c => selectedCandidates.has(c.id));
     
     // Create a print-specific stylesheet
@@ -465,7 +550,7 @@ const CandidatesPage = () => {
                   </span>
                 </td>
                 <td style="padding: 12px; color: #6b7280; border-right: 1px solid #e2e8f0; max-width: 200px; word-wrap: break-word;">${candidate.description || 'N/A'}</td>
-                <td style="padding: 12px; text-align: center; color: #2563eb; font-weight: bold; font-size: 16px;">${candidate.votes || 0}</td>
+                <td style="padding: 12px; text-align: center; color: #2563eb; font-weight: bold; font-size: 16px;">${voteCounts[candidate.id] || 0}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -521,9 +606,38 @@ const CandidatesPage = () => {
           onFilterChange={handleFilterChange}
           filters={filters}
           statusOptions={categoryOptions}
-          showFilterIcon={false}
+          showFilterIcon={true}
           className="bg-white border-gray-200"
         />
+        
+        {/* Filter Status Indicator */}
+        {(filters.status || searchValue) && (
+          <div className="mt-3 flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Active filters:</span>
+            {filters.status && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                Category: {filters.status === 'male' ? 'Male' : 'Female'}
+                <button
+                  onClick={() => handleFilterChange('status', '')}
+                  className="ml-1 text-primary-600 hover:text-primary-800"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {searchValue && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                Search: "{searchValue}"
+                <button
+                  onClick={() => setSearchValue('')}
+                  className="ml-1 text-gray-600 hover:text-gray-800"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Loading State - Handled by ProgressiveLoader below */}
@@ -553,7 +667,6 @@ const CandidatesPage = () => {
       )}
 
       {/* Progressive Loading with Skeleton */}
-      {console.log('🔍 CandidatesPage render - loading:', loading, 'error:', error)}
       <ProgressiveLoader
         loading={loading}
         error={error}
@@ -565,12 +678,15 @@ const CandidatesPage = () => {
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-gray-900">Male Candidates</h2>
-            <Pagination
-              currentPage={maleCurrentPage}
-              totalPages={maleTotalPages}
-              onPageChange={setMaleCurrentPage}
-              totalItems={maleCandidates.length}
-            />
+            {/* Only show pagination when not filtering by category */}
+            {!isFilteringByCategory && (
+              <Pagination
+                currentPage={maleCurrentPage}
+                totalPages={maleTotalPages}
+                onPageChange={setMaleCurrentPage}
+                totalItems={maleCandidates.length}
+              />
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {paginatedMaleCandidates.map((candidate) => {
@@ -659,7 +775,7 @@ const CandidatesPage = () => {
                       {/* Vote Count Badge */}
                       <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-50 text-primary-700 mb-4">
                         <span className="w-2 h-2 bg-primary-500 rounded-full mr-2"></span>
-                        {candidate.votes || 0} votes
+                        {voteCounts[candidate.id] || 0} votes
                       </div>
                     </div>
                     
@@ -703,12 +819,15 @@ const CandidatesPage = () => {
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-gray-900">Female Candidates</h2>
-            <Pagination
-              currentPage={femaleCurrentPage}
-              totalPages={femaleTotalPages}
-              onPageChange={setFemaleCurrentPage}
-              totalItems={femaleCandidates.length}
-            />
+            {/* Only show pagination when not filtering by category */}
+            {!isFilteringByCategory && (
+              <Pagination
+                currentPage={femaleCurrentPage}
+                totalPages={femaleTotalPages}
+                onPageChange={setFemaleCurrentPage}
+                totalItems={femaleCandidates.length}
+              />
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {paginatedFemaleCandidates.map((candidate) => {
@@ -797,7 +916,7 @@ const CandidatesPage = () => {
                       {/* Vote Count Badge */}
                       <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-50 text-primary-700 mb-4">
                         <span className="w-2 h-2 bg-primary-500 rounded-full mr-2"></span>
-                        {candidate.votes || 0} votes
+                        {voteCounts[candidate.id] || 0} votes
                       </div>
                     </div>
                     
@@ -836,42 +955,6 @@ const CandidatesPage = () => {
         </div>
       )}
 
-      {/* No candidates found */}
-      {!loading && filteredCandidates.length === 0 && (
-        <div className="p-6 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UserIcon className="h-8 w-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No candidates found</h3>
-          <p className="text-gray-600 mb-4">
-            {error 
-              ? 'Unable to load candidates. Please check your connection and try again.'
-              : searchValue || Object.keys(filters).length > 0 
-                ? 'Try adjusting your search or filter criteria.' 
-                : 'Add your first candidate to get started.'
-            }
-          </p>
-          {error ? (
-            <Button
-              variant="primary"
-              onClick={refresh}
-              className="flex items-center mx-auto"
-            >
-              <ArrowPathIcon className="h-5 w-5 mr-2" />
-              Retry
-            </Button>
-          ) : (!searchValue && Object.keys(filters).length === 0) && (
-            <Button
-              variant="primary"
-              onClick={handleAddCandidate}
-              className="flex items-center mx-auto"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Add Candidate
-            </Button>
-          )}
-        </div>
-      )}
 
       {/* Form Modal */}
       <FormModal
@@ -1012,6 +1095,43 @@ const CandidatesPage = () => {
           </div>
         </div>
         )}
+
+      {/* No candidates found */}
+      {filteredCandidates.length === 0 && (
+        <div className="p-6 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserIcon className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No candidates found</h3>
+          <p className="text-gray-600 mb-4">
+            {error 
+              ? 'Unable to load candidates. Please check your connection and try again.'
+              : searchValue || Object.keys(filters).length > 0 
+                ? 'Try adjusting your search or filter criteria.' 
+                : 'Add your first candidate to get started.'
+            }
+          </p>
+          {error ? (
+            <Button
+              variant="primary"
+              onClick={refresh}
+              className="flex items-center mx-auto"
+            >
+              <ArrowPathIcon className="h-5 w-5 mr-2" />
+              Retry
+            </Button>
+          ) : (!searchValue && Object.keys(filters).length === 0) && (
+            <Button
+              variant="primary"
+              onClick={handleAddCandidate}
+              className="flex items-center mx-auto"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add Candidate
+            </Button>
+          )}
+        </div>
+      )}
       </ProgressiveLoader>
 
       {/* Floating Action Button */}

@@ -56,6 +56,9 @@ class AuditLogger {
       };
 
       await apiClient.createObject('audit_logs', auditData);
+      
+      // Dispatch event to notify components of audit log updates
+      window.dispatchEvent(new CustomEvent('auditLogsUpdated'));
     } catch (error) {
       console.error('Failed to log audit event:', error);
       // Don't throw error to avoid breaking the main functionality

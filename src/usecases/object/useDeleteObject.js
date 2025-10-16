@@ -23,7 +23,6 @@ export function useDeleteObject() {
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Delete object hook was aborted");
         return null;
       }
       const errorMessage = `Delete object failed: ${err.message}`;

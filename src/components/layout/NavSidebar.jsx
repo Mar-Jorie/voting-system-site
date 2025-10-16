@@ -18,14 +18,14 @@ import ConfirmationModal from '../ConfirmationModal';
 import useApp from '../../hooks/useApp';
 
 const NavSidebar = () => {
-  const { isMobile, setShow } = useContext(MainLayout.Context);
+  const { isMobile, isTablet, setShow } = useContext(MainLayout.Context);
   const { user, logout } = useApp();
   const location = useLocation();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
 
   const handleNavClick = () => {
-    if (isMobile) {
+    if (isMobile || isTablet) {
       setShow(false);
     }
   };
@@ -105,7 +105,7 @@ const NavSidebar = () => {
       <div className="flex flex-col h-full">
         {/* Header Section - Responsive */}
         <div className="flex flex-col p-6 border-b border-gray-200">
-          {/* Mobile: User Profile */}
+          {/* Mobile/Tablet: User Profile */}
           <div className="lg:hidden">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white text-lg font-medium">

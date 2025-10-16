@@ -20,7 +20,9 @@ const VotesListPage = () => {
     refresh
   } = useOptimizedData('votes', {
     limit: 100,
-    sort: { created: -1 }
+    sort: { created: -1 },
+    enableGlobalRefresh: true,
+    refreshKey: 'votes_page'
   });
   
   const [candidates, setCandidates] = useState([]);
@@ -88,17 +90,17 @@ const VotesListPage = () => {
       });
     }
 
-    // Category filter
-    if (filters.category) {
+    // Category filter (status in SearchFilter maps to category in votes)
+    if (filters.status) {
       filtered = filtered.filter(vote => {
         if (vote.vote_type === 'dual_selection') {
           // For dual selection votes, show them for both categories
           return true;
         } else {
           // Handle legacy votes
-          if (filters.category === 'male') {
+          if (filters.status === 'male') {
             return vote.category === 'male';
-          } else if (filters.category === 'female') {
+          } else if (filters.status === 'female') {
             return vote.category === 'female';
           }
           return true;

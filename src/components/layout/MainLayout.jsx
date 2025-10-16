@@ -7,17 +7,17 @@ import Header from './Header';
 const MainLayoutContext = createContext();
 
 const MainLayout = ({ children }) => {
-  const { isMobile, isDesktop } = useScreenSize();
-  const [show, setShow] = useState(!isMobile);
+  const { isMobile, isTablet, isDesktop, isLargeDesktop } = useScreenSize();
+  const [show, setShow] = useState(!isMobile && !isTablet);
 
   // Set initial sidebar state based on screen size
   useEffect(() => {
-    if (isMobile) {
-      setShow(false); // Mobile: start closed
+    if (isMobile || isTablet) {
+      setShow(false); // Mobile/Tablet: start closed (hamburger menu)
     } else {
-      setShow(true); // Desktop: start open
+      setShow(true); // Desktop: start open (full navigation)
     }
-  }, [isMobile]);
+  }, [isMobile, isTablet]);
 
   // Add/remove body class to control scrolling behavior
   useEffect(() => {
@@ -28,7 +28,7 @@ const MainLayout = ({ children }) => {
   }, []);
 
   return (
-    <MainLayoutContext.Provider value={{ show, setShow, isMobile, isDesktop }}>
+    <MainLayoutContext.Provider value={{ show, setShow, isMobile, isTablet, isDesktop, isLargeDesktop }}>
       <div className="min-h-screen bg-gray-50">
         {/* Sidebar - Fixed positioned, doesn't affect layout flow */}
         <Sidebar 
@@ -41,8 +41,8 @@ const MainLayout = ({ children }) => {
         <div 
           className="flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
           style={{
-            marginLeft: isDesktop && show ? '270px' : '0px',
-            width: isDesktop && show ? 'calc(100vw - 270px)' : '100vw',
+            marginLeft: (isDesktop || isLargeDesktop) && show ? '270px' : '0px',
+            width: (isDesktop || isLargeDesktop) && show ? 'calc(100vw - 270px)' : '100vw',
             height: '100vh',
             position: 'relative' // Ensure proper positioning context
           }}
@@ -52,12 +52,15 @@ const MainLayout = ({ children }) => {
 
           {/* Main Content - Scrollable area */}
           <main className="flex-1 overflow-y-auto scrollbar-hide">
-            <div className="w-full max-w-full overflow-x-hidden p-4">
+            <div className={`w-full max-w-full overflow-x-hidden ${
+              isLargeDesktop ? 'p-8' : 'p-4'
+            }`}>
               {children}
             </div>
           </main>
         </div>
       </div>
+      
     </MainLayoutContext.Provider>
   );
 };

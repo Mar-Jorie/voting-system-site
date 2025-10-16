@@ -25,7 +25,6 @@ export function useFindSchemas() {
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Find schemas hook was aborted");
         return null;
       }
       const errorMessage = `Find schemas failed: ${err.message}`;

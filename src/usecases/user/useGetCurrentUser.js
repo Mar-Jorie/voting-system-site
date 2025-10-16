@@ -25,7 +25,6 @@ export function useGetCurrentUser() {
       return response;
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Get current user hook was aborted");
         return null;
       }
       const errorMessage = `Get current user failed: ${err.message}`;
