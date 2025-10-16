@@ -265,7 +265,7 @@ const Header = () => {
 
               {/* Notification Dropdown */}
               {showNotificationDropdown && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50" style={{ right: 'max(0px, calc(50vw - 160px))' }}>
                   <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
                     {notifications.some(n => n.unread) && (
@@ -278,7 +278,7 @@ const Header = () => {
                       </button>
                     )}
                   </div>
-                  <div className="max-h-64 overflow-y-auto">
+                  <div className="max-h-[calc(100vh-8rem)] sm:max-h-64 overflow-y-auto">
                     {notifications.length === 0 ? (
                       <div className="px-4 py-8 text-center">
                         <BellIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
