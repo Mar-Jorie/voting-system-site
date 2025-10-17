@@ -125,7 +125,7 @@ const FormModal = ({
         try {
           const apiClient = (await import('../usecases/api')).default;
           const existingVotes = await apiClient.findObjects('votes', {
-            where: { voter_email: value }
+            voter_email: value
           });
           console.log('Database check result:', existingVotes);
           
