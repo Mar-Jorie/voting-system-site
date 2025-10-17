@@ -42,6 +42,11 @@ class NotificationService {
   // Load notifications from database
   async loadNotificationsFromDatabase() {
     try {
+      // Check if apiClient is available
+      if (!apiClient || typeof apiClient.findObjects !== 'function') {
+        throw new Error('API client not available');
+      }
+      
       const notifications = await apiClient.findObjects('notifications', {
         order: '-created',
         limit: 50
@@ -49,6 +54,7 @@ class NotificationService {
       
       this.notifications = notifications || [];
       this.notifyListeners();
+      console.log('Successfully loaded notifications from database:', this.notifications.length);
     } catch (error) {
       console.error('Failed to load notifications from database:', error);
       console.log('Notifications collection may not exist yet. Using local storage fallback.');
@@ -59,6 +65,7 @@ class NotificationService {
         if (storedNotifications) {
           this.notifications = JSON.parse(storedNotifications);
           this.notifyListeners();
+          console.log('Loaded notifications from localStorage:', this.notifications.length);
         } else {
           this.notifications = [];
         }
@@ -72,6 +79,11 @@ class NotificationService {
   // Save notification to database
   async saveNotificationToDatabase(notification) {
     try {
+      // Check if apiClient is available
+      if (!apiClient || typeof apiClient.createObject !== 'function') {
+        throw new Error('API client not available');
+      }
+      
       const savedNotification = await apiClient.createObject('notifications', {
         title: notification.title,
         message: notification.message,
@@ -82,6 +94,7 @@ class NotificationService {
         user_id: notification.user_id || null
       });
       
+      console.log('Successfully saved notification to database:', savedNotification.id);
       return savedNotification;
     } catch (error) {
       console.error('Failed to save notification to database:', error);
@@ -103,6 +116,7 @@ class NotificationService {
         const trimmedNotifications = existingNotifications.slice(0, 50);
         localStorage.setItem('voting_notifications', JSON.stringify(trimmedNotifications));
         
+        console.log('Saved notification to localStorage:', notificationWithId.id);
         return notificationWithId;
       } catch (storageError) {
         console.error('Failed to save notification to localStorage:', storageError);
@@ -189,9 +203,15 @@ class NotificationService {
   // Mark notification as read in database
   async markNotificationAsRead(notificationId) {
     try {
+      // Check if apiClient is available
+      if (!apiClient || typeof apiClient.updateObject !== 'function') {
+        throw new Error('API client not available');
+      }
+      
       await apiClient.updateObject('notifications', notificationId, {
         unread: false
       });
+      console.log('Successfully marked notification as read in database:', notificationId);
     } catch (error) {
       console.error('Failed to mark notification as read in database:', error);
       console.log('Using localStorage fallback for marking as read.');
@@ -205,6 +225,7 @@ class NotificationService {
             : notification
         );
         localStorage.setItem('voting_notifications', JSON.stringify(updatedNotifications));
+        console.log('Marked notification as read in localStorage:', notificationId);
       } catch (storageError) {
         console.error('Failed to mark notification as read in localStorage:', storageError);
       }
@@ -244,21 +265,28 @@ class NotificationService {
   }
 
   // Start monitoring for new votes
-  startVoteMonitoring(apiClient) {
+  startVoteMonitoring(apiClientParam) {
     if (this.voteCheckInterval) {
       clearInterval(this.voteCheckInterval);
     }
 
     this.voteCheckInterval = setInterval(async () => {
       try {
-        const votes = await apiClient.findObjects('votes', {});
+        // Use the passed apiClient parameter or fall back to imported one
+        const client = apiClientParam || apiClient;
+        if (!client || typeof client.findObjects !== 'function') {
+          console.log('API client not available for vote monitoring');
+          return;
+        }
+
+        const votes = await client.findObjects('votes', {});
         const currentVoteCount = votes.length;
 
         if (currentVoteCount > this.voteCount) {
           const newVotesCount = currentVoteCount - this.voteCount;
           this.voteCount = currentVoteCount;
 
-          this.addNotification({
+          await this.addNotification({
             title: "New Vote Submitted",
             message: `${newVotesCount} new vote${newVotesCount > 1 ? 's' : ''} submitted`,
             type: "vote",
@@ -273,21 +301,28 @@ class NotificationService {
   }
 
   // Start monitoring voting status and deadlines
-  startVotingStatusMonitoring(apiClient) {
+  startVotingStatusMonitoring(apiClientParam) {
     if (this.deadlineCheckInterval) {
       clearInterval(this.deadlineCheckInterval);
     }
 
     this.deadlineCheckInterval = setInterval(async () => {
       try {
-        const votingStatus = await apiClient.findObjects('voting_status', {});
+        // Use the passed apiClient parameter or fall back to imported one
+        const client = apiClientParam || apiClient;
+        if (!client || typeof client.findObjects !== 'function') {
+          console.log('API client not available for voting status monitoring');
+          return;
+        }
+
+        const votingStatus = await client.findObjects('voting_status', {});
         const currentStatus = votingStatus[0];
 
         if (currentStatus) {
           // Check if voting status changed
           if (this.votingStatus && this.votingStatus.isActive !== currentStatus.isActive) {
             if (currentStatus.isActive) {
-              this.addNotification({
+              await this.addNotification({
                 title: "Voting Started",
                 message: "Voting is now active and accepting votes",
                 type: "voting",
@@ -295,7 +330,7 @@ class NotificationService {
                 priority: "high"
               });
             } else {
-              this.addNotification({
+              await this.addNotification({
                 title: "Voting Ended",
                 message: "Voting has been stopped and is no longer accepting votes",
                 type: "voting",

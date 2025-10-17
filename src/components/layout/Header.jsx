@@ -165,6 +165,10 @@ const Header = () => {
       // Initialize notification service (loads from database)
       await notificationService.initialize();
 
+      // Start monitoring for votes and voting status
+      notificationService.startVoteMonitoring(apiClient);
+      notificationService.startVotingStatusMonitoring(apiClient);
+
       return unsubscribe;
     };
 
