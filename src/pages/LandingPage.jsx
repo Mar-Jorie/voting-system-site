@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Bars3Icon, UserIcon, ChartBarIcon, ShieldCheckIcon, ClockIcon, TrophyIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import Button from '../components/Button';
 import FloatingChatbot from '../components/FloatingChatbot';
-import VotingModal from '../components/VotingModal';
 import { getVotingStatusInfo, getResultsVisibility, RESULTS_VISIBILITY } from '../utils/voteControl';
 import { ProgressiveLoader, LandingPageSkeleton } from '../components/SkeletonLoader';
 import apiClient from '../usecases/api';
 import { getVisitorStats } from '../utils/visitorTracking';
 
 const LandingPage = () => {
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showVotingModal, setShowVotingModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [votingStatus, setVotingStatus] = useState(null);
   const [resultsVisibility, setResultsVisibility] = useState(RESULTS_VISIBILITY.HIDDEN);
@@ -24,6 +23,10 @@ const LandingPage = () => {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleVoteClick = () => {
+    navigate('/vote');
   };
 
   const cleanupOldPageLoadData = () => {
@@ -407,7 +410,7 @@ const LandingPage = () => {
                     alert('Voting is currently disabled. Please contact the administrator.');
                     return;
                   }
-                  setShowVotingModal(true);
+                  handleVoteClick();
                 }}
                 disabled={votingStatus && !votingStatus.isActive}
               >
@@ -439,7 +442,7 @@ const LandingPage = () => {
                         setIsMobileMenuOpen(false);
                         return;
                       }
-                      setShowVotingModal(true);
+                      handleVoteClick();
                       setIsMobileMenuOpen(false);
                     }}
                     disabled={votingStatus && !votingStatus.isActive}
@@ -477,7 +480,7 @@ const LandingPage = () => {
                       alert('Voting is currently disabled. Please contact the administrator.');
                       return;
                     }
-                    setShowVotingModal(true);
+                    handleVoteClick();
                   }}
                   disabled={votingStatus && !votingStatus.isActive}
                 >
@@ -906,11 +909,6 @@ const LandingPage = () => {
       {/* Floating Elements */}
       <FloatingChatbot />
       
-      {/* Voting Modal */}
-      <VotingModal 
-        isOpen={showVotingModal} 
-        onClose={() => setShowVotingModal(false)} 
-      />
     </div>
   );
 };

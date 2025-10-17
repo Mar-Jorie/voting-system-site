@@ -1,5 +1,6 @@
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
+import VotingPage from "./pages/VotingPage";
 import SignInPage from "./pages/SigninPage";
 import ProtectedRoute from "./pages/ProtectedRoute";
 import PublicRoute from "./pages/PublicRoute";
@@ -19,6 +20,11 @@ function App() {
         <Route path="/signin" element={
           <PublicRoute>
             <SignInPage />
+          </PublicRoute>
+        } />
+        <Route path="/vote" element={
+          <PublicRoute>
+            <VotingPage />
           </PublicRoute>
         } />
         
