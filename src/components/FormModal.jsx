@@ -25,6 +25,11 @@ const FormModal = ({
   const [formData, setFormData] = useState(memoizedInitialData);
   const [errors, setErrors] = useState({});
 
+  // Debug custom errors
+  useEffect(() => {
+    console.log('FormModal customErrors changed:', customErrors);
+  }, [customErrors]);
+
   // Update form data when initialData changes
   useEffect(() => {
     setFormData(memoizedInitialData);
@@ -108,6 +113,7 @@ const FormModal = ({
 
     // Call custom field change handler if provided
     if (onFieldChange) {
+      console.log('FormModal calling onFieldChange with:', fieldName, fieldValue);
       onFieldChange(fieldName, fieldValue);
     }
     

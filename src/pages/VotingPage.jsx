@@ -143,6 +143,11 @@ const VotingPage = () => {
   const trackingRef = useRef(false);
   const trackingTimeoutRef = useRef(null);
 
+  // Debug email validation state changes
+  useEffect(() => {
+    console.log('Email validation state changed:', emailValidation);
+  }, [emailValidation]);
+
   // Helper function to get candidate images (same as CandidatesPage)
   const getCandidateImages = (candidate) => {
     // Support both 'image' (single) and 'images' (array) for backward compatibility
@@ -179,6 +184,7 @@ const VotingPage = () => {
 
   // Email validation function
   const validateEmail = async (email) => {
+    console.log('validateEmail called with:', email);
     if (!email) {
       setEmailValidation({ isValid: true, message: '' });
       return true;
@@ -186,17 +192,21 @@ const VotingPage = () => {
 
     try {
       // Check if email already exists in votes
+      console.log('Checking for existing votes with email:', email);
       const existingVotes = await apiClient.findObjects('votes', {
         where: { email: email }
       });
+      console.log('Existing votes found:', existingVotes);
 
       if (existingVotes && existingVotes.length > 0) {
+        console.log('Email already voted, setting validation error');
         setEmailValidation({ 
           isValid: false, 
           message: 'Email already voted' 
         });
         return false;
       } else {
+        console.log('Email is valid, clearing validation error');
         setEmailValidation({ isValid: true, message: '' });
         return true;
       }
@@ -209,6 +219,7 @@ const VotingPage = () => {
 
   // Handle field changes in the vote modal
   const handleVoteFieldChange = async (fieldName, value) => {
+    console.log('handleVoteFieldChange called with:', fieldName, value);
     if (fieldName === 'email') {
       await validateEmail(value);
     }
