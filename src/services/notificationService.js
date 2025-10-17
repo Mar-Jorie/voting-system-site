@@ -11,6 +11,8 @@ class NotificationService {
     this.deadlineCheckInterval = null;
     this.voteCheckInterval = null;
     this.isInitialized = false;
+    this.recentNotifications = new Map(); // Track recent notifications to prevent duplicates
+    this.monitoringActive = false; // Prevent multiple monitoring instances
   }
 
   // Add notification listener
@@ -99,19 +101,27 @@ class NotificationService {
   // Add a new notification
   async addNotification(notification) {
     try {
-      // Check for duplicate notifications (same title and message within last 30 seconds)
-      const now = new Date();
-      const thirtySecondsAgo = new Date(now.getTime() - 30000);
+      // Create a unique key for this notification
+      const notificationKey = `${notification.title}-${notification.message}`;
+      const now = Date.now();
       
-      const isDuplicate = this.notifications.some(existing => 
-        existing.title === notification.title && 
-        existing.message === notification.message &&
-        new Date(existing.created) > thirtySecondsAgo
-      );
+      // Check if we've already created this notification recently (within 60 seconds)
+      if (this.recentNotifications.has(notificationKey)) {
+        const lastCreated = this.recentNotifications.get(notificationKey);
+        if (now - lastCreated < 60000) { // 60 seconds
+          console.log('Duplicate notification prevented:', notification.title);
+          return null;
+        }
+      }
       
-      if (isDuplicate) {
-        console.log('Duplicate notification prevented:', notification.title);
-        return null;
+      // Mark this notification as recently created
+      this.recentNotifications.set(notificationKey, now);
+      
+      // Clean up old entries (older than 5 minutes)
+      for (const [key, timestamp] of this.recentNotifications.entries()) {
+        if (now - timestamp > 300000) { // 5 minutes
+          this.recentNotifications.delete(key);
+        }
       }
 
       const newNotification = {
@@ -350,11 +360,18 @@ class NotificationService {
       clearInterval(this.deadlineCheckInterval);
       this.deadlineCheckInterval = null;
     }
+    this.monitoringActive = false;
   }
 
   // Initialize monitoring with API client
   async initializeMonitoring(apiClient) {
     try {
+      // Prevent multiple monitoring instances
+      if (this.monitoringActive) {
+        console.log('Monitoring already active, skipping initialization');
+        return;
+      }
+
       // Get initial vote count
       const votes = await apiClient.findObjects('votes', {});
       this.voteCount = votes.length;
@@ -366,6 +383,8 @@ class NotificationService {
       // Start monitoring
       this.startVoteMonitoring(apiClient);
       this.startVotingStatusMonitoring(apiClient);
+      
+      this.monitoringActive = true;
 
       console.log('Notification service monitoring initialized');
     } catch (error) {
