@@ -29,34 +29,6 @@ const DashboardPage = () => {
   } = useOptimizedDashboardData();
 
   const [resultsVisibility, setResultsVisibilityState] = useState(RESULTS_VISIBILITY.HIDDEN);
-  
-  // Activity search filter state
-  const [activitySearchTerm, setActivitySearchTerm] = useState('');
-  const [activityFilterType, setActivityFilterType] = useState('all');
-
-  // Filter activity logs based on search term and type
-  const getFilteredActivityLogs = () => {
-    let filtered = auditLogs;
-
-    // Filter by type
-    if (activityFilterType !== 'all') {
-      filtered = filtered.filter(log => log.action === activityFilterType);
-    }
-
-    // Filter by search term
-    if (activitySearchTerm.trim()) {
-      const searchLower = activitySearchTerm.toLowerCase();
-      filtered = filtered.filter(log => 
-        log.action?.toLowerCase().includes(searchLower) ||
-        log.entity_type?.toLowerCase().includes(searchLower) ||
-        log.entity_name?.toLowerCase().includes(searchLower) ||
-        log.user_name?.toLowerCase().includes(searchLower) ||
-        log.details?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    return filtered;
-  };
 
   // Note: Real-time event listeners are now handled in the useOptimizedDashboardData hook
 
@@ -1266,64 +1238,9 @@ const DashboardPage = () => {
             </div>
           </div>
           
-          {/* Activity Search Filter */}
-          <div className="mb-4 space-y-3">
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search Input */}
-              <div className="flex-1">
-                <input
-                  type="text"
-                  placeholder="Search activities..."
-                  value={activitySearchTerm}
-                  onChange={(e) => setActivitySearchTerm(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-              
-              {/* Filter Dropdown */}
-              <div className="sm:w-48">
-                <select
-                  value={activityFilterType}
-                  onChange={(e) => setActivityFilterType(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value="all">All Activities</option>
-                  <option value="login">Login</option>
-                  <option value="logout">Logout</option>
-                  <option value="create">Create</option>
-                  <option value="update">Update</option>
-                  <option value="delete">Delete</option>
-                  <option value="vote_cast">Vote Cast</option>
-                  <option value="voting_started">Voting Started</option>
-                  <option value="voting_stopped">Voting Stopped</option>
-                  <option value="results_shown">Results Shown</option>
-                  <option value="results_hidden">Results Hidden</option>
-                  <option value="export_data">Export Data</option>
-                </select>
-              </div>
-            </div>
-            
-            {/* Clear Filters Button */}
-            {(activitySearchTerm || activityFilterType !== 'all') && (
-              <div className="flex justify-end">
-                <button
-                  onClick={() => {
-                    setActivitySearchTerm('');
-                    setActivityFilterType('all');
-                  }}
-                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            )}
-          </div>
-          
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {(() => {
-              const filteredLogs = getFilteredActivityLogs();
-              return filteredLogs.length > 0 ? (
-                filteredLogs.map((log, index) => {
+            {auditLogs.length > 0 ? (
+              auditLogs.map((log, index) => {
                 const getActivityIcon = (action, category) => {
                   switch (action) {
                     case 'login':
@@ -1414,23 +1331,15 @@ const DashboardPage = () => {
                   </div>
                 );
               })
-              ) : (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CalendarDaysIcon className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <p className="text-gray-500 font-medium">
-                    {auditLogs.length === 0 ? 'No activity yet' : 'No matching activities'}
-                  </p>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {auditLogs.length === 0 
-                      ? 'System activities will appear here' 
-                      : 'Try adjusting your search or filter criteria'
-                    }
-                  </p>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CalendarDaysIcon className="h-8 w-8 text-gray-400" />
                 </div>
-              );
-            })()}
+                <p className="text-gray-500 font-medium">No activity yet</p>
+                <p className="text-sm text-gray-400 mt-1">System activities will appear here</p>
+              </div>
+            )}
           </div>
         </div>
         </div>
