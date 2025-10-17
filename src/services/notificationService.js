@@ -31,8 +31,10 @@ class NotificationService {
     if (this.isInitialized) return;
     
     try {
+      console.log('Initializing notification service...');
       await this.loadNotificationsFromDatabase();
       this.isInitialized = true;
+      console.log('Notification service initialized successfully');
     } catch (error) {
       console.error('Failed to initialize notification service:', error);
       // Continue with empty notifications if database fails
@@ -47,32 +49,22 @@ class NotificationService {
         throw new Error('API client not available');
       }
       
-      const notifications = await apiClient.findObjects('notifications', {
-        order: '-created',
+      // Fetch global notifications (not per-user) from database
+      const notifications = await apiClient.findObjects('notifications', {}, {
+        sort: { created: -1 },
         limit: 50
       });
       
       this.notifications = notifications || [];
       this.notifyListeners();
-      console.log('Successfully loaded notifications from database:', this.notifications.length);
+      console.log('Successfully loaded global notifications from database:', this.notifications.length);
+      console.log('Sample notification:', this.notifications[0]);
+      console.log('Unread notifications:', this.notifications.filter(n => n.unread).length);
     } catch (error) {
       console.error('Failed to load notifications from database:', error);
-      console.log('Notifications collection may not exist yet. Using local storage fallback.');
-      
-      // Fallback to localStorage for persistence
-      try {
-        const storedNotifications = localStorage.getItem('voting_notifications');
-        if (storedNotifications) {
-          this.notifications = JSON.parse(storedNotifications);
-          this.notifyListeners();
-          console.log('Loaded notifications from localStorage:', this.notifications.length);
-        } else {
-          this.notifications = [];
-        }
-      } catch (storageError) {
-        console.error('Failed to load notifications from localStorage:', storageError);
-        this.notifications = [];
-      }
+      // No localStorage fallback - use empty array if database fails
+      this.notifications = [];
+      this.notifyListeners();
     }
   }
 
@@ -84,80 +76,55 @@ class NotificationService {
         throw new Error('API client not available');
       }
       
+      // Create global notification (not per-user)
       const savedNotification = await apiClient.createObject('notifications', {
         title: notification.title,
         message: notification.message,
         type: notification.type,
         action: notification.action,
         priority: notification.priority || 'normal',
-        unread: notification.unread !== false,
-        user_id: notification.user_id || null
+        unread: notification.unread !== false
+        // Removed user_id to make notifications global
       });
       
-      console.log('Successfully saved notification to database:', savedNotification.id);
+      console.log('Successfully saved global notification to database:', savedNotification.id);
       return savedNotification;
     } catch (error) {
       console.error('Failed to save notification to database:', error);
-      console.log('Notifications collection may not exist yet. Using localStorage fallback.');
-      
-      // Fallback to localStorage for persistence
-      try {
-        const notificationWithId = {
-          ...notification,
-          id: notification.id || Date.now() + Math.random(),
-          created: notification.timestamp || new Date().toISOString()
-        };
-        
-        // Save to localStorage
-        const existingNotifications = JSON.parse(localStorage.getItem('voting_notifications') || '[]');
-        existingNotifications.unshift(notificationWithId);
-        
-        // Keep only last 50 notifications
-        const trimmedNotifications = existingNotifications.slice(0, 50);
-        localStorage.setItem('voting_notifications', JSON.stringify(trimmedNotifications));
-        
-        console.log('Saved notification to localStorage:', notificationWithId.id);
-        return notificationWithId;
-      } catch (storageError) {
-        console.error('Failed to save notification to localStorage:', storageError);
-        return notification; // Return original if all saves fail
-      }
+      // No localStorage fallback - throw error if database save fails
+      throw error;
     }
   }
 
   // Add a new notification
   async addNotification(notification) {
-    const newNotification = {
-      id: Date.now() + Math.random(),
-      timestamp: new Date(),
-      unread: true,
-      ...notification
-    };
+    try {
+      const newNotification = {
+        timestamp: new Date(),
+        unread: true,
+        ...notification
+      };
 
-    // Save to database
-    const savedNotification = await this.saveNotificationToDatabase(newNotification);
-    
-    // Use saved notification if successful, otherwise use local one
-    const finalNotification = savedNotification.id ? savedNotification : newNotification;
-
-    this.notifications.unshift(finalNotification);
-    
-    // Keep only last 50 notifications
-    if (this.notifications.length > 50) {
-      this.notifications = this.notifications.slice(0, 50);
+      // Save to database only
+      const savedNotification = await this.saveNotificationToDatabase(newNotification);
+      
+      // Reload notifications from database to get the latest state
+      await this.loadNotificationsFromDatabase();
+      
+      // Show toast notification for important events
+      if (notification.priority === 'high') {
+        toast.success(notification.title, {
+          duration: 4000,
+          icon: this.getNotificationIcon(notification.type)
+        });
+      }
+      
+      return savedNotification;
+    } catch (error) {
+      console.error('Failed to add notification:', error);
+      // Don't add to local state if database save fails
+      throw error;
     }
-
-    this.notifyListeners();
-    
-    // Show toast notification for important events
-    if (notification.priority === 'high') {
-      toast.success(notification.title, {
-        duration: 4000,
-        icon: this.getNotificationIcon(notification.type)
-      });
-    }
-    
-    return finalNotification;
   }
 
   // Get notification icon based on type
@@ -177,13 +144,17 @@ class NotificationService {
   }
 
   // Mark notification as read
-  markAsRead(notificationId) {
-    this.notifications = this.notifications.map(notification =>
-      notification.id === notificationId
-        ? { ...notification, unread: false }
-        : notification
-    );
-    this.notifyListeners();
+  async markAsRead(notificationId) {
+    try {
+      // Update in database
+      await this.markNotificationAsRead(notificationId);
+      
+      // Reload notifications from database to get the latest state
+      await this.loadNotificationsFromDatabase();
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+      throw error;
+    }
   }
 
   // Mark all notifications as read
@@ -214,21 +185,8 @@ class NotificationService {
       console.log('Successfully marked notification as read in database:', notificationId);
     } catch (error) {
       console.error('Failed to mark notification as read in database:', error);
-      console.log('Using localStorage fallback for marking as read.');
-      
-      // Fallback to localStorage
-      try {
-        const existingNotifications = JSON.parse(localStorage.getItem('voting_notifications') || '[]');
-        const updatedNotifications = existingNotifications.map(notification => 
-          notification.id === notificationId 
-            ? { ...notification, unread: false }
-            : notification
-        );
-        localStorage.setItem('voting_notifications', JSON.stringify(updatedNotifications));
-        console.log('Marked notification as read in localStorage:', notificationId);
-      } catch (storageError) {
-        console.error('Failed to mark notification as read in localStorage:', storageError);
-      }
+      // No localStorage fallback - throw error if database update fails
+      throw error;
     }
   }
 
@@ -244,23 +202,11 @@ class NotificationService {
         }
       }
       
-      // Update local state
-      this.notifications = this.notifications.map(n => ({ ...n, unread: false }));
-      
-      // Update localStorage as well
-      try {
-        const existingNotifications = JSON.parse(localStorage.getItem('voting_notifications') || '[]');
-        const updatedNotifications = existingNotifications.map(notification => 
-          ({ ...notification, unread: false })
-        );
-        localStorage.setItem('voting_notifications', JSON.stringify(updatedNotifications));
-      } catch (storageError) {
-        console.error('Failed to update localStorage for mark all as read:', storageError);
-      }
-      
-      this.notifyListeners();
+      // Reload notifications from database to get the latest state
+      await this.loadNotificationsFromDatabase();
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
+      throw error;
     }
   }
 

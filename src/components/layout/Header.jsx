@@ -185,35 +185,45 @@ const Header = () => {
 
   // Mark all notifications as read
   const markAllAsRead = async () => {
-    await notificationService.markAllAsRead();
-    toast.success('All notifications marked as read');
+    try {
+      await notificationService.markAllAsRead();
+      toast.success('All notifications marked as read');
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+      toast.error('Failed to mark notifications as read');
+    }
   };
 
   // Mark individual notification as read and handle action
   const handleNotificationItemClick = async (notification) => {
-    // Mark as read
-    await notificationService.markNotificationAsRead(notification.id);
+    try {
+      // Mark as read
+      await notificationService.markNotificationAsRead(notification.id);
 
-    // Close notification dropdown
-    setShowNotificationDropdown(false);
+      // Close notification dropdown
+      setShowNotificationDropdown(false);
 
-    // Handle different notification actions
-    switch (notification.action) {
-      case 'view_votes':
-        navigate('/votes');
-        break;
-      case 'view_candidates':
-        navigate('/candidates');
-        break;
-      case 'view_help':
-        setShowHelpModal(true);
-        break;
-      case 'view_dashboard':
-        navigate('/dashboard');
-        break;
-      default:
-        // Default action - could be a generic page
-        navigate('/dashboard');
+      // Handle different notification actions
+      switch (notification.action) {
+        case 'view_votes':
+          navigate('/votes');
+          break;
+        case 'view_candidates':
+          navigate('/candidates');
+          break;
+        case 'view_help':
+          setShowHelpModal(true);
+          break;
+        case 'view_dashboard':
+          navigate('/dashboard');
+          break;
+        default:
+          // Default action - could be a generic page
+          navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+      toast.error('Failed to mark notification as read');
     }
   };
 
