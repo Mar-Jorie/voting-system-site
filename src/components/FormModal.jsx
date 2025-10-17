@@ -123,7 +123,7 @@ const FormModal = ({
         console.log('Email format valid, checking database...');
         // Check if email has already voted in database
         try {
-          const { apiClient } = await import('../usecases/api');
+          const apiClient = (await import('../usecases/api')).default;
           const existingVotes = await apiClient.findObjects('votes', {
             where: { voter_email: value }
           });
