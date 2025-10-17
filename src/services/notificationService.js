@@ -346,24 +346,24 @@ class NotificationService {
     }
   }
 
-  // Initialize monitoring
-  async initialize(apiClient) {
+  // Initialize monitoring with API client
+  async initializeMonitoring(apiClient) {
     try {
       // Get initial vote count
       const votes = await apiClient.findObjects('votes', {});
       this.voteCount = votes.length;
 
       // Get initial voting status
-      const votingStatus = await apiClient.findObjects('voting_status', {});
+      const votingStatus = await apiClient.findObjects('voting_sessions', {});
       this.votingStatus = votingStatus[0];
 
       // Start monitoring
       this.startVoteMonitoring(apiClient);
       this.startVotingStatusMonitoring(apiClient);
 
-      console.log('Notification service initialized');
+      console.log('Notification service monitoring initialized');
     } catch (error) {
-      console.error('Error initializing notification service:', error);
+      console.error('Error initializing notification service monitoring:', error);
     }
   }
 
