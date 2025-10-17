@@ -15,7 +15,9 @@ const FormModal = ({
   initialData = {},
   loading = false,
   isUpdate = false,
-  submitButtonText = null
+  submitButtonText = null,
+  onFieldChange = null,
+  customErrors = {}
 }) => {
   // Memoize initialData to prevent infinite re-renders
   const memoizedInitialData = useMemo(() => initialData, [JSON.stringify(initialData)]);
@@ -60,7 +62,10 @@ const FormModal = ({
     // Check if there are any field-specific errors (like duplicate email)
     const noFieldErrors = Object.values(errors).every(error => error === null);
     
-    return fieldsValid && noFieldErrors;
+    // Check if there are any custom errors
+    const noCustomErrors = Object.values(customErrors).every(error => !error || error === '');
+    
+    return fieldsValid && noFieldErrors && noCustomErrors;
   };
 
   // Get validation error message
@@ -99,6 +104,11 @@ const FormModal = ({
         ...prev,
         general: null
       }));
+    }
+
+    // Call custom field change handler if provided
+    if (onFieldChange) {
+      onFieldChange(fieldName, fieldValue);
     }
     
     // Validate email format and check for duplicates in real-time
@@ -228,14 +238,14 @@ const FormModal = ({
                       }}
                       value={formData[field.name]}
                       onChange={(value) => handleFieldChange(field.name, value)}
-                      error={errors[field.name]}
+                      error={errors[field.name] || customErrors[field.name]}
                     />
                   )}
                   
                   {/* Field-specific error message */}
-                  {errors[field.name] && (
+                  {(errors[field.name] || customErrors[field.name]) && (
                     <p className="mt-1 text-red-600 text-sm">
-                      {errors[field.name]}
+                      {errors[field.name] || customErrors[field.name]}
                     </p>
                   )}
                 </div>

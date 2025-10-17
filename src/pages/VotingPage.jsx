@@ -119,6 +119,10 @@ const VotingPage = () => {
     name: '',
     email: ''
   });
+  const [emailValidation, setEmailValidation] = useState({
+    isValid: true,
+    message: ''
+  });
   const [votingComplete, setVotingComplete] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
   const [voteLoading, setVoteLoading] = useState(false);
@@ -171,6 +175,49 @@ const VotingPage = () => {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  // Email validation function
+  const validateEmail = async (email) => {
+    if (!email) {
+      setEmailValidation({ isValid: true, message: '' });
+      return true;
+    }
+
+    try {
+      // Check if email already exists in votes
+      const existingVotes = await apiClient.findObjects('votes', {
+        where: { email: email }
+      });
+
+      if (existingVotes && existingVotes.length > 0) {
+        setEmailValidation({ 
+          isValid: false, 
+          message: 'Email already voted' 
+        });
+        return false;
+      } else {
+        setEmailValidation({ isValid: true, message: '' });
+        return true;
+      }
+    } catch (error) {
+      console.error('Error validating email:', error);
+      setEmailValidation({ isValid: true, message: '' });
+      return true;
+    }
+  };
+
+  // Handle field changes in the vote modal
+  const handleVoteFieldChange = async (fieldName, value) => {
+    if (fieldName === 'email') {
+      await validateEmail(value);
+    }
+  };
+
+  // Handle vote modal close
+  const handleVoteModalClose = () => {
+    setShowVoteModal(false);
+    setEmailValidation({ isValid: true, message: '' });
   };
 
   // Search and filter handlers
@@ -586,7 +633,7 @@ const VotingPage = () => {
             {/* Desktop CTA Buttons - Hidden on Mobile */}
             <div className="hidden md:flex items-center space-x-4">
               <Link to="/">
-                <Button variant="primary" size="md" className="!w-auto">Home</Button>
+                <Button variant="primaryOutline" size="md" className="!w-auto">Home</Button>
               </Link>
             </div>
           </div>
@@ -667,7 +714,7 @@ const VotingPage = () => {
                   <h3 className="text-xl font-semibold text-gray-900 flex items-center">
                     <span className="h-3 w-3 rounded-full bg-blue-500 mr-3"></span>
                     Male
-                  </h3>
+                  </h3> 
                   <div className="flex items-center space-x-2">
                     <Pagination
                       currentPage={1}
@@ -824,7 +871,7 @@ const VotingPage = () => {
       {/* Vote Form Modal */}
       <FormModal
         isOpen={showVoteModal}
-        onClose={() => setShowVoteModal(false)}
+        onClose={handleVoteModalClose}
         onSubmit={handleVoteSubmit}
         title="Cast Your Vote - Star of the Night"
         fields={voteFormFields}
@@ -832,6 +879,10 @@ const VotingPage = () => {
         loading={false}
         isUpdate={false}
         submitButtonText="Vote"
+        onFieldChange={handleVoteFieldChange}
+        customErrors={{
+          email: emailValidation.isValid ? '' : emailValidation.message
+        }}
       />
 
       {/* Vote Confirmation Modal */}
