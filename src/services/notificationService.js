@@ -99,8 +99,22 @@ class NotificationService {
   // Add a new notification
   async addNotification(notification) {
     try {
+      // Check for duplicate notifications (same title and message within last 30 seconds)
+      const now = new Date();
+      const thirtySecondsAgo = new Date(now.getTime() - 30000);
+      
+      const isDuplicate = this.notifications.some(existing => 
+        existing.title === notification.title && 
+        existing.message === notification.message &&
+        new Date(existing.created) > thirtySecondsAgo
+      );
+      
+      if (isDuplicate) {
+        console.log('Duplicate notification prevented:', notification.title);
+        return null;
+      }
+
       const newNotification = {
-        timestamp: new Date(),
         unread: true,
         ...notification
       };
@@ -111,8 +125,8 @@ class NotificationService {
       // Reload notifications from database to get the latest state
       await this.loadNotificationsFromDatabase();
       
-      // Show toast notification for important events
-      if (notification.priority === 'high') {
+      // Show toast notification for important events (only for new notifications, not duplicates)
+      if (notification.priority === 'high' && savedNotification) {
         toast.success(notification.title, {
           duration: 4000,
           icon: this.getNotificationIcon(notification.type)
@@ -157,14 +171,6 @@ class NotificationService {
     }
   }
 
-  // Mark all notifications as read
-  markAllAsRead() {
-    this.notifications = this.notifications.map(notification => ({
-      ...notification,
-      unread: false
-    }));
-    this.notifyListeners();
-  }
 
   // Get unread count
   getUnreadCount() {

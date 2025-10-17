@@ -319,10 +319,10 @@ const Header = () => {
                                 {notification.message}
                               </p>
                               <p className="text-xs text-gray-500 mt-1">
-                                {notification.timestamp ? 
+                                {notification.created ? 
                                   (() => {
                                     const now = new Date();
-                                    const notificationTime = new Date(notification.timestamp);
+                                    const notificationTime = new Date(notification.created);
                                     const diffInMinutes = Math.floor((now - notificationTime) / (1000 * 60));
                                     
                                     if (diffInMinutes < 1) return 'Just now';
@@ -334,7 +334,7 @@ const Header = () => {
                                     const diffInDays = Math.floor(diffInHours / 24);
                                     return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
                                   })() 
-                                  : notification.time || 'Unknown time'
+                                  : 'Unknown time'
                                 }
                               </p>
                             </div>
