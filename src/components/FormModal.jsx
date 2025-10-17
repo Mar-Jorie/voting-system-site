@@ -116,7 +116,7 @@ const FormModal = ({
         try {
           const { apiClient } = await import('../usecases/api');
           const existingVotes = await apiClient.findObjects('votes', {
-            where: { email: value }
+            where: { voter_email: value }
           });
           
           if (existingVotes && existingVotes.length > 0) {
