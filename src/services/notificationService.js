@@ -138,8 +138,7 @@ class NotificationService {
       // Show toast notification for important events (only for new notifications, not duplicates)
       if (notification.priority === 'high' && savedNotification) {
         toast.success(notification.title, {
-          duration: 4000,
-          icon: this.getNotificationIcon(notification.type)
+          duration: 4000
         });
       }
       
@@ -151,21 +150,6 @@ class NotificationService {
     }
   }
 
-  // Get notification icon based on type
-  getNotificationIcon(type) {
-    switch (type) {
-      case 'vote':
-        return '🗳️';
-      case 'deadline':
-        return '⏰';
-      case 'voting':
-        return '📊';
-      case 'system':
-        return '⚙️';
-      default:
-        return '📢';
-    }
-  }
 
   // Mark notification as read
   async markAsRead(notificationId) {
