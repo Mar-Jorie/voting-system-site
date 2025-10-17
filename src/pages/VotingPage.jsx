@@ -47,18 +47,29 @@ const CandidateImageCarousel = ({ images, candidateId, candidateName, onImageCli
       {/* Current Image - Clickable */}
       <img
         src={images[currentIndex]}
-        alt={`Candidate ${candidateId}`}
-        className="w-full h-full object-contain bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+        alt={`${candidateName} - Candidate ${candidateId}`}
+        className="w-full h-full object-cover bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
         onClick={handleImageClick}
         onError={(e) => {
-          // Prevent infinite retry loops by setting a fallback
-          if (e.target.src !== '/api/placeholder/400/300') {
-            e.target.src = '/api/placeholder/400/300';
+          // Show placeholder icon instead of broken image
+          e.target.style.display = 'none';
+          const parent = e.target.parentElement;
+          if (!parent.querySelector('.error-placeholder')) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'error-placeholder absolute inset-0 flex items-center justify-center bg-gray-200';
+            placeholder.innerHTML = '<svg class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>';
+            parent.appendChild(placeholder);
           }
         }}
         onLoad={(e) => {
-          // Ensure image is properly loaded
+          // Ensure image is properly loaded and visible
+          e.target.style.display = 'block';
           e.target.style.opacity = '1';
+          // Remove any error placeholder
+          const errorPlaceholder = e.target.parentElement.querySelector('.error-placeholder');
+          if (errorPlaceholder) {
+            errorPlaceholder.remove();
+          }
         }}
       />
       
@@ -519,15 +530,31 @@ const VotingPage = () => {
             {/* Logo */}
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
-                <img src="/vite.svg" alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
+                <img 
+                  src="/vite.svg" 
+                  alt="Voting System Logo" 
+                  className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                  onError={(e) => {
+                    // Fallback to a simple text logo if image fails
+                    e.target.style.display = 'none';
+                    const parent = e.target.parentElement;
+                    if (!parent.querySelector('.text-logo')) {
+                      const textLogo = document.createElement('div');
+                      textLogo.className = 'text-logo w-6 h-6 sm:w-8 sm:h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm';
+                      textLogo.textContent = 'VS';
+                      parent.appendChild(textLogo);
+                    }
+                  }}
+                />
               </div>
               <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Voting System</span>
             </div>
             
             {/* Navigation Links - Hidden on Mobile */}
             <div className="hidden md:flex items-center space-x-10">
-              <Link to="/" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Home</Link>
-              <Link to="/signin" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Sign In</Link>
+              <a href="/#features" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Features</a>
+              <a href="/#how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">How It Works</a>
+              <a href="/#results" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Results</a>
             </div>
             
             {/* Mobile Hamburger Menu - Right Corner */}
@@ -543,11 +570,8 @@ const VotingPage = () => {
             
             {/* Desktop CTA Buttons - Hidden on Mobile */}
             <div className="hidden md:flex items-center space-x-4">
-              <Link to="/signin">
-                <Button variant="ghost" size="md" className="!w-auto">Sign In</Button>
-              </Link>
-              <Link to="/signup">
-                <Button variant="primaryOutline" size="md">Get Started</Button>
+              <Link to="/">
+                <Button variant="ghost" size="md" className="!w-auto">Home</Button>
               </Link>
             </div>
           </div>
@@ -558,17 +582,15 @@ const VotingPage = () => {
               <div className="px-4 py-4 space-y-4">
                 {/* Mobile Navigation Links */}
                 <div className="space-y-3">
-                  <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Home</Link>
-                  <Link to="/signin" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Sign In</Link>
+                  <a href="/#features" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Features</a>
+                  <a href="/#how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">How It Works</a>
+                  <a href="/#results" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Results</a>
                 </div>
                 
                 {/* Mobile CTA Buttons */}
                 <div className="flex flex-col space-y-3 pt-4 border-t border-gray-100">
-                  <Link to="/signin" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" size="md" className="w-full">Sign In</Button>
-                  </Link>
-                  <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="primaryOutline" size="md" className="w-full">Get Started</Button>
+                  <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" size="md" className="w-full">Home</Button>
                   </Link>
                 </div>
               </div>
@@ -581,55 +603,42 @@ const VotingPage = () => {
       <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {/* Page Header with Voting Status */}
-          <div className="flex items-start justify-between mb-8">
+          <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl md:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight text-left">
+              <h1 className="text-2xl sm:text-3xl md:text-3xl font-bold text-gray-900 mb-4 sm:mb-4 leading-tight tracking-tight text-left">
                 Cast Your Vote
               </h1>
-              <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed text-left">
+              <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-4 leading-relaxed text-left">
                 Select your preferred candidates for both male and female categories. Make your voice heard in this important election.
               </p>
             </div>
-            
-            {/* Voting Status - Right Side */}
-            {votingStatus && (
-              <div className="flex items-center space-x-2 ml-6">
-                {votingStatus.isActive ? (
-                  <>
-                    <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                    <span className="text-green-600 font-medium">Active</span>
-                  </>
-                ) : (
-                  <>
-                    <XMarkIcon className="h-5 w-5 text-red-600" />
-                    <span className="text-red-600 font-medium">Closed</span>
-                  </>
-                )}
-              </div>
-            )}
+        
           </div>
 
-          {/* Filter Component */}
+          {/* Search Component */}
           <div className="mb-6">
-            <SearchFilter
-              placeholder="Search candidates..."
-              value={searchValue}
-              onChange={handleSearchChange}
-              onSearch={handleSearch}
-              onFilterChange={handleFilterChange}
-              filters={filters}
-              useSelectForSearch={false}
-              searchSelectOptions={[]}
-              searchSelectValue=""
-              onSearchSelectChange={() => {}}
-              statusOptions={[
-                { value: '', label: 'All Categories' },
-                { value: 'male', label: 'Male' },
-                { value: 'female', label: 'Female' }
-              ]}
-              getUniqueCompanies={() => []}
-              className="bg-white border-gray-200"
-            />
+            <div className="w-full">
+              <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="w-full">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search candidates..."
+                    value={searchValue}
+                    onChange={handleSearchChange}
+                    className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-gray-900"
+                  />
+                  {searchValue && (
+                    <button
+                      type="button"
+                      onClick={() => { setSearchValue(''); handleSearch(); }}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <XMarkIcon className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
           </div>
 
        
@@ -639,11 +648,25 @@ const VotingPage = () => {
             {/* Male Candidates */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
               <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 border-b border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                  <span className="h-3 w-3 rounded-full bg-blue-500 mr-3"></span>
-                  Male
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">Select your preferred male candidate</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+                      <span className="h-3 w-3 rounded-full bg-blue-500 mr-3"></span>
+                      Male
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">Select your preferred male candidate</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Pagination
+                      currentPage={1}
+                      totalPages={1}
+                      onPageChange={() => {}}
+                      itemsPerPage={10}
+                      totalItems={maleCandidates.length}
+                      showInfo={true}
+                    />
+                  </div>
+                </div>
               </div>
               <div className="p-6">
                 {loading ? (
@@ -688,12 +711,26 @@ const VotingPage = () => {
 
             {/* Female Candidates */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-              <div className="bg-gradient-to-r from-pink-50 to-pink-100 p-6 border-b border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                  <span className="h-3 w-3 rounded-full bg-pink-500 mr-3"></span>
-                  Female Candidates
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">Select your preferred female candidate</p>
+              <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+                      <span className="h-3 w-3 rounded-full bg-purple-500 mr-3"></span>
+                      Female
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">Select your preferred female candidate</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Pagination
+                      currentPage={1}
+                      totalPages={1}
+                      onPageChange={() => {}}
+                      itemsPerPage={10}
+                      totalItems={femaleCandidates.length}
+                      showInfo={true}
+                    />
+                  </div>
+                </div>
               </div>
               <div className="p-6">
                 {loading ? (
@@ -709,7 +746,7 @@ const VotingPage = () => {
                         key={candidate.id}
                         className={`border-2 rounded-lg cursor-pointer transition-all duration-200 ${
                           selectedCandidates.female?.id === candidate.id
-                            ? 'border-pink-500 bg-pink-50'
+                            ? 'border-purple-500 bg-purple-50'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                         onClick={() => handleCandidateSelect(candidate)}
@@ -738,8 +775,8 @@ const VotingPage = () => {
           </div>
 
           {/* Vote Button */}
-          <div className="text-center mt-8">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div className="text-center mt-6">
+            <div className="p-6">
               <Button
                 onClick={handleVote}
                 disabled={!selectedCandidates.male || !selectedCandidates.female || !votingStatus?.isActive}
@@ -809,6 +846,7 @@ const VotingPage = () => {
         confirmLabel="Confirm"
         icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
         variant="success"
+        showCancelButton={false}
       />
 
       {/* Image Modal */}
