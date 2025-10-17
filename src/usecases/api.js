@@ -1,9 +1,7 @@
 // api.js
 
-// Use CORS proxy for both production and development to avoid CORS issues
-const API_BASE = (window.location.hostname === 'mar-jorie.github.io' || window.location.hostname === 'localhost')
-  ? "https://corsproxy.io/?https://api.innque.com/v1"
-  : "https://api.innque.com/v1";
+// Use direct API URL since CORS proxy is failing
+const API_BASE = "https://api.innque.com/v1";
 const APP_ID = import.meta.env.VITE_APP_ID || "votes";
 const MASTER_KEY = import.meta.env.VITE_MASTER_KEY || "cbd9e198-8f76-4d8f-93b1-04201de94e5d";
 const DEFAULT_RETRIES = 3; // Number of retry attempts

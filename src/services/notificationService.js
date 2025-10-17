@@ -315,13 +315,13 @@ class NotificationService {
           return;
         }
 
-        const votingStatus = await client.findObjects('voting_status', {});
+        const votingStatus = await client.findObjects('voting_sessions', {});
         const currentStatus = votingStatus[0];
 
         if (currentStatus) {
           // Check if voting status changed
-          if (this.votingStatus && this.votingStatus.isActive !== currentStatus.isActive) {
-            if (currentStatus.isActive) {
+          if (this.votingStatus && this.votingStatus.is_active !== currentStatus.is_active) {
+            if (currentStatus.is_active) {
               await this.addNotification({
                 title: "Voting Started",
                 message: "Voting is now active and accepting votes",
@@ -341,8 +341,8 @@ class NotificationService {
           }
 
           // Check deadline notifications
-          if (currentStatus.autoStopDate) {
-            const deadline = new Date(currentStatus.autoStopDate);
+          if (currentStatus.end_date) {
+            const deadline = new Date(currentStatus.end_date);
             const now = new Date();
             const timeUntilDeadline = deadline.getTime() - now.getTime();
 
