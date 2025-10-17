@@ -29,6 +29,34 @@ const DashboardPage = () => {
   } = useOptimizedDashboardData();
 
   const [resultsVisibility, setResultsVisibilityState] = useState(RESULTS_VISIBILITY.HIDDEN);
+  
+  // Activity search filter state
+  const [activitySearchTerm, setActivitySearchTerm] = useState('');
+  const [activityFilterType, setActivityFilterType] = useState('all');
+
+  // Filter activity logs based on search term and type
+  const getFilteredActivityLogs = () => {
+    let filtered = auditLogs;
+
+    // Filter by type
+    if (activityFilterType !== 'all') {
+      filtered = filtered.filter(log => log.action === activityFilterType);
+    }
+
+    // Filter by search term
+    if (activitySearchTerm.trim()) {
+      const searchLower = activitySearchTerm.toLowerCase();
+      filtered = filtered.filter(log => 
+        log.action?.toLowerCase().includes(searchLower) ||
+        log.entity_type?.toLowerCase().includes(searchLower) ||
+        log.entity_name?.toLowerCase().includes(searchLower) ||
+        log.user_name?.toLowerCase().includes(searchLower) ||
+        log.details?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered;
+  };
 
   // Note: Real-time event listeners are now handled in the useOptimizedDashboardData hook
 
@@ -117,6 +145,29 @@ const DashboardPage = () => {
     return votes.length;
   };
 
+  // Get total votes within each category
+  const getTotalMaleVotes = () => {
+    let total = 0;
+    candidates.filter(c => c.category === 'male').forEach(candidate => {
+      total += getCandidateVotes(candidate.id, 'male');
+    });
+    return total;
+  };
+
+  const getTotalFemaleVotes = () => {
+    let total = 0;
+    candidates.filter(c => c.category === 'female').forEach(candidate => {
+      total += getCandidateVotes(candidate.id, 'female');
+    });
+    return total;
+  };
+
+  // Calculate percentage within category
+  const getCategoryPercentage = (candidateVotes, category) => {
+    const totalInCategory = category === 'male' ? getTotalMaleVotes() : getTotalFemaleVotes();
+    return totalInCategory > 0 ? ((candidateVotes / totalInCategory) * 100).toFixed(1) : 0;
+  };
+
   const getMaleCandidates = () => {
     return candidates
       .filter(c => c.category === 'male')
@@ -135,10 +186,18 @@ const DashboardPage = () => {
     return candidates.length > 0 ? candidates[0] : null;
   };
 
+  const getTiedCandidates = (candidates) => {
+    if (candidates.length === 0) return [];
+    const topVoteCount = candidates[0].voteCount;
+    return candidates.filter(c => c.voteCount === topVoteCount);
+  };
+
   const maleCandidates = getMaleCandidates();
   const femaleCandidates = getFemaleCandidates();
   const maleWinner = getWinner(maleCandidates);
   const femaleWinner = getWinner(femaleCandidates);
+  const maleTiedCandidates = getTiedCandidates(maleCandidates);
+  const femaleTiedCandidates = getTiedCandidates(femaleCandidates);
 
   const handleAddCandidate = () => {
     setShowFormModal(true);
@@ -985,25 +1044,43 @@ const DashboardPage = () => {
           {/* Male Winner */}
           <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-6 shadow-sm border border-primary-200 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Male Winner</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {maleTiedCandidates.length > 1 ? 'Male Winners (Tied)' : 'Male Winner'}
+              </h3>
               <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
                 <TrophyIcon className="h-6 w-6 text-yellow-600" />
               </div>
             </div>
             {maleWinner ? (
               <div className="text-center">
-                {maleWinner.image && (
-                  <img 
-                    src={maleWinner.image} 
-                    alt={maleWinner.name}
-                    className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
-                  />
+                {maleTiedCandidates.length > 1 ? (
+                  // Show tied candidates
+                  <div className="text-center">
+                    <h4 className="text-xl font-semibold text-gray-900 mb-2">
+                      {maleTiedCandidates.map(candidate => getDisplayName(candidate)).join(' & ')}
+                    </h4>
+                    <p className="text-2xl font-bold text-primary-600 mb-2">{maleWinner.voteCount} votes</p>
+                    <p className="text-sm text-gray-600">
+                      {getCategoryPercentage(maleWinner.voteCount, 'male')}% of male votes
+                    </p>
+                  </div>
+                ) : (
+                  // Show single winner
+                  <div>
+                    {maleWinner.image && (
+                      <img 
+                        src={maleWinner.image} 
+                        alt={maleWinner.name}
+                        className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
+                      />
+                    )}
+                    <h4 className="text-xl font-semibold text-gray-900 mb-2">{getDisplayName(maleWinner)}</h4>
+                    <p className="text-2xl font-bold text-primary-600 mb-2">{maleWinner.voteCount} votes</p>
+                    <p className="text-sm text-gray-600">
+                      {getCategoryPercentage(maleWinner.voteCount, 'male')}% of male votes
+                    </p>
+                  </div>
                 )}
-                <h4 className="text-xl font-semibold text-gray-900 mb-2">{getDisplayName(maleWinner)}</h4>
-                <p className="text-2xl font-bold text-primary-600 mb-2">{maleWinner.voteCount} votes</p>
-                <p className="text-sm text-gray-600">
-                  {getTotalVotes() > 0 ? ((maleWinner.voteCount / getTotalVotes()) * 100).toFixed(1) : 0}% of total votes
-                </p>
               </div>
             ) : (
               <div className="text-center py-8">
@@ -1018,25 +1095,43 @@ const DashboardPage = () => {
           {/* Female Winner */}
           <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-6 shadow-sm border border-primary-200 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Female Winner</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {femaleTiedCandidates.length > 1 ? 'Female Winners (Tied)' : 'Female Winner'}
+              </h3>
               <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
                 <TrophyIcon className="h-6 w-6 text-yellow-600" />
               </div>
             </div>
             {femaleWinner ? (
               <div className="text-center">
-                {femaleWinner.image && (
-                  <img 
-                    src={femaleWinner.image} 
-                    alt={femaleWinner.name}
-                    className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
-                  />
+                {femaleTiedCandidates.length > 1 ? (
+                  // Show tied candidates
+                  <div className="text-center">
+                    <h4 className="text-xl font-semibold text-gray-900 mb-2">
+                      {femaleTiedCandidates.map(candidate => getDisplayName(candidate)).join(' & ')}
+                    </h4>
+                    <p className="text-2xl font-bold text-primary-600 mb-2">{femaleWinner.voteCount} votes</p>
+                    <p className="text-sm text-gray-600">
+                      {getCategoryPercentage(femaleWinner.voteCount, 'female')}% of female votes
+                    </p>
+                  </div>
+                ) : (
+                  // Show single winner
+                  <div>
+                    {femaleWinner.image && (
+                      <img 
+                        src={femaleWinner.image} 
+                        alt={femaleWinner.name}
+                        className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md"
+                      />
+                    )}
+                    <h4 className="text-xl font-semibold text-gray-900 mb-2">{getDisplayName(femaleWinner)}</h4>
+                    <p className="text-2xl font-bold text-primary-600 mb-2">{femaleWinner.voteCount} votes</p>
+                    <p className="text-sm text-gray-600">
+                      {getCategoryPercentage(femaleWinner.voteCount, 'female')}% of female votes
+                    </p>
+                  </div>
                 )}
-                <h4 className="text-xl font-semibold text-gray-900 mb-2">{getDisplayName(femaleWinner)}</h4>
-                <p className="text-2xl font-bold text-primary-600 mb-2">{femaleWinner.voteCount} votes</p>
-                <p className="text-sm text-gray-600">
-                  {getTotalVotes() > 0 ? ((femaleWinner.voteCount / getTotalVotes()) * 100).toFixed(1) : 0}% of total votes
-                </p>
               </div>
             ) : (
               <div className="text-center py-8">
@@ -1084,11 +1179,12 @@ const DashboardPage = () => {
                             <div 
                               className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
                               style={{ 
-                                width: `${getTotalVotes() > 0 ? (candidate.voteCount / getTotalVotes()) * 100 : 0}%` 
+                                width: `${getCategoryPercentage(candidate.voteCount, 'male')}%` 
                               }}
                             ></div>
                           </div>
                           <span className="text-sm font-medium text-gray-600 min-w-[2rem]">{candidate.voteCount}</span>
+                          <span className="text-xs text-gray-500 ml-1">({getCategoryPercentage(candidate.voteCount, 'male')}%)</span>
                         </div>
                     </div>
                   </div>
@@ -1138,11 +1234,12 @@ const DashboardPage = () => {
                             <div 
                               className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
                               style={{ 
-                                width: `${getTotalVotes() > 0 ? (candidate.voteCount / getTotalVotes()) * 100 : 0}%` 
+                                width: `${getCategoryPercentage(candidate.voteCount, 'female')}%` 
                               }}
                             ></div>
                           </div>
                           <span className="text-sm font-medium text-gray-600 min-w-[2rem]">{candidate.voteCount}</span>
+                          <span className="text-xs text-gray-500 ml-1">({getCategoryPercentage(candidate.voteCount, 'female')}%)</span>
                         </div>
                     </div>
                   </div>
@@ -1168,9 +1265,65 @@ const DashboardPage = () => {
               <CalendarDaysIcon className="h-6 w-6 text-green-800" />
             </div>
           </div>
+          
+          {/* Activity Search Filter */}
+          <div className="mb-4 space-y-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Search Input */}
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="Search activities..."
+                  value={activitySearchTerm}
+                  onChange={(e) => setActivitySearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              
+              {/* Filter Dropdown */}
+              <div className="sm:w-48">
+                <select
+                  value={activityFilterType}
+                  onChange={(e) => setActivityFilterType(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="all">All Activities</option>
+                  <option value="login">Login</option>
+                  <option value="logout">Logout</option>
+                  <option value="create">Create</option>
+                  <option value="update">Update</option>
+                  <option value="delete">Delete</option>
+                  <option value="vote_cast">Vote Cast</option>
+                  <option value="voting_started">Voting Started</option>
+                  <option value="voting_stopped">Voting Stopped</option>
+                  <option value="results_shown">Results Shown</option>
+                  <option value="results_hidden">Results Hidden</option>
+                  <option value="export_data">Export Data</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Clear Filters Button */}
+            {(activitySearchTerm || activityFilterType !== 'all') && (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setActivitySearchTerm('');
+                    setActivityFilterType('all');
+                  }}
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            )}
+          </div>
+          
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {auditLogs.length > 0 ? (
-              auditLogs.map((log, index) => {
+            {(() => {
+              const filteredLogs = getFilteredActivityLogs();
+              return filteredLogs.length > 0 ? (
+                filteredLogs.map((log, index) => {
                 const getActivityIcon = (action, category) => {
                   switch (action) {
                     case 'login':
@@ -1261,15 +1414,23 @@ const DashboardPage = () => {
                   </div>
                 );
               })
-            ) : (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CalendarDaysIcon className="h-8 w-8 text-gray-400" />
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CalendarDaysIcon className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 font-medium">
+                    {auditLogs.length === 0 ? 'No activity yet' : 'No matching activities'}
+                  </p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {auditLogs.length === 0 
+                      ? 'System activities will appear here' 
+                      : 'Try adjusting your search or filter criteria'
+                    }
+                  </p>
                 </div>
-                <p className="text-gray-500 font-medium">No activity yet</p>
-                <p className="text-sm text-gray-400 mt-1">System activities will appear here</p>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
         </div>

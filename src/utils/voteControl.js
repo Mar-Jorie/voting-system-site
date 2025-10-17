@@ -3,6 +3,7 @@
 // NOW USES DATABASE FOR REAL-TIME SYNCHRONIZATION ACROSS ALL DEVICES
 
 import apiClient from '../usecases/api';
+import notificationService from '../services/notificationService';
 
 export const VOTE_STATUS = {
   ACTIVE: 'active',
@@ -246,8 +247,18 @@ export const stopVoting = async (stoppedBy = 'admin', reason = 'Manually stopped
     autoStopDate: clearAutoStop ? null : control.autoStopDate
   };
   
+  const result = await setVoteControl(newControl);
   
-  return await setVoteControl(newControl);
+  // Notify about voting being stopped
+  notificationService.addNotification({
+    title: "Voting Stopped",
+    message: reason,
+    type: "voting",
+    action: "view_dashboard",
+    priority: "high"
+  });
+  
+  return result;
 };
 
 // Start voting (resume) (async version)
@@ -264,6 +275,15 @@ export const startVoting = async () => {
   };
   
   const result = await setVoteControl(newControl);
+  
+  // Notify about voting being started
+  notificationService.addNotification({
+    title: "Voting Started",
+    message: "Voting is now active and accepting votes",
+    type: "voting",
+    action: "view_dashboard",
+    priority: "high"
+  });
   
   // Wait a moment for the database update to propagate
   await new Promise(resolve => setTimeout(resolve, 100));
@@ -282,10 +302,19 @@ export const startVoting = async () => {
 // Set automatic stop date (async version)
 export const setAutoStopDate = async (date) => {
   const control = await getVoteControl();
-  return await setVoteControl({
+  const result = await setVoteControl({
     ...control,
     autoStopDate: date
   });
+  
+  // Notify about deadline being set
+  if (date) {
+    notificationService.notifyDeadlineSet(date);
+  } else {
+    notificationService.notifyDeadlineCleared();
+  }
+  
+  return result;
 };
 
 // Get voting status info for display (async version)

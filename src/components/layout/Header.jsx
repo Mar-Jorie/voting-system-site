@@ -18,6 +18,8 @@ import {
 } from '@heroicons/react/24/outline';
 import MainLayout from './MainLayout';
 import Button from '../Button';
+import notificationService from '../../services/notificationService';
+import apiClient from '../../usecases/api';
 import ConfirmationModal from '../ConfirmationModal';
 import FormModal from '../FormModal';
 import useApp from '../../hooks/useApp';
@@ -150,52 +152,34 @@ const Header = () => {
   };
 
   // Notification state management
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "New vote submitted",
-      message: "A new vote has been submitted for the current election",
-      time: "2 minutes ago",
-      unread: true,
-      type: "vote",
-      action: "view_votes"
-    },
-    {
-      id: 2,
-      title: "Election reminder",
-      message: "Don't forget to cast your vote before the deadline",
-      time: "1 hour ago",
-      unread: true,
-      type: "reminder",
-      action: "view_candidates"
-    },
-    {
-      id: 3,
-      title: "System update",
-      message: "The voting system has been updated with new features",
-      time: "3 hours ago",
-      unread: true,
-      type: "system",
-      action: "view_help"
-    }
-  ]);
+  const [notifications, setNotifications] = useState([]);
+
+  // Initialize notification service
+  useEffect(() => {
+    // Subscribe to notification updates
+    const unsubscribe = notificationService.addListener((updatedNotifications) => {
+      setNotifications(updatedNotifications);
+    });
+
+    // Initialize notification service
+    notificationService.initialize(apiClient);
+
+    return () => {
+      unsubscribe();
+      notificationService.stopMonitoring();
+    };
+  }, []);
 
   // Mark all notifications as read
   const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notification => ({ ...notification, unread: false }))
-    );
+    notificationService.markAllAsRead();
     toast.success('All notifications marked as read');
   };
 
   // Mark individual notification as read and handle action
   const handleNotificationItemClick = (notification) => {
     // Mark as read
-    setNotifications(prev => 
-      prev.map(n => 
-        n.id === notification.id ? { ...n, unread: false } : n
-      )
-    );
+    notificationService.markAsRead(notification.id);
 
     // Close notification dropdown
     setShowNotificationDropdown(false);
@@ -313,7 +297,23 @@ const Header = () => {
                                 {notification.message}
                               </p>
                               <p className="text-xs text-gray-500 mt-1">
-                                {notification.time}
+                                {notification.timestamp ? 
+                                  (() => {
+                                    const now = new Date();
+                                    const notificationTime = new Date(notification.timestamp);
+                                    const diffInMinutes = Math.floor((now - notificationTime) / (1000 * 60));
+                                    
+                                    if (diffInMinutes < 1) return 'Just now';
+                                    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+                                    
+                                    const diffInHours = Math.floor(diffInMinutes / 60);
+                                    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+                                    
+                                    const diffInDays = Math.floor(diffInHours / 24);
+                                    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+                                  })() 
+                                  : notification.time || 'Unknown time'
+                                }
                               </p>
                             </div>
                           </div>

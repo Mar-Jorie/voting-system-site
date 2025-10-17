@@ -98,7 +98,7 @@ const SignInPage = () => {
             />
 
             {/* Remember Me */}
-            <div className="flex items-center">
+            {/* <div className="flex items-center">
               <input
                 id="remember-me"
                 name="remember-me"
@@ -108,7 +108,7 @@ const SignInPage = () => {
               <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                 Remember me
               </label>
-            </div>
+            </div> */}
 
             {/* Terms and Conditions */}
             <div className="text-center">

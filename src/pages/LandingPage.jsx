@@ -304,11 +304,19 @@ const LandingPage = () => {
 
   // Get total votes within each category
   const getTotalMaleVotes = () => {
-    return votes.length; // Each vote record has 1 male selection
+    let total = 0;
+    candidates.filter(c => c.category === 'male').forEach(candidate => {
+      total += candidate.votes || 0;
+    });
+    return total;
   };
 
   const getTotalFemaleVotes = () => {
-    return votes.length; // Each vote record has 1 female selection
+    let total = 0;
+    candidates.filter(c => c.category === 'female').forEach(candidate => {
+      total += candidate.votes || 0;
+    });
+    return total;
   };
 
   // Calculate percentage within category
@@ -882,7 +890,7 @@ const LandingPage = () => {
                   alert('Voting is currently disabled. Please contact the administrator.');
                   return;
                 }
-                setShowVotingModal(true);
+                handleVoteClick();
               }}
               disabled={votingStatus && !votingStatus.isActive}
             >
