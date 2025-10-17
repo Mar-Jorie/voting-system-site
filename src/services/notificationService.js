@@ -277,35 +277,49 @@ class NotificationService {
 
             // Notify 1 hour before deadline
             if (timeUntilDeadline > 0 && timeUntilDeadline <= 3600000 && timeUntilDeadline > 3300000) {
-              this.addNotification({
-                title: "Voting Deadline Reminder",
-                message: "Voting will end in 1 hour. Make sure to cast your vote!",
-                type: "deadline",
-                action: "view_candidates",
-                priority: "high"
-              });
+              const reminderKey = `deadline-reminder-1h-${currentStatus.end_date}`;
+              if (!this.recentNotifications.has(reminderKey)) {
+                await this.addNotification({
+                  title: "Voting Deadline Reminder",
+                  message: "Voting will end in 1 hour. Make sure to cast your vote!",
+                  type: "deadline",
+                  action: "view_candidates",
+                  priority: "high"
+                });
+                this.recentNotifications.set(reminderKey, Date.now());
+              }
             }
 
             // Notify 15 minutes before deadline
             if (timeUntilDeadline > 0 && timeUntilDeadline <= 900000 && timeUntilDeadline > 600000) {
-              this.addNotification({
-                title: "Voting Deadline Warning",
-                message: "Voting will end in 15 minutes. Last chance to vote!",
-                type: "deadline",
-                action: "view_candidates",
-                priority: "high"
-              });
+              const warningKey = `deadline-warning-15m-${currentStatus.end_date}`;
+              if (!this.recentNotifications.has(warningKey)) {
+                await this.addNotification({
+                  title: "Voting Deadline Warning",
+                  message: "Voting will end in 15 minutes. Last chance to vote!",
+                  type: "deadline",
+                  action: "view_candidates",
+                  priority: "high"
+                });
+                this.recentNotifications.set(warningKey, Date.now());
+              }
             }
 
-            // Notify when deadline is reached
-            if (timeUntilDeadline <= 0 && this.votingStatus && this.votingStatus.autoStopDate) {
-              this.addNotification({
-                title: "Voting Deadline Reached",
-                message: "The voting deadline has been reached and voting has ended",
-                type: "deadline",
-                action: "view_dashboard",
-                priority: "high"
-              });
+            // Notify when deadline is reached and voting has stopped
+            if (timeUntilDeadline <= 0 && !currentStatus.is_active) {
+              // Check if we haven't already notified about this deadline
+              const deadlineKey = `deadline-reached-${currentStatus.end_date}`;
+              if (!this.recentNotifications.has(deadlineKey)) {
+                await this.addNotification({
+                  title: "Voting Deadline Reached",
+                  message: "The voting deadline has been reached and voting has ended",
+                  type: "deadline",
+                  action: "view_dashboard",
+                  priority: "high"
+                });
+                // Mark this deadline as notified to prevent duplicates
+                this.recentNotifications.set(deadlineKey, Date.now());
+              }
             }
           }
 
