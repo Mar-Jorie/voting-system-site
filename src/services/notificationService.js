@@ -51,7 +51,21 @@ class NotificationService {
       this.notifyListeners();
     } catch (error) {
       console.error('Failed to load notifications from database:', error);
-      this.notifications = [];
+      console.log('Notifications collection may not exist yet. Using local storage fallback.');
+      
+      // Fallback to localStorage for persistence
+      try {
+        const storedNotifications = localStorage.getItem('voting_notifications');
+        if (storedNotifications) {
+          this.notifications = JSON.parse(storedNotifications);
+          this.notifyListeners();
+        } else {
+          this.notifications = [];
+        }
+      } catch (storageError) {
+        console.error('Failed to load notifications from localStorage:', storageError);
+        this.notifications = [];
+      }
     }
   }
 
@@ -71,7 +85,29 @@ class NotificationService {
       return savedNotification;
     } catch (error) {
       console.error('Failed to save notification to database:', error);
-      return notification; // Return original if save fails
+      console.log('Notifications collection may not exist yet. Using localStorage fallback.');
+      
+      // Fallback to localStorage for persistence
+      try {
+        const notificationWithId = {
+          ...notification,
+          id: notification.id || Date.now() + Math.random(),
+          created: notification.timestamp || new Date().toISOString()
+        };
+        
+        // Save to localStorage
+        const existingNotifications = JSON.parse(localStorage.getItem('voting_notifications') || '[]');
+        existingNotifications.unshift(notificationWithId);
+        
+        // Keep only last 50 notifications
+        const trimmedNotifications = existingNotifications.slice(0, 50);
+        localStorage.setItem('voting_notifications', JSON.stringify(trimmedNotifications));
+        
+        return notificationWithId;
+      } catch (storageError) {
+        console.error('Failed to save notification to localStorage:', storageError);
+        return notification; // Return original if all saves fail
+      }
     }
   }
 
@@ -158,6 +194,20 @@ class NotificationService {
       });
     } catch (error) {
       console.error('Failed to mark notification as read in database:', error);
+      console.log('Using localStorage fallback for marking as read.');
+      
+      // Fallback to localStorage
+      try {
+        const existingNotifications = JSON.parse(localStorage.getItem('voting_notifications') || '[]');
+        const updatedNotifications = existingNotifications.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, unread: false }
+            : notification
+        );
+        localStorage.setItem('voting_notifications', JSON.stringify(updatedNotifications));
+      } catch (storageError) {
+        console.error('Failed to mark notification as read in localStorage:', storageError);
+      }
     }
   }
 
@@ -175,6 +225,18 @@ class NotificationService {
       
       // Update local state
       this.notifications = this.notifications.map(n => ({ ...n, unread: false }));
+      
+      // Update localStorage as well
+      try {
+        const existingNotifications = JSON.parse(localStorage.getItem('voting_notifications') || '[]');
+        const updatedNotifications = existingNotifications.map(notification => 
+          ({ ...notification, unread: false })
+        );
+        localStorage.setItem('voting_notifications', JSON.stringify(updatedNotifications));
+      } catch (storageError) {
+        console.error('Failed to update localStorage for mark all as read:', storageError);
+      }
+      
       this.notifyListeners();
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
