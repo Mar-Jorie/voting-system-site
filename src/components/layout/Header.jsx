@@ -188,41 +188,11 @@ const Header = () => {
       await notificationService.markAllAsRead();
       toast.success('All notifications marked as read');
     } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
       toast.error('Failed to mark notifications as read');
     }
   };
 
-  // Mark individual notification as read and handle action
-  const handleNotificationItemClick = async (notification) => {
-    try {
-      // Mark as read using the proper method that reloads notifications
-      await notificationService.markAsRead(notification.id);
-
-      // Close notification dropdown
-      setShowNotificationDropdown(false);
-
-      // Handle different notification actions
-      switch (notification.action) {
-        case 'view_votes':
-          navigate('/votes');
-          break;
-        case 'view_candidates':
-          navigate('/candidates');
-          break;
-        case 'view_help':
-          setShowHelpModal(true);
-          break;
-        case 'view_dashboard':
-          navigate('/dashboard');
-          break;
-        default:
-          // Default action - could be a generic page
-          navigate('/dashboard');
-      }
-    } catch (error) {
-      toast.error('Failed to mark notification as read');
-    }
-  };
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -303,8 +273,7 @@ const Header = () => {
                       notifications.map((notification) => (
                         <div 
                           key={notification.id}
-                          onClick={() => handleNotificationItemClick(notification)}
-                          className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
+                          className={`px-4 py-3 border-b border-gray-100 last:border-b-0 ${
                             notification.unread ? 'bg-blue-50' : ''
                           }`}
                         >
