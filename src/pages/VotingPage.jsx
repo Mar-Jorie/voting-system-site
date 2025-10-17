@@ -120,12 +120,32 @@ const VotingPage = () => {
   const [resultsVisibility, setResultsVisibility] = useState(RESULTS_VISIBILITY.HIDDEN);
   const [votes, setVotes] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [searchValue, setSearchValue] = useState('');
+  const [filters, setFilters] = useState({
+    category: '',
+    status: ''
+  });
   const trackingRef = useRef(false);
   const trackingTimeoutRef = useRef(null);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
+
+  // Search and filter handlers
+  const handleSearchChange = (e) => {
+    setSearchValue(e.target.value);
+  };
+
+  const handleSearch = () => {
+    // Filter candidates based on search value
+    const filtered = candidates.filter(candidate => 
+      candidate.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+      candidate.description.toLowerCase().includes(searchValue.toLowerCase())
+    );
+    setFilteredCandidates(filtered);
+  };
+
 
   const cleanupOldPageLoadData = () => {
     try {
@@ -329,10 +349,27 @@ const VotingPage = () => {
   }, [refreshTrigger]);
 
   const handleFilterChange = (key, value) => {
-    setFilteredCandidates(prev => ({
+    setFilters(prev => ({
       ...prev,
       [key]: value
     }));
+    
+    // Apply filters
+    let filtered = candidates;
+    
+    if (key === 'category' && value) {
+      filtered = candidates.filter(candidate => candidate.category === value);
+    }
+    
+    // Also apply search filter if there's a search value
+    if (searchValue) {
+      filtered = filtered.filter(candidate => 
+        candidate.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+        candidate.description.toLowerCase().includes(searchValue.toLowerCase())
+      );
+    }
+    
+    setFilteredCandidates(filtered);
   };
 
   const handleCandidateSelect = (candidate) => {
@@ -595,40 +632,7 @@ const VotingPage = () => {
             />
           </div>
 
-          {/* Selection Status */}
-          <div className="mb-8 bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Selection</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <span className="h-3 w-3 rounded-full bg-blue-500 mr-3"></span>
-                  <span className="text-gray-700 font-medium">Male Candidate</span>
-                </div>
-                {selectedCandidates.male ? (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-green-600 font-medium">Selected</span>
-                    <CheckCircleIcon className="h-4 w-4 text-green-600" />
-                  </div>
-                ) : (
-                  <span className="text-sm text-gray-400">Not selected</span>
-                )}
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <span className="h-3 w-3 rounded-full bg-pink-500 mr-3"></span>
-                  <span className="text-gray-700 font-medium">Female Candidate</span>
-                </div>
-                {selectedCandidates.female ? (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-green-600 font-medium">Selected</span>
-                    <CheckCircleIcon className="h-4 w-4 text-green-600" />
-                  </div>
-                ) : (
-                  <span className="text-sm text-gray-400">Not selected</span>
-                )}
-              </div>
-            </div>
-          </div>
+       
 
           {/* Candidates Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -637,7 +641,7 @@ const VotingPage = () => {
               <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 border-b border-gray-200">
                 <h3 className="text-xl font-semibold text-gray-900 flex items-center">
                   <span className="h-3 w-3 rounded-full bg-blue-500 mr-3"></span>
-                  Male Candidates
+                  Male
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">Select your preferred male candidate</p>
               </div>
