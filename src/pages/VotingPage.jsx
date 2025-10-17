@@ -104,6 +104,13 @@ const VotingPage = () => {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [voterInfo, setVoterInfo] = useState({
+    name: '',
+    email: ''
+  });
+  const [votingComplete, setVotingComplete] = useState(false);
+  const [hasVoted, setHasVoted] = useState(false);
+  const [voteLoading, setVoteLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedImageName, setSelectedImageName] = useState('');
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -216,18 +223,39 @@ const VotingPage = () => {
       setLoading(true);
       setError(null);
 
-      // Load candidates
-      const candidatesData = await apiClient.findObjects('candidates', {
-        where: { is_active: true },
-        limit: 100
+      // Load candidates and votes from database
+      const [candidatesData, votesData] = await Promise.all([
+        apiClient.findObjects('candidates', {}),
+        apiClient.findObjects('votes', {})
+      ]);
+      
+      // Calculate vote counts for each candidate
+      const candidatesWithVotes = candidatesData.map(candidate => {
+        let candidateVotes = 0;
+        
+        // Count votes from the new single vote structure
+        votesData.forEach(vote => {
+          if (vote.vote_type === 'dual_selection') {
+            // Check if this candidate is selected as male or female
+            if (vote.male_candidate_id === candidate.id || vote.female_candidate_id === candidate.id) {
+              candidateVotes++;
+            }
+          } else {
+            // Legacy single vote structure
+            if (vote.candidate_id === candidate.id) {
+              candidateVotes++;
+            }
+          }
+        });
+        
+        return {
+          ...candidate,
+          voteCount: candidateVotes
+        };
       });
-      setCandidates(candidatesData || []);
-      setFilteredCandidates(candidatesData || []);
-
-      // Load votes
-      const votesData = await apiClient.findObjects('votes', {
-        limit: 1000
-      });
+      
+      setCandidates(candidatesWithVotes || []);
+      setFilteredCandidates(candidatesWithVotes || []);
       setVotes(votesData || []);
 
     } catch (err) {
@@ -321,6 +349,25 @@ const VotingPage = () => {
     }
   };
 
+  // Form fields for the vote modal
+  const voteFormFields = [
+    {
+      name: 'name',
+      type: 'String',
+      label: 'Full Name',
+      placeholder: 'Enter your full name',
+      required: true
+    },
+    {
+      name: 'email',
+      type: 'String',
+      label: 'Email Address',
+      placeholder: 'Enter your email',
+      required: true,
+      format: 'email'
+    }
+  ];
+
   const handleVote = () => {
     if (!selectedCandidates.male || !selectedCandidates.female) {
       toast.error('Please select both male and female candidates');
@@ -329,47 +376,57 @@ const VotingPage = () => {
     setShowVoteModal(true);
   };
 
+  const handleVoteSubmit = (formData) => {
+    // Update voter info with form data
+    setVoterInfo(formData);
+
+    // Show confirmation modal instead of directly submitting
+    setShowVoteModal(false);
+    setShowConfirmationModal(true);
+  };
+
   const handleConfirmVote = async () => {
+    setVoteLoading(true);
     try {
-      // Create vote records
-      const voteData = [
-        {
-          candidate_id: selectedCandidates.male.id,
-          category: 'male',
-          timestamp: new Date().toISOString()
-        },
-        {
-          candidate_id: selectedCandidates.female.id,
-          category: 'female',
-          timestamp: new Date().toISOString()
-        }
-      ];
+      // Create a single vote entry with both male and female candidates
+      const vote = {
+        male_candidate_id: selectedCandidates.male.id,
+        male_candidate_name: selectedCandidates.male.name,
+        female_candidate_id: selectedCandidates.female.id,
+        female_candidate_name: selectedCandidates.female.name,
+        voter_email: voterInfo.email,
+        voter_name: voterInfo.name,
+        vote_type: 'dual_selection' // Indicates this is a vote for both categories
+      };
 
-      // Submit votes
-      for (const vote of voteData) {
-        await apiClient.createObject('votes', vote);
-      }
+      // Save single vote to database
+      const voteResult = await apiClient.createObject('votes', vote);
 
-      // Log the voting action
+      // Log vote casting for the single vote entry
       await auditLogger.log({
-        action: 'cast_vote',
+        action: 'vote_cast',
         entity_type: 'vote',
-        entity_id: `${selectedCandidates.male.id}_${selectedCandidates.female.id}`,
+        entity_id: voteResult.id,
         entity_name: `${selectedCandidates.male.name} & ${selectedCandidates.female.name}`,
         details: {
           male_candidate: selectedCandidates.male.name,
           female_candidate: selectedCandidates.female.name,
+          voter_email: voterInfo.email,
+          voter_name: voterInfo.name,
           timestamp: new Date().toISOString()
         },
         category: 'voting',
         severity: 'info'
       });
 
-      setShowVoteModal(false);
+      setShowConfirmationModal(false);
       setShowSuccessModal(true);
+      setVotingComplete(true);
+      setHasVoted(true);
       
       // Reset selections
       setSelectedCandidates({ male: null, female: null });
+      setVoterInfo({ name: '', email: '' });
       
       // Refresh data
       loadData();
@@ -381,8 +438,11 @@ const VotingPage = () => {
     } catch (error) {
       console.error('Error casting vote:', error);
       toast.error('Failed to cast vote. Please try again.');
+    } finally {
+      setVoteLoading(false);
     }
   };
+
 
   const handleImageClick = (images, candidateName, currentIndex) => {
     setSelectedImage(images);
@@ -393,6 +453,18 @@ const VotingPage = () => {
 
   const closeImageModal = () => {
     setShowImageModal(false);
+  };
+
+  const handleSuccessClose = () => {
+    setShowSuccessModal(false);
+    setShowVoteModal(false);
+    setShowConfirmationModal(false);
+  };
+
+  const handleCloseAllModals = () => {
+    setShowVoteModal(false);
+    setShowConfirmationModal(false);
+    setShowSuccessModal(false);
     setSelectedImage(null);
     setSelectedImageName('');
     setSelectedImageIndex(0);
@@ -472,8 +544,8 @@ const VotingPage = () => {
       <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {/* Page Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight">
+          <div className="mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight">
               Cast Your Vote
             </h1>
             <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed max-w-3xl mx-auto">
@@ -534,7 +606,7 @@ const VotingPage = () => {
               <div className="p-6 border-b border-gray-200">
                 <h3 className="text-xl font-semibold text-gray-900 flex items-center">
                   <span className="h-3 w-3 rounded-full bg-blue-500 mr-3"></span>
-                  Male Candidates
+                  Male
                 </h3>
               </div>
               <div className="p-6">
@@ -583,7 +655,7 @@ const VotingPage = () => {
               <div className="p-6 border-b border-gray-200">
                 <h3 className="text-xl font-semibold text-gray-900 flex items-center">
                   <span className="h-3 w-3 rounded-full bg-pink-500 mr-3"></span>
-                  Female Candidates
+                  Female
                 </h3>
               </div>
               <div className="p-6">
@@ -637,7 +709,7 @@ const VotingPage = () => {
               size="lg"
               className="min-w-[200px]"
             >
-              Cast Vote
+              Submit My Vote
             </Button>
           </div>
         </div>
@@ -651,10 +723,23 @@ const VotingPage = () => {
       {/* Floating Elements */}
       <FloatingChatbot />
 
-      {/* Vote Confirmation Modal */}
-      <ConfirmationModal
+      {/* Vote Form Modal */}
+      <FormModal
         isOpen={showVoteModal}
         onClose={() => setShowVoteModal(false)}
+        onSubmit={handleVoteSubmit}
+        title="Cast Your Vote - Star of the Night"
+        fields={voteFormFields}
+        initialData={voterInfo}
+        loading={false}
+        isUpdate={false}
+        submitButtonText="Vote"
+      />
+
+      {/* Vote Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={() => setShowConfirmationModal(false)}
         onConfirm={handleConfirmVote}
         title="Confirm Your Vote"
         message={`Are you sure you want to vote for ${selectedCandidates.male?.name} (Male) and ${selectedCandidates.female?.name} (Female)? This action cannot be undone.`}
@@ -667,11 +752,11 @@ const VotingPage = () => {
       {/* Success Modal */}
       <ConfirmationModal
         isOpen={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        onConfirm={() => setShowSuccessModal(false)}
+        onClose={handleSuccessClose}
+        onConfirm={handleSuccessClose}
         title="Vote Cast Successfully!"
-        message="Thank you for participating in the election. Your vote has been recorded successfully."
-        confirmLabel="OK"
+        message="Thank you for participating in the Star of the Night election. Your vote has been recorded successfully."
+        confirmLabel="Close"
         cancelLabel=""
         icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
         variant="success"
