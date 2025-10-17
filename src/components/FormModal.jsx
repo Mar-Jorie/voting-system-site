@@ -23,11 +23,6 @@ const FormModal = ({
   const [formData, setFormData] = useState(memoizedInitialData);
   const [errors, setErrors] = useState({});
 
-  // Debug errors state changes
-  useEffect(() => {
-    console.log('FormModal errors state changed:', errors);
-  }, [errors]);
-
 
   // Update form data when initialData changes
   useEffect(() => {
@@ -91,7 +86,6 @@ const FormModal = ({
   };
 
   const handleFieldChange = async (fieldName, value) => {
-    console.log('FormModal handleFieldChange called with:', fieldName, value);
     // For select fields, extract the value from the option object
     const fieldValue = (typeof value === 'object' && value?.value !== undefined) ? value.value : value;
     
@@ -111,39 +105,32 @@ const FormModal = ({
     
     // Validate email format and check for duplicates in real-time
     if (fieldName === 'email' && value && value.trim() !== '') {
-      console.log('Email validation triggered for:', value);
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(value)) {
-        console.log('Email format invalid');
         setErrors(prev => ({
           ...prev,
           [fieldName]: 'Please enter a valid email address'
         }));
       } else {
-        console.log('Email format valid, checking database...');
         // Check if email has already voted in database
         try {
           const apiClient = (await import('../usecases/api')).default;
           const existingVotes = await apiClient.findObjects('votes', {
             voter_email: value
           });
-          console.log('Database check result:', existingVotes);
           
           if (existingVotes && existingVotes.length > 0) {
-            console.log('Email already voted, setting error');
             setErrors(prev => ({
               ...prev,
               [fieldName]: 'Email already voted'
             }));
           } else {
-            console.log('Email is valid, clearing error');
             setErrors(prev => ({
               ...prev,
               [fieldName]: null
             }));
           }
         } catch (error) {
-          console.error('Error checking email:', error);
           // If there's an error checking, allow the user to proceed
           setErrors(prev => ({
             ...prev,
@@ -152,7 +139,6 @@ const FormModal = ({
         }
       }
     } else if (fieldName === 'email' && (!value || value.trim() === '')) {
-      console.log('Email field cleared');
       // Clear email error when field is empty
       setErrors(prev => ({
         ...prev,
