@@ -272,7 +272,7 @@ const Header = () => {
               {/* Notification Dropdown */}
               {showNotificationDropdown && (
                 <div 
-                  className="mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50" 
+                  className="mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 flex flex-col max-h-[calc(100vh-8rem)] sm:max-h-80" 
                   style={{
                     ...(window.innerWidth < 768 
                       ? { position: 'fixed', left: '50%', top: '4rem', transform: 'translateX(-50%)' }
@@ -280,7 +280,8 @@ const Header = () => {
                     )
                   }}
                 >
-                  <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                  {/* Fixed Header */}
+                  <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
                     <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
                     {notifications.some(n => n.unread) && (
                       <button
@@ -292,7 +293,9 @@ const Header = () => {
                       </button>
                     )}
                   </div>
-                  <div className="max-h-[calc(100vh-8rem)] sm:max-h-64 overflow-y-auto">
+                  
+                  {/* Scrollable Content */}
+                  <div className="flex-1 overflow-y-auto">
                     {notifications.length === 0 ? (
                       <div className="px-4 py-8 text-center">
                         <BellIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
@@ -342,6 +345,16 @@ const Header = () => {
                         </div>
                       ))
                     )}
+                  </div>
+                  
+                  {/* Fixed Footer */}
+                  <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between flex-shrink-0 bg-gray-50">
+                    <div className="text-xs text-gray-600">
+                      <span className="font-medium">{notifications.length}</span> total notification{notifications.length !== 1 ? 's' : ''}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      <span className="font-medium text-blue-600">{notifications.filter(n => n.unread).length}</span> unread
+                    </div>
                   </div>
                 </div>
               )}
