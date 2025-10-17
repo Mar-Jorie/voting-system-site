@@ -586,7 +586,7 @@ const VotingPage = () => {
             {/* Desktop CTA Buttons - Hidden on Mobile */}
             <div className="hidden md:flex items-center space-x-4">
               <Link to="/">
-                <Button variant="ghost" size="md" className="!w-auto">Home</Button>
+                <Button variant="primary" size="md" className="!w-auto">Home</Button>
               </Link>
             </div>
           </div>
@@ -605,7 +605,7 @@ const VotingPage = () => {
                 {/* Mobile CTA Buttons */}
                 <div className="flex flex-col space-y-3 pt-4 border-t border-gray-100">
                   <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" size="md" className="w-full">Home</Button>
+                    <Button variant="primaryOutline" size="md" className="w-full">Home</Button>
                   </Link>
                 </div>
               </div>
@@ -663,14 +663,11 @@ const VotingPage = () => {
             {/* Male Candidates */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
               <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                      <span className="h-3 w-3 rounded-full bg-blue-500 mr-3"></span>
-                      Male
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">Select your preferred male candidate</p>
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+                    <span className="h-3 w-3 rounded-full bg-blue-500 mr-3"></span>
+                    Male
+                  </h3>
                   <div className="flex items-center space-x-2">
                     <Pagination
                       currentPage={1}
@@ -682,6 +679,7 @@ const VotingPage = () => {
                     />
                   </div>
                 </div>
+                <p className="text-sm text-gray-600">Select your preferred male candidate</p>
               </div>
               <div className="p-6">
                 {loading ? (
@@ -727,14 +725,11 @@ const VotingPage = () => {
             {/* Female Candidates */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
               <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                      <span className="h-3 w-3 rounded-full bg-purple-500 mr-3"></span>
-                      Female
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">Select your preferred female candidate</p>
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+                    <span className="h-3 w-3 rounded-full bg-purple-500 mr-3"></span>
+                    Female
+                  </h3>
                   <div className="flex items-center space-x-2">
                     <Pagination
                       currentPage={1}
@@ -746,6 +741,7 @@ const VotingPage = () => {
                     />
                   </div>
                 </div>
+                <p className="text-sm text-gray-600">Select your preferred female candidate</p>
               </div>
               <div className="p-6">
                 {loading ? (
