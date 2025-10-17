@@ -156,30 +156,39 @@ const Header = () => {
 
   // Initialize notification service
   useEffect(() => {
-    // Subscribe to notification updates
-    const unsubscribe = notificationService.addListener((updatedNotifications) => {
-      setNotifications(updatedNotifications);
+    const initializeNotifications = async () => {
+      // Subscribe to notification updates
+      const unsubscribe = notificationService.addListener((updatedNotifications) => {
+        setNotifications(updatedNotifications);
+      });
+
+      // Initialize notification service (loads from database)
+      await notificationService.initialize();
+
+      return unsubscribe;
+    };
+
+    let unsubscribe;
+    initializeNotifications().then((unsub) => {
+      unsubscribe = unsub;
     });
 
-    // Initialize notification service
-    notificationService.initialize(apiClient);
-
     return () => {
-      unsubscribe();
+      if (unsubscribe) unsubscribe();
       notificationService.stopMonitoring();
     };
   }, []);
 
   // Mark all notifications as read
-  const markAllAsRead = () => {
-    notificationService.markAllAsRead();
+  const markAllAsRead = async () => {
+    await notificationService.markAllAsRead();
     toast.success('All notifications marked as read');
   };
 
   // Mark individual notification as read and handle action
-  const handleNotificationItemClick = (notification) => {
+  const handleNotificationItemClick = async (notification) => {
     // Mark as read
-    notificationService.markAsRead(notification.id);
+    await notificationService.markNotificationAsRead(notification.id);
 
     // Close notification dropdown
     setShowNotificationDropdown(false);

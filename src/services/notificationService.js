@@ -1,5 +1,6 @@
 // Notification Service for managing real-time notifications
 import { toast } from 'react-hot-toast';
+import apiClient from '../usecases/api';
 
 class NotificationService {
   constructor() {
@@ -9,6 +10,7 @@ class NotificationService {
     this.votingStatus = null;
     this.deadlineCheckInterval = null;
     this.voteCheckInterval = null;
+    this.isInitialized = false;
   }
 
   // Add notification listener
@@ -24,8 +26,57 @@ class NotificationService {
     this.listeners.forEach(listener => listener([...this.notifications]));
   }
 
+  // Initialize notification service
+  async initialize() {
+    if (this.isInitialized) return;
+    
+    try {
+      await this.loadNotificationsFromDatabase();
+      this.isInitialized = true;
+    } catch (error) {
+      console.error('Failed to initialize notification service:', error);
+      // Continue with empty notifications if database fails
+    }
+  }
+
+  // Load notifications from database
+  async loadNotificationsFromDatabase() {
+    try {
+      const notifications = await apiClient.findObjects('notifications', {
+        order: '-created',
+        limit: 50
+      });
+      
+      this.notifications = notifications || [];
+      this.notifyListeners();
+    } catch (error) {
+      console.error('Failed to load notifications from database:', error);
+      this.notifications = [];
+    }
+  }
+
+  // Save notification to database
+  async saveNotificationToDatabase(notification) {
+    try {
+      const savedNotification = await apiClient.createObject('notifications', {
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        action: notification.action,
+        priority: notification.priority || 'normal',
+        unread: notification.unread !== false,
+        user_id: notification.user_id || null
+      });
+      
+      return savedNotification;
+    } catch (error) {
+      console.error('Failed to save notification to database:', error);
+      return notification; // Return original if save fails
+    }
+  }
+
   // Add a new notification
-  addNotification(notification) {
+  async addNotification(notification) {
     const newNotification = {
       id: Date.now() + Math.random(),
       timestamp: new Date(),
@@ -33,7 +84,13 @@ class NotificationService {
       ...notification
     };
 
-    this.notifications.unshift(newNotification);
+    // Save to database
+    const savedNotification = await this.saveNotificationToDatabase(newNotification);
+    
+    // Use saved notification if successful, otherwise use local one
+    const finalNotification = savedNotification.id ? savedNotification : newNotification;
+
+    this.notifications.unshift(finalNotification);
     
     // Keep only last 50 notifications
     if (this.notifications.length > 50) {
@@ -49,6 +106,8 @@ class NotificationService {
         icon: this.getNotificationIcon(notification.type)
       });
     }
+    
+    return finalNotification;
   }
 
   // Get notification icon based on type
@@ -89,6 +148,37 @@ class NotificationService {
   // Get unread count
   getUnreadCount() {
     return this.notifications.filter(n => n.unread).length;
+  }
+
+  // Mark notification as read in database
+  async markNotificationAsRead(notificationId) {
+    try {
+      await apiClient.updateObject('notifications', notificationId, {
+        unread: false
+      });
+    } catch (error) {
+      console.error('Failed to mark notification as read in database:', error);
+    }
+  }
+
+  // Mark all notifications as read
+  async markAllAsRead() {
+    try {
+      const unreadNotifications = this.notifications.filter(n => n.unread);
+      
+      // Update in database
+      for (const notification of unreadNotifications) {
+        if (notification.id) {
+          await this.markNotificationAsRead(notification.id);
+        }
+      }
+      
+      // Update local state
+      this.notifications = this.notifications.map(n => ({ ...n, unread: false }));
+      this.notifyListeners();
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
   }
 
   // Start monitoring for new votes

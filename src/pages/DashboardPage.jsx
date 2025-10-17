@@ -29,6 +29,28 @@ const DashboardPage = () => {
   } = useOptimizedDashboardData();
 
   const [resultsVisibility, setResultsVisibilityState] = useState(RESULTS_VISIBILITY.HIDDEN);
+  
+  // Activity search filter state (search only, no type filter)
+  const [activitySearchTerm, setActivitySearchTerm] = useState('');
+
+  // Filter activity logs based on search term only
+  const getFilteredActivityLogs = () => {
+    let filtered = auditLogs;
+
+    // Filter by search term
+    if (activitySearchTerm.trim()) {
+      const searchLower = activitySearchTerm.toLowerCase();
+      filtered = filtered.filter(log => 
+        log.action?.toLowerCase().includes(searchLower) ||
+        log.entity_type?.toLowerCase().includes(searchLower) ||
+        log.entity_name?.toLowerCase().includes(searchLower) ||
+        log.user_name?.toLowerCase().includes(searchLower) ||
+        log.details?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered;
+  };
 
   // Note: Real-time event listeners are now handled in the useOptimizedDashboardData hook
 
@@ -1238,9 +1260,39 @@ const DashboardPage = () => {
             </div>
           </div>
           
+          {/* Activity Search Filter */}
+          <div className="mb-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Search Input */}
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="Search activities..."
+                  value={activitySearchTerm}
+                  onChange={(e) => setActivitySearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            {/* Clear Search Button */}
+            {activitySearchTerm && (
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => setActivitySearchTerm('')}
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  Clear Search
+                </button>
+              </div>
+            )}
+          </div>
+          
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {auditLogs.length > 0 ? (
-              auditLogs.map((log, index) => {
+            {(() => {
+              const filteredLogs = getFilteredActivityLogs();
+              return filteredLogs.length > 0 ? (
+                filteredLogs.map((log, index) => {
                 const getActivityIcon = (action, category) => {
                   switch (action) {
                     case 'login':
@@ -1331,15 +1383,23 @@ const DashboardPage = () => {
                   </div>
                 );
               })
-            ) : (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CalendarDaysIcon className="h-8 w-8 text-gray-400" />
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CalendarDaysIcon className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 font-medium">
+                    {auditLogs.length === 0 ? 'No activity yet' : 'No matching activities'}
+                  </p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {auditLogs.length === 0 
+                      ? 'System activities will appear here' 
+                      : 'Try adjusting your search criteria'
+                    }
+                  </p>
                 </div>
-                <p className="text-gray-500 font-medium">No activity yet</p>
-                <p className="text-sm text-gray-400 mt-1">System activities will appear here</p>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
         </div>
