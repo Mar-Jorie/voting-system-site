@@ -1,7 +1,7 @@
 // api.js
 
-// Use CORS proxy for production deployment to avoid CORS issues
-const API_BASE = window.location.hostname === 'mar-jorie.github.io' 
+// Use CORS proxy for both production and development to avoid CORS issues
+const API_BASE = (window.location.hostname === 'mar-jorie.github.io' || window.location.hostname === 'localhost')
   ? "https://corsproxy.io/?https://api.innque.com/v1"
   : "https://api.innque.com/v1";
 const APP_ID = import.meta.env.VITE_APP_ID || "votes";
