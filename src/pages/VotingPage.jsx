@@ -139,6 +139,36 @@ const VotingPage = () => {
   const trackingRef = useRef(false);
   const trackingTimeoutRef = useRef(null);
 
+  // Helper function to get candidate images (same as CandidatesPage)
+  const getCandidateImages = (candidate) => {
+    // Support both 'image' (single) and 'images' (array) for backward compatibility
+    let images = [];
+    
+    if (candidate.images && Array.isArray(candidate.images)) {
+      images = candidate.images;
+    } else if (candidate.image) {
+      images = [candidate.image];
+    }
+    
+    // Convert image objects to URLs for display
+    return images.map(img => {
+      if (typeof img === 'string') {
+        // Simple string path
+        return img;
+      } else if (img && img.dataUrl) {
+        // Object with dataUrl property (base64)
+        return img.dataUrl;
+      } else if (img && img.url) {
+        // Object with url property
+        return img.url;
+      } else if (img && img.src) {
+        // Object with src property
+        return img.src;
+      }
+      return img;
+    }).filter(img => img); // Remove any null/undefined values
+  };
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
@@ -530,31 +560,16 @@ const VotingPage = () => {
             {/* Logo */}
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
-                <img 
-                  src="/vite.svg" 
-                  alt="Voting System Logo" 
-                  className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
-                  onError={(e) => {
-                    // Fallback to a simple text logo if image fails
-                    e.target.style.display = 'none';
-                    const parent = e.target.parentElement;
-                    if (!parent.querySelector('.text-logo')) {
-                      const textLogo = document.createElement('div');
-                      textLogo.className = 'text-logo w-6 h-6 sm:w-8 sm:h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm';
-                      textLogo.textContent = 'VS';
-                      parent.appendChild(textLogo);
-                    }
-                  }}
-                />
+                <img src="/voting-system-site/logo.png" alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
               </div>
               <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Voting System</span>
             </div>
             
             {/* Navigation Links - Hidden on Mobile */}
             <div className="hidden md:flex items-center space-x-10">
-              <a href="/#features" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Features</a>
-              <a href="/#how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">How It Works</a>
-              <a href="/#results" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Results</a>
+              <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Features</a>
+              <a href="#how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">How It Works</a>
+              <a href="#results" className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm">Results</a>
             </div>
             
             {/* Mobile Hamburger Menu - Right Corner */}
@@ -582,9 +597,9 @@ const VotingPage = () => {
               <div className="px-4 py-4 space-y-4">
                 {/* Mobile Navigation Links */}
                 <div className="space-y-3">
-                  <a href="/#features" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Features</a>
-                  <a href="/#how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">How It Works</a>
-                  <a href="/#results" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Results</a>
+                  <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Features</a>
+                  <a href="#how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">How It Works</a>
+                  <a href="#results" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium text-sm py-2">Results</a>
                 </div>
                 
                 {/* Mobile CTA Buttons */}
@@ -688,7 +703,7 @@ const VotingPage = () => {
                         onClick={() => handleCandidateSelect(candidate)}
                       >
                         <CandidateImageCarousel
-                          images={candidate.images}
+                          images={getCandidateImages(candidate)}
                           candidateId={candidate.id}
                           candidateName={candidate.name}
                           onImageClick={handleImageClick}
@@ -752,7 +767,7 @@ const VotingPage = () => {
                         onClick={() => handleCandidateSelect(candidate)}
                       >
                         <CandidateImageCarousel
-                          images={candidate.images}
+                          images={getCandidateImages(candidate)}
                           candidateId={candidate.id}
                           candidateName={candidate.name}
                           onImageClick={handleImageClick}
