@@ -543,57 +543,88 @@ const VotingPage = () => {
       {/* Main Content */}
       <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          {/* Page Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl md:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight">
-              Cast Your Vote
-            </h1>
-            <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed max-w-3xl mx-auto">
-              Select your preferred candidates for both male and female categories. Make your voice heard in this important election.
-            </p>
+          {/* Page Header with Voting Status */}
+          <div className="flex items-start justify-between mb-8">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl md:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight text-left">
+                Cast Your Vote
+              </h1>
+              <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed text-left">
+                Select your preferred candidates for both male and female categories. Make your voice heard in this important election.
+              </p>
+            </div>
+            
+            {/* Voting Status - Right Side */}
+            {votingStatus && (
+              <div className="flex items-center space-x-2 ml-6">
+                {votingStatus.isActive ? (
+                  <>
+                    <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                    <span className="text-green-600 font-medium">Active</span>
+                  </>
+                ) : (
+                  <>
+                    <XMarkIcon className="h-5 w-5 text-red-600" />
+                    <span className="text-red-600 font-medium">Closed</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Voting Status */}
-          {votingStatus && (
-            <div className="mb-8">
-              {votingStatus.isActive ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                  <div className="flex items-center justify-center space-x-2">
-                    <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                    <span className="text-green-800 font-medium">Voting is currently active</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                  <div className="flex items-center justify-center space-x-2">
-                    <XMarkIcon className="h-5 w-5 text-red-600" />
-                    <span className="text-red-800 font-medium">Voting is currently closed</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Filter Component */}
+          <div className="mb-6">
+            <SearchFilter
+              placeholder="Search candidates..."
+              value={searchValue}
+              onChange={handleSearchChange}
+              onSearch={handleSearch}
+              onFilterChange={handleFilterChange}
+              filters={filters}
+              useSelectForSearch={false}
+              searchSelectOptions={[]}
+              searchSelectValue=""
+              onSearchSelectChange={() => {}}
+              statusOptions={[
+                { value: '', label: 'All Categories' },
+                { value: 'male', label: 'Male' },
+                { value: 'female', label: 'Female' }
+              ]}
+              getUniqueCompanies={() => []}
+              className="bg-white border-gray-200"
+            />
+          </div>
 
           {/* Selection Status */}
           <div className="mb-8 bg-white rounded-lg p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Selection</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center">
-                <span className="h-2 w-2 rounded-full bg-blue-500 mr-2"></span>
-                Male Candidate:
-                {selectedCandidates.male && (
-                  <span className="ml-2 text-sm text-green-600 font-medium">
-                    ✓
-                  </span>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center">
+                  <span className="h-3 w-3 rounded-full bg-blue-500 mr-3"></span>
+                  <span className="text-gray-700 font-medium">Male Candidate</span>
+                </div>
+                {selectedCandidates.male ? (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-green-600 font-medium">Selected</span>
+                    <CheckCircleIcon className="h-4 w-4 text-green-600" />
+                  </div>
+                ) : (
+                  <span className="text-sm text-gray-400">Not selected</span>
                 )}
               </div>
-              <div className="flex items-center">
-                <span className="h-2 w-2 rounded-full bg-pink-500 mr-2"></span>
-                Female Candidate:
-                {selectedCandidates.female && (
-                  <span className="ml-2 text-sm text-green-600 font-medium">
-                    ✓
-                  </span>
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center">
+                  <span className="h-3 w-3 rounded-full bg-pink-500 mr-3"></span>
+                  <span className="text-gray-700 font-medium">Female Candidate</span>
+                </div>
+                {selectedCandidates.female ? (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-green-600 font-medium">Selected</span>
+                    <CheckCircleIcon className="h-4 w-4 text-green-600" />
+                  </div>
+                ) : (
+                  <span className="text-sm text-gray-400">Not selected</span>
                 )}
               </div>
             </div>
@@ -602,12 +633,13 @@ const VotingPage = () => {
           {/* Candidates Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Male Candidates */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-              <div className="p-6 border-b border-gray-200">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 border-b border-gray-200">
                 <h3 className="text-xl font-semibold text-gray-900 flex items-center">
                   <span className="h-3 w-3 rounded-full bg-blue-500 mr-3"></span>
-                  Male
+                  Male Candidates
                 </h3>
+                <p className="text-sm text-gray-600 mt-1">Select your preferred male candidate</p>
               </div>
               <div className="p-6">
                 {loading ? (
@@ -651,12 +683,13 @@ const VotingPage = () => {
             </div>
 
             {/* Female Candidates */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-              <div className="p-6 border-b border-gray-200">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-pink-50 to-pink-100 p-6 border-b border-gray-200">
                 <h3 className="text-xl font-semibold text-gray-900 flex items-center">
                   <span className="h-3 w-3 rounded-full bg-pink-500 mr-3"></span>
-                  Female
+                  Female Candidates
                 </h3>
+                <p className="text-sm text-gray-600 mt-1">Select your preferred female candidate</p>
               </div>
               <div className="p-6">
                 {loading ? (
@@ -701,16 +734,29 @@ const VotingPage = () => {
           </div>
 
           {/* Vote Button */}
-          <div className="text-center">
-            <Button
-              onClick={handleVote}
-              disabled={!selectedCandidates.male || !selectedCandidates.female || !votingStatus?.isActive}
-              variant="primary"
-              size="lg"
-              className="min-w-[200px]"
-            >
-              Submit My Vote
-            </Button>
+          <div className="text-center mt-8">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+              <Button
+                onClick={handleVote}
+                disabled={!selectedCandidates.male || !selectedCandidates.female || !votingStatus?.isActive}
+                variant="primary"
+                size="lg"
+                className="min-w-[200px]"
+              >
+                {!selectedCandidates.male || !selectedCandidates.female ? (
+                  "Select Both Candidates to Vote"
+                ) : !votingStatus?.isActive ? (
+                  "Voting is Currently Closed"
+                ) : (
+                  "Submit My Vote"
+                )}
+              </Button>
+              {(!selectedCandidates.male || !selectedCandidates.female) && (
+                <p className="text-sm text-gray-500 mt-3">
+                  Please select both a male and female candidate to proceed
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -756,8 +802,7 @@ const VotingPage = () => {
         onConfirm={handleSuccessClose}
         title="Vote Cast Successfully!"
         message="Thank you for participating in the Star of the Night election. Your vote has been recorded successfully."
-        confirmLabel="Close"
-        cancelLabel=""
+        confirmLabel="Confirm"
         icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
         variant="success"
       />
