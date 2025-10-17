@@ -33,12 +33,9 @@ class NotificationService {
     if (this.isInitialized) return;
     
     try {
-      console.log('Initializing notification service...');
       await this.loadNotificationsFromDatabase();
       this.isInitialized = true;
-      console.log('Notification service initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize notification service:', error);
       // Continue with empty notifications if database fails
     }
   }
@@ -59,11 +56,7 @@ class NotificationService {
       
       this.notifications = notifications || [];
       this.notifyListeners();
-      console.log('Successfully loaded global notifications from database:', this.notifications.length);
-      console.log('Sample notification:', this.notifications[0]);
-      console.log('Unread notifications:', this.notifications.filter(n => n.unread).length);
     } catch (error) {
-      console.error('Failed to load notifications from database:', error);
       // No localStorage fallback - use empty array if database fails
       this.notifications = [];
       this.notifyListeners();
@@ -89,10 +82,8 @@ class NotificationService {
         // Removed user_id to make notifications global
       });
       
-      console.log('Successfully saved global notification to database:', savedNotification.id);
       return savedNotification;
     } catch (error) {
-      console.error('Failed to save notification to database:', error);
       // No localStorage fallback - throw error if database save fails
       throw error;
     }
@@ -109,7 +100,6 @@ class NotificationService {
       if (this.recentNotifications.has(notificationKey)) {
         const lastCreated = this.recentNotifications.get(notificationKey);
         if (now - lastCreated < 60000) { // 60 seconds
-          console.log('Duplicate notification prevented:', notification.title);
           return null;
         }
       }
@@ -144,7 +134,6 @@ class NotificationService {
       
       return savedNotification;
     } catch (error) {
-      console.error('Failed to add notification:', error);
       // Don't add to local state if database save fails
       throw error;
     }
@@ -160,7 +149,6 @@ class NotificationService {
       // Reload notifications from database to get the latest state
       await this.loadNotificationsFromDatabase();
     } catch (error) {
-      console.error('Failed to mark notification as read:', error);
       throw error;
     }
   }
@@ -182,9 +170,7 @@ class NotificationService {
       await apiClient.updateObject('notifications', notificationId, {
         unread: false
       });
-      console.log('Successfully marked notification as read in database:', notificationId);
     } catch (error) {
-      console.error('Failed to mark notification as read in database:', error);
       // No localStorage fallback - throw error if database update fails
       throw error;
     }
@@ -205,7 +191,6 @@ class NotificationService {
       // Reload notifications from database to get the latest state
       await this.loadNotificationsFromDatabase();
     } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
       throw error;
     }
   }
@@ -221,7 +206,6 @@ class NotificationService {
         // Use the passed apiClient parameter or fall back to imported one
         const client = apiClientParam || apiClient;
         if (!client || typeof client.findObjects !== 'function') {
-          console.log('API client not available for vote monitoring');
           return;
         }
 
@@ -241,7 +225,7 @@ class NotificationService {
           });
         }
       } catch (error) {
-        console.error('Error monitoring votes:', error);
+        // Silent error handling
       }
     }, 5000); // Check every 5 seconds
   }
@@ -257,7 +241,6 @@ class NotificationService {
         // Use the passed apiClient parameter or fall back to imported one
         const client = apiClientParam || apiClient;
         if (!client || typeof client.findObjects !== 'function') {
-          console.log('API client not available for voting status monitoring');
           return;
         }
 
@@ -329,7 +312,7 @@ class NotificationService {
           this.votingStatus = currentStatus;
         }
       } catch (error) {
-        console.error('Error monitoring voting status:', error);
+        // Silent error handling
       }
     }, 10000); // Check every 10 seconds
   }
@@ -352,7 +335,6 @@ class NotificationService {
     try {
       // Prevent multiple monitoring instances
       if (this.monitoringActive) {
-        console.log('Monitoring already active, skipping initialization');
         return;
       }
 
@@ -369,10 +351,8 @@ class NotificationService {
       this.startVotingStatusMonitoring(apiClient);
       
       this.monitoringActive = true;
-
-      console.log('Notification service monitoring initialized');
     } catch (error) {
-      console.error('Error initializing notification service monitoring:', error);
+      // Silent error handling
     }
   }
 
