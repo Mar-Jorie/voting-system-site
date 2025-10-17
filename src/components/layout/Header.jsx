@@ -188,7 +188,6 @@ const Header = () => {
       await notificationService.markAllAsRead();
       toast.success('All notifications marked as read');
     } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
       toast.error('Failed to mark notifications as read');
     }
   };
@@ -196,8 +195,8 @@ const Header = () => {
   // Mark individual notification as read and handle action
   const handleNotificationItemClick = async (notification) => {
     try {
-      // Mark as read
-      await notificationService.markNotificationAsRead(notification.id);
+      // Mark as read using the proper method that reloads notifications
+      await notificationService.markAsRead(notification.id);
 
       // Close notification dropdown
       setShowNotificationDropdown(false);
@@ -221,7 +220,6 @@ const Header = () => {
           navigate('/dashboard');
       }
     } catch (error) {
-      console.error('Failed to mark notification as read:', error);
       toast.error('Failed to mark notification as read');
     }
   };
