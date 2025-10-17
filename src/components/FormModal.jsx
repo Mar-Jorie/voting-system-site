@@ -15,9 +15,7 @@ const FormModal = ({
   initialData = {},
   loading = false,
   isUpdate = false,
-  submitButtonText = null,
-  onFieldChange = null,
-  customErrors = {}
+  submitButtonText = null
 }) => {
   // Memoize initialData to prevent infinite re-renders
   const memoizedInitialData = useMemo(() => initialData, [JSON.stringify(initialData)]);
@@ -25,10 +23,6 @@ const FormModal = ({
   const [formData, setFormData] = useState(memoizedInitialData);
   const [errors, setErrors] = useState({});
 
-  // Debug custom errors
-  useEffect(() => {
-    console.log('FormModal customErrors changed:', customErrors);
-  }, [customErrors]);
 
   // Update form data when initialData changes
   useEffect(() => {
@@ -67,10 +61,7 @@ const FormModal = ({
     // Check if there are any field-specific errors (like duplicate email)
     const noFieldErrors = Object.values(errors).every(error => error === null);
     
-    // Check if there are any custom errors
-    const noCustomErrors = Object.values(customErrors).every(error => !error || error === '');
-    
-    return fieldsValid && noFieldErrors && noCustomErrors;
+    return fieldsValid && noFieldErrors;
   };
 
   // Get validation error message
@@ -94,7 +85,7 @@ const FormModal = ({
     return null;
   };
 
-  const handleFieldChange = (fieldName, value) => {
+  const handleFieldChange = async (fieldName, value) => {
     // For select fields, extract the value from the option object
     const fieldValue = (typeof value === 'object' && value?.value !== undefined) ? value.value : value;
     
@@ -111,11 +102,6 @@ const FormModal = ({
       }));
     }
 
-    // Call custom field change handler if provided
-    if (onFieldChange) {
-      console.log('FormModal calling onFieldChange with:', fieldName, fieldValue);
-      onFieldChange(fieldName, fieldValue);
-    }
     
     // Validate email format and check for duplicates in real-time
     if (fieldName === 'email' && value && value.trim() !== '') {
@@ -126,14 +112,27 @@ const FormModal = ({
           [fieldName]: 'Please enter a valid email address'
         }));
       } else {
-        // Check if email has already voted
-        const existingVotes = JSON.parse(localStorage.getItem('votes') || '[]');
-        if (existingVotes.some(vote => vote.voterEmail === value)) {
-          setErrors(prev => ({
-            ...prev,
-            [fieldName]: 'This email has already voted'
-          }));
-        } else {
+        // Check if email has already voted in database
+        try {
+          const { apiClient } = await import('../usecases/api');
+          const existingVotes = await apiClient.findObjects('votes', {
+            where: { email: value }
+          });
+          
+          if (existingVotes && existingVotes.length > 0) {
+            setErrors(prev => ({
+              ...prev,
+              [fieldName]: 'Email already voted'
+            }));
+          } else {
+            setErrors(prev => ({
+              ...prev,
+              [fieldName]: null
+            }));
+          }
+        } catch (error) {
+          console.error('Error checking email:', error);
+          // If there's an error checking, allow the user to proceed
           setErrors(prev => ({
             ...prev,
             [fieldName]: null
@@ -244,14 +243,14 @@ const FormModal = ({
                       }}
                       value={formData[field.name]}
                       onChange={(value) => handleFieldChange(field.name, value)}
-                      error={errors[field.name] || customErrors[field.name]}
+                      error={errors[field.name]}
                     />
                   )}
                   
                   {/* Field-specific error message */}
-                  {(errors[field.name] || customErrors[field.name]) && (
+                  {errors[field.name] && (
                     <p className="mt-1 text-red-600 text-sm">
-                      {errors[field.name] || customErrors[field.name]}
+                      {errors[field.name]}
                     </p>
                   )}
                 </div>

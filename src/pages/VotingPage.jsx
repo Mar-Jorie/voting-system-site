@@ -119,10 +119,6 @@ const VotingPage = () => {
     name: '',
     email: ''
   });
-  const [emailValidation, setEmailValidation] = useState({
-    isValid: true,
-    message: ''
-  });
   const [votingComplete, setVotingComplete] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
   const [voteLoading, setVoteLoading] = useState(false);
@@ -143,10 +139,6 @@ const VotingPage = () => {
   const trackingRef = useRef(false);
   const trackingTimeoutRef = useRef(null);
 
-  // Debug email validation state changes
-  useEffect(() => {
-    console.log('Email validation state changed:', emailValidation);
-  }, [emailValidation]);
 
   // Helper function to get candidate images (same as CandidatesPage)
   const getCandidateImages = (candidate) => {
@@ -182,53 +174,11 @@ const VotingPage = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  // Email validation function
-  const validateEmail = async (email) => {
-    console.log('validateEmail called with:', email);
-    if (!email) {
-      setEmailValidation({ isValid: true, message: '' });
-      return true;
-    }
 
-    try {
-      // Check if email already exists in votes
-      console.log('Checking for existing votes with email:', email);
-      const existingVotes = await apiClient.findObjects('votes', {
-        where: { email: email }
-      });
-      console.log('Existing votes found:', existingVotes);
-
-      if (existingVotes && existingVotes.length > 0) {
-        console.log('Email already voted, setting validation error');
-        setEmailValidation({ 
-          isValid: false, 
-          message: 'Email already voted' 
-        });
-        return false;
-      } else {
-        console.log('Email is valid, clearing validation error');
-        setEmailValidation({ isValid: true, message: '' });
-        return true;
-      }
-    } catch (error) {
-      console.error('Error validating email:', error);
-      setEmailValidation({ isValid: true, message: '' });
-      return true;
-    }
-  };
-
-  // Handle field changes in the vote modal
-  const handleVoteFieldChange = async (fieldName, value) => {
-    console.log('handleVoteFieldChange called with:', fieldName, value);
-    if (fieldName === 'email') {
-      await validateEmail(value);
-    }
-  };
 
   // Handle vote modal close
   const handleVoteModalClose = () => {
     setShowVoteModal(false);
-    setEmailValidation({ isValid: true, message: '' });
   };
 
   // Search and filter handlers
@@ -890,10 +840,6 @@ const VotingPage = () => {
         loading={false}
         isUpdate={false}
         submitButtonText="Vote"
-        onFieldChange={handleVoteFieldChange}
-        customErrors={{
-          email: emailValidation.isValid ? '' : emailValidation.message
-        }}
       />
 
       {/* Vote Confirmation Modal */}
